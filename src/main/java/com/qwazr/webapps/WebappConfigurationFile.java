@@ -19,11 +19,10 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.qwazr.connectors.ConnectorsConfigurationFile;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class WebappConfigurationFile extends ConnectorsConfigurationFile {
+public class WebappConfigurationFile {
 
-	public Map<String, List<String>> controllerPatterns;
+	public Map<String, List<String>> controllers;
 
 }

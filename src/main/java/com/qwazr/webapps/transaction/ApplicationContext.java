@@ -31,14 +31,14 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
-import com.qwazr.connectors.ConnectorContextAbstract;
-import com.qwazr.connectors.ConnectorsConfigurationFile;
+import com.qwazr.connectors.ConnectorManager;
+import com.qwazr.tools.ToolsManager;
 import com.qwazr.utils.LockUtils;
 import com.qwazr.utils.json.JsonMapper;
 import com.qwazr.webapps.WebappConfigurationFile;
 import com.qwazr.webapps.transaction.FilePathResolver.FilePath;
 
-public class ApplicationContext extends ConnectorContextAbstract {
+public class ApplicationContext {
 
 	private final static String CONF_FILE = "configuration.json";
 
@@ -79,7 +79,6 @@ public class ApplicationContext extends ConnectorContextAbstract {
 			lastModified = null;
 
 		// Load the resources
-		loadConnectors(this, globalConfiguration, configuration);
 		controllerMatchers = loadControllers(globalConfiguration, configuration);
 
 		// Prepare the sessions
@@ -96,12 +95,12 @@ public class ApplicationContext extends ConnectorContextAbstract {
 	private static List<Pair<Matcher, String>> loadControllersConf(
 			WebappConfigurationFile configuration,
 			List<Pair<Matcher, String>> controllerMatchers) {
-		if (configuration == null || configuration.controllerPatterns == null)
+		if (configuration == null || configuration.controllers == null)
 			return null;
 		if (controllerMatchers == null)
 			controllerMatchers = new ArrayList<Pair<Matcher, String>>(
-					configuration.controllerPatterns.size());
-		for (Map.Entry<String, List<String>> entry : configuration.controllerPatterns
+					configuration.controllers.size());
+		for (Map.Entry<String, List<String>> entry : configuration.controllers
 				.entrySet()) {
 			String controller = entry.getKey().intern();
 			for (String patternString : entry.getValue()) {
@@ -126,17 +125,7 @@ public class ApplicationContext extends ConnectorContextAbstract {
 		return controllerMatchers;
 	}
 
-	private void loadConnectors(ApplicationContext context,
-			WebappConfigurationFile globalConf,
-			WebappConfigurationFile contextConf) {
-		if (contextConf != null)
-			ConnectorsConfigurationFile.load(context, contextConf);
-		if (globalConf != null)
-			ConnectorsConfigurationFile.load(context, globalConf);
-	}
-
 	void close() {
-		super.unload();
 		if (controllerMatchers != null)
 			controllerMatchers.clear();
 	}
@@ -176,7 +165,9 @@ public class ApplicationContext extends ConnectorContextAbstract {
 	}
 
 	final public void apply(WebappResponse response) {
-		response.variable("providers", getReadOnlyMap());
+		response.variable("connectors",
+				ConnectorManager.INSTANCE.getReadOnlyMap());
+		response.variable("tools", ToolsManager.INSTANCE.getReadOnlyMap());
 	}
 
 	public String getRootPath() {
@@ -204,7 +195,6 @@ public class ApplicationContext extends ConnectorContextAbstract {
 		return lastModified != configurationFile.lastModified();
 	}
 
-	@Override
 	public String getContextId() {
 		String cpath = contextPath;
 		if (cpath.endsWith("/"))
@@ -212,7 +202,6 @@ public class ApplicationContext extends ConnectorContextAbstract {
 		return cpath;
 	}
 
-	@Override
 	public File getContextDirectory() {
 		return contextDirectory;
 	}

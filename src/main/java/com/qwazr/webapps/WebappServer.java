@@ -34,6 +34,8 @@ import org.apache.commons.cli.ParseException;
 
 import com.qwazr.cluster.ClusterServer;
 import com.qwazr.cluster.manager.ClusterManager;
+import com.qwazr.connectors.ConnectorManager;
+import com.qwazr.tools.ToolsManager;
 import com.qwazr.utils.server.AbstractServer;
 import com.qwazr.utils.server.RestApplication;
 import com.qwazr.utils.server.ServletApplication;
@@ -170,8 +172,11 @@ public class WebappServer extends AbstractServer {
 
 	@Override
 	public void load() throws IOException {
-		ClusterServer.load(this, getCurrentDataDir(), null, null);
-		load(contextRootPath, confFile, depth, getCurrentDataDir());
+		File currentDataDir = getCurrentDataDir();
+		ClusterServer.load(this, currentDataDir, null, null);
+		ConnectorManager.load(this, currentDataDir, null);
+		ToolsManager.load(this, currentDataDir, null);
+		load(contextRootPath, confFile, depth, currentDataDir);
 	}
 
 	@Override
