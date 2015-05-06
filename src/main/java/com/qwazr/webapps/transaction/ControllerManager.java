@@ -82,8 +82,10 @@ public class ControllerManager {
 
 		// Check if it is a directory
 		if (file.exists() && file.isDirectory()) {
-			if (!request.getPathInfo().endsWith("/"))
-				throw new WebappRedirectException(request.getRequestURI() + "/");
+			if (filePath.requestPath != null
+					&& filePath.requestPath.length() > 0
+					&& !filePath.requestPath.endsWith("/"))
+				throw new WebappRedirectException(request.getRequestURI() + '/');
 			return checkController(new File(file, "index.js"));
 		}
 

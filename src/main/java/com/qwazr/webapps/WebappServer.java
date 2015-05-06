@@ -47,15 +47,15 @@ import com.qwazr.webapps.transaction.StaticManager;
 
 public class WebappServer extends AbstractServer {
 
-	public final static String DEFAULT_ROOT_PATH = "/";
-	public final static int DEFAULT_ROOT_DEPTH = 1;
+	public final static String DEFAULT_ROOT_PATH = "";
+	public final static int DEFAULT_ROOT_DEPTH = 0;
 	public final static String SERVICE_NAME = "webapps";
 
 	private final static ServerDefinition serverDefinition = new ServerDefinition();
 	static {
 		serverDefinition.defaultWebApplicationTcpPort = 9095;
 		serverDefinition.mainJarPath = "qwazr-webapps.jar";
-		serverDefinition.defaultDataDirPath = "qwazr/webapps";
+		serverDefinition.defaultDataDirPath = "qwazr";
 	}
 
 	/**
@@ -92,7 +92,7 @@ public class WebappServer extends AbstractServer {
 		@Override
 		protected List<ServletInfo> getServletInfos() {
 			List<ServletInfo> servletInfos = new ArrayList<ServletInfo>();
-			servletInfos.add(new ServletInfo("RendererServlet",
+			servletInfos.add(new ServletInfo("WebAppServlet",
 					WebappHttpServlet.class).addMapping("/*"));
 			return servletInfos;
 		}
@@ -148,10 +148,13 @@ public class WebappServer extends AbstractServer {
 	public static void load(String contextPath, String confFile, int depth,
 			File data_directory) throws IOException {
 
+		File webapps_directory = new File(data_directory, "webapps");
+		if (!webapps_directory.exists())
+			webapps_directory.mkdir();
 		// Create the singletons
-		FilePathResolver.load(data_directory, depth);
+		FilePathResolver.load(webapps_directory, depth);
 		ControllerManager.load();
-		FileTemplateManager.load(data_directory);
+		FileTemplateManager.load(webapps_directory);
 		StaticManager.load();
 		ApplicationContextManager.load(contextPath, confFile);
 	}
@@ -173,9 +176,10 @@ public class WebappServer extends AbstractServer {
 	@Override
 	public void load() throws IOException {
 		File currentDataDir = getCurrentDataDir();
-		ClusterServer.load(this, currentDataDir, null, null);
-		ConnectorManager.load(this, currentDataDir, null);
-		ToolsManager.load(this, currentDataDir, null);
+		ClusterServer.load(getWebApplicationPublicAddress(), currentDataDir,
+				null, null);
+		ConnectorManager.load(currentDataDir, null);
+		ToolsManager.load(currentDataDir, null);
 		load(contextRootPath, confFile, depth, currentDataDir);
 	}
 

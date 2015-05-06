@@ -58,6 +58,12 @@
 			<groupId>com.opensearchserver</groupId>
 			<artifactId>qwazr-connectors</artifactId>
 			<version>1.0.0-SNAPSHOT</version>
+			<exclusions>
+				<exclusion>
+					<artifactId>asm</artifactId>
+					<groupId>asm</groupId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>com.opensearchserver</groupId>
