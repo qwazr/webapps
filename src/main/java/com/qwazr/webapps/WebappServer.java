@@ -49,13 +49,14 @@ public class WebappServer extends AbstractServer {
 
 	public final static String DEFAULT_ROOT_PATH = "";
 	public final static int DEFAULT_ROOT_DEPTH = 0;
-	public final static String SERVICE_NAME = "webapps";
+	public final static String SERVICE_NAME_WEBAPPS = "webapps";
 
 	private final static ServerDefinition serverDefinition = new ServerDefinition();
 	static {
 		serverDefinition.defaultWebApplicationTcpPort = 9095;
 		serverDefinition.mainJarPath = "qwazr-webapps.jar";
-		serverDefinition.defaultDataDirPath = "qwazr";
+		serverDefinition.defaultDataDirName = "qwazr";
+		serverDefinition.subDirectoryNames = new String[] { SERVICE_NAME_WEBAPPS };
 	}
 
 	/**
@@ -148,9 +149,7 @@ public class WebappServer extends AbstractServer {
 	public static void load(String contextPath, String confFile, int depth,
 			File data_directory) throws IOException {
 
-		File webapps_directory = new File(data_directory, "webapps");
-		if (!webapps_directory.exists())
-			webapps_directory.mkdir();
+		File webapps_directory = new File(data_directory, SERVICE_NAME_WEBAPPS);
 		// Create the singletons
 		FilePathResolver.load(webapps_directory, depth);
 		ControllerManager.load();
@@ -196,7 +195,7 @@ public class WebappServer extends AbstractServer {
 	public static void main(String[] args) throws IOException, ParseException,
 			ServletException {
 		new WebappServer().start(args);
-		ClusterManager.INSTANCE.registerMe(SERVICE_NAME);
+		ClusterManager.INSTANCE.registerMe(SERVICE_NAME_WEBAPPS);
 	}
 
 }
