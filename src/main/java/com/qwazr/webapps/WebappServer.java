@@ -56,7 +56,6 @@ public class WebappServer extends AbstractServer {
 		serverDefinition.defaultWebApplicationTcpPort = 9095;
 		serverDefinition.mainJarPath = "qwazr-webapps.jar";
 		serverDefinition.defaultDataDirName = "qwazr";
-		serverDefinition.subDirectoryNames = new String[] { SERVICE_NAME_WEBAPPS };
 	}
 
 	/**
@@ -150,6 +149,8 @@ public class WebappServer extends AbstractServer {
 			File data_directory) throws IOException {
 
 		File webapps_directory = new File(data_directory, SERVICE_NAME_WEBAPPS);
+		if (!webapps_directory.exists())
+			webapps_directory.mkdir();
 		// Create the singletons
 		FilePathResolver.load(webapps_directory, depth);
 		ControllerManager.load();
