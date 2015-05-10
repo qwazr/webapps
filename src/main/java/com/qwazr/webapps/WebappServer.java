@@ -176,8 +176,7 @@ public class WebappServer extends AbstractServer {
 	@Override
 	public void load() throws IOException {
 		File currentDataDir = getCurrentDataDir();
-		ClusterServer.load(getWebApplicationPublicAddress(), currentDataDir,
-				null);
+		ClusterServer.load(getWebApplicationPublicAddress(), currentDataDir);
 		ConnectorManager.load(currentDataDir, null);
 		ToolsManager.load(currentDataDir, null);
 		load(contextRootPath, confFile, depth, currentDataDir);
