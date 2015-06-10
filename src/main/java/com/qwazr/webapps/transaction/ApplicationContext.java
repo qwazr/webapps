@@ -34,52 +34,27 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.qwazr.connectors.ConnectorManager;
 import com.qwazr.tools.ToolsManager;
 import com.qwazr.utils.LockUtils;
-import com.qwazr.utils.json.JsonMapper;
-import com.qwazr.webapps.WebappConfigurationFile;
-import com.qwazr.webapps.transaction.FilePathResolver.FilePath;
 
 public class ApplicationContext {
 
-	private final static String CONF_FILE = "configuration.json";
-
-	private final Long lastModified;
-
-	private final String rootPath;
-
 	private final String contextPath;
-
-	public final File contextDirectory;
-
-	private final File configurationFile;
 
 	private final Map<String, WebappHttpSessionImpl> sessions;
 
-	private final List<Pair<Matcher, String>> controllerMatchers;
+	private final List<Pair<Matcher, File>> controllerMatchers;
+
+	private final List<Pair<Matcher, File>> staticMatchers;
 
 	private final LockUtils.ReadWriteLock sessionsLock = new LockUtils.ReadWriteLock();
 
-	ApplicationContext(String rootPath, String contextPath,
-			WebappConfigurationFile globalConfiguration, File contextDirectory,
+	ApplicationContext(String contextPath, WebappDefinition webappDefinition,
 			ApplicationContext oldContext) throws JsonParseException,
 			JsonMappingException, IOException {
-		this.contextDirectory = contextDirectory;
-		this.rootPath = rootPath;
 		this.contextPath = contextPath.intern();
 
-		// Check the configuration file
-		WebappConfigurationFile configuration = null;
-		configurationFile = new File(contextDirectory, CONF_FILE);
-		if (configurationFile != null && configurationFile.exists()
-				&& configurationFile.isFile()) {
-			lastModified = configurationFile.lastModified();
-			configuration = JsonMapper.MAPPER.readValue(configurationFile,
-					WebappConfigurationFile.class);
-
-		} else
-			lastModified = null;
-
 		// Load the resources
-		controllerMatchers = loadControllers(globalConfiguration, configuration);
+		controllerMatchers = loadMatchers(webappDefinition.controllers);
+		staticMatchers = loadMatchers(webappDefinition.statics);
 
 		// Prepare the sessions
 		this.sessions = oldContext != null ? oldContext.sessions
@@ -87,42 +62,33 @@ public class ApplicationContext {
 	}
 
 	/**
-	 * Load the controller map by reading the configuration file
+	 * Load the matcher map by reading the configuration file
 	 * 
 	 * @param configuration
-	 * @return the controller map
+	 * @return the matcher map
 	 */
-	private static List<Pair<Matcher, String>> loadControllersConf(
-			WebappConfigurationFile configuration,
-			List<Pair<Matcher, String>> controllerMatchers) {
-		if (configuration == null || configuration.controllers == null)
+	private static List<Pair<Matcher, File>> loadMatcherConf(
+			Map<String, String> patternMap, List<Pair<Matcher, File>> matchers) {
+		if (patternMap == null)
 			return null;
-		if (controllerMatchers == null)
-			controllerMatchers = new ArrayList<Pair<Matcher, String>>(
-					configuration.controllers.size());
-		for (Map.Entry<String, List<String>> entry : configuration.controllers
-				.entrySet()) {
-			String controller = entry.getKey().intern();
-			for (String patternString : entry.getValue()) {
-				Matcher matcher = Pattern.compile(patternString).matcher(
-						StringUtils.EMPTY);
-				controllerMatchers.add(Pair.of(matcher, controller));
-			}
+		if (matchers == null)
+			matchers = new ArrayList<Pair<Matcher, File>>(patternMap.size());
+		for (Map.Entry<String, String> entry : patternMap.entrySet()) {
+			String patternString = entry.getKey();
+			File destination = new File(entry.getValue());
+			Matcher matcher = Pattern.compile(patternString).matcher(
+					StringUtils.EMPTY);
+			matchers.add(Pair.of(matcher, destination));
 		}
-		return controllerMatchers;
+		return matchers;
 	}
 
-	private static List<Pair<Matcher, String>> loadControllers(
-			WebappConfigurationFile globalConf,
-			WebappConfigurationFile contextConf) {
-		List<Pair<Matcher, String>> controllerMatchers = null;
-		if (globalConf != null)
-			controllerMatchers = loadControllersConf(globalConf,
-					controllerMatchers);
-		if (contextConf != null)
-			controllerMatchers = loadControllersConf(contextConf,
-					controllerMatchers);
-		return controllerMatchers;
+	private static List<Pair<Matcher, File>> loadMatchers(
+			Map<String, String> patternMap) {
+		List<Pair<Matcher, File>> matchers = null;
+		if (patternMap != null)
+			matchers = loadMatcherConf(patternMap, matchers);
+		return matchers;
 	}
 
 	void close() {
@@ -170,29 +136,26 @@ public class ApplicationContext {
 		response.variable("tools", ToolsManager.INSTANCE.getReadOnlyMap());
 	}
 
-	public String getRootPath() {
-		return rootPath;
-	}
-
 	public String getContextPath() {
 		return contextPath;
 	}
 
-	String findController(FilePath filePath) {
-		if (controllerMatchers == null)
+	static File findMatchingFile(String requestPath,
+			List<Pair<Matcher, File>> matchers) {
+		if (matchers == null)
 			return null;
-		for (Pair<Matcher, String> controllerMatcher : controllerMatchers)
-			if (controllerMatcher.getLeft().reset(filePath.requestPath).find())
-				return controllerMatcher.getRight();
+		for (Pair<Matcher, File> matcher : matchers)
+			if (matcher.getLeft().reset(requestPath).find())
+				return matcher.getRight();
 		return null;
 	}
 
-	boolean mustBeReloaded() {
-		boolean confFileExists = configurationFile != null
-				&& configurationFile.exists() && configurationFile.isFile();
-		if (lastModified == null)
-			return confFileExists;
-		return lastModified != configurationFile.lastModified();
+	File findStatic(String requestPath) {
+		return findMatchingFile(requestPath, staticMatchers);
+	}
+
+	File findController(String requestPath) {
+		return findMatchingFile(requestPath, controllerMatchers);
 	}
 
 	public String getContextId() {
@@ -200,10 +163,6 @@ public class ApplicationContext {
 		if (cpath.endsWith("/"))
 			cpath = cpath.substring(0, cpath.length() - 1);
 		return cpath;
-	}
-
-	public File getContextDirectory() {
-		return contextDirectory;
 	}
 
 }

@@ -13,16 +13,16 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-package com.qwazr.webapps;
+package com.qwazr.webapps.transaction;
 
-import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-public class WebappConfigurationFile {
+public class WebappDefinition {
 
-	public Map<String, List<String>> controllers;
+	public Map<String, String> controllers;
+	public Map<String, String> statics;
 
 }

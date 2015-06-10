@@ -26,57 +26,43 @@ import org.slf4j.LoggerFactory;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.qwazr.utils.LockUtils;
-import com.qwazr.utils.json.JsonMapper;
-import com.qwazr.webapps.WebappConfigurationFile;
-import com.qwazr.webapps.transaction.FilePathResolver.FilePath;
+import com.qwazr.utils.json.DirectoryJsonManager;
+import com.qwazr.utils.server.ServerException;
 
-public class ApplicationContextManager {
+public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 
 	private static final Logger logger = LoggerFactory
-			.getLogger(ApplicationContextManager.class);
+			.getLogger(WebappManager.class);
 
-	public static volatile ApplicationContextManager INSTANCE = null;
+	public static volatile WebappManager INSTANCE = null;
 
-	public static void load(String rootPath, String genericConfigurationFilePath)
-			throws IOException {
+	public static void load(File webappDirectory) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
-		INSTANCE = new ApplicationContextManager(rootPath,
-				genericConfigurationFilePath);
+		try {
+			INSTANCE = new WebappManager(webappDirectory);
+		} catch (ServerException e) {
+			throw new RuntimeException(e);
+		}
 	}
-
-	private final File globalConfFile;
-	private final WebappConfigurationFile globalConfiguration;
-
-	private final String rootPath;
 
 	private final Map<String, ApplicationContext> applicationContextMap;
 	private final LockUtils.ReadWriteLock contextsLock = new LockUtils.ReadWriteLock();
 
-	private ApplicationContextManager(String rootPath,
-			String genericConfigurationFilePath) throws IOException {
-		this.rootPath = rootPath;
+	private WebappManager(File webappDirectory) throws IOException,
+			ServerException {
+		super(webappDirectory, WebappDefinition.class);
 		applicationContextMap = new ConcurrentHashMap<String, ApplicationContext>();
-		if (genericConfigurationFilePath != null) {
-			globalConfFile = new File(genericConfigurationFilePath);
-			if (!globalConfFile.exists() && !globalConfFile.isFile())
-				throw new IOException("Invalid configuration file: "
-						+ genericConfigurationFilePath);
-			globalConfiguration = JsonMapper.MAPPER.readValue(globalConfFile,
-					WebappConfigurationFile.class);
-		} else {
-			globalConfFile = null;
-			globalConfiguration = null;
-		}
 	}
 
-	private ApplicationContext getApplicationContext(FilePath filePath)
-			throws JsonParseException, JsonMappingException, IOException {
+	private ApplicationContext getApplicationContext(String contextPath,
+			WebappDefinition webappDefinition) throws JsonParseException,
+			JsonMappingException, IOException {
 		contextsLock.r.lock();
 		try {
 			ApplicationContext existingContext = applicationContextMap
-					.get(filePath.contextPath);
-			if (existingContext != null && !existingContext.mustBeReloaded())
+					.get(contextPath);
+			if (existingContext != null)
 				return existingContext;
 		} finally {
 			contextsLock.r.unlock();
@@ -84,28 +70,29 @@ public class ApplicationContextManager {
 		contextsLock.w.lock();
 		try {
 			ApplicationContext existingContext = applicationContextMap
-					.get(filePath.contextPath);
-			if (existingContext != null && !existingContext.mustBeReloaded())
-				return existingContext;
+					.get(contextPath);
 			if (existingContext != null)
-				existingContext.close();
-			logger.info("Load application " + filePath.contextPath);
+				return existingContext;
+			logger.info("Load application " + contextPath);
 			ApplicationContext applicationContext = new ApplicationContext(
-					rootPath, filePath.contextPath, globalConfiguration,
-					filePath.fileDepth, existingContext);
-			applicationContextMap.put(filePath.contextPath, applicationContext);
+					contextPath, webappDefinition, existingContext);
+			applicationContextMap.put(contextPath, applicationContext);
 			return applicationContext;
 		} finally {
 			contextsLock.w.unlock();
 		}
 	}
 
-	public ApplicationContext applyConf(FilePath filePath,
+	public ApplicationContext findApplicationContext(String contextPath,
 			WebappTransaction transaction) throws JsonParseException,
 			JsonMappingException, IOException {
-		if (filePath == null || filePath.fileDepth == null)
+		if (contextPath == null)
 			return null;
-		ApplicationContext applicationContext = getApplicationContext(filePath);
+		WebappDefinition webappDefinition = get(contextPath);
+		if (webappDefinition == null)
+			throw new IOException("Not WEB application found.");
+		ApplicationContext applicationContext = getApplicationContext(
+				contextPath, webappDefinition);
 		if (applicationContext == null)
 			throw new IOException("Not context found.");
 		applicationContext.apply(transaction.getResponse());

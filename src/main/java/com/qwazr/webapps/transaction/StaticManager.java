@@ -17,14 +17,14 @@ package com.qwazr.webapps.transaction;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.URISyntaxException;
 
 import javax.activation.MimetypesFileTypeMap;
 
 import org.apache.commons.io.IOUtils;
-
-import com.qwazr.webapps.transaction.FilePathResolver.FilePath;
 
 public class StaticManager {
 
@@ -42,17 +42,18 @@ public class StaticManager {
 		mimeTypeMap = new MimetypesFileTypeMap();
 	}
 
-	File findStatic(FilePath filePath) {
-		if (filePath == null)
+	File findStatic(ApplicationContext context, String requestPath)
+			throws URISyntaxException, IOException {
+		// First we try to find the root directory using configuration mapping
+		File staticRootFile = context.findStatic(requestPath);
+		if (staticRootFile == null)
 			return null;
-		File file = filePath.buildFile("static");
-		if (file == null)
-			return null;
-		if (!file.exists())
-			return null;
-		if (!file.isFile())
-			return null;
-		return file;
+		File staticFile = new File(staticRootFile, requestPath);
+		if (!staticFile.exists())
+			throw new FileNotFoundException("File not found");
+		if (!staticFile.isFile())
+			throw new FileNotFoundException("File not found");
+		return staticFile;
 	}
 
 	void handle(WebappResponse response, File staticFile) throws IOException {

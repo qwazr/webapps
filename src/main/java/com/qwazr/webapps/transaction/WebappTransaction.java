@@ -29,29 +29,23 @@ import javax.ws.rs.core.Response.Status;
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
 import com.qwazr.webapps.exception.WebappHtmlException;
-import com.qwazr.webapps.transaction.FilePathResolver.FilePath;
 import com.qwazr.webapps.transaction.body.HttpBodyInterface;
 
 public class WebappTransaction {
 
 	private final ApplicationContext context;
 	private final WebappHttpRequest request;
-	private final FilePath filePath;
 	private final WebappResponse response;
 
 	public WebappTransaction(HttpServletRequest request,
 			HttpServletResponse response, HttpBodyInterface body)
 			throws JsonParseException, JsonMappingException, IOException {
-		this.filePath = FilePathResolver.INSTANCE.find(request.getPathInfo());
-		if (filePath == null)
-			throw new FileNotFoundException();
-		this.response = new WebappResponse(response, filePath);
-		this.context = ApplicationContextManager.INSTANCE.applyConf(filePath,
-				this);
+		this.context = WebappManager.INSTANCE.findApplicationContext(
+				request.getPathInfo(), this);
+		this.response = new WebappResponse(response);
 		if (context == null)
 			throw new FileNotFoundException("No application found");
-		this.request = new WebappHttpRequestImpl(context, filePath, request,
-				body);
+		this.request = new WebappHttpRequestImpl(context, request, body);
 		this.response.variable("request", this.request);
 		this.response.variable("response", this.response);
 		this.response.variable("session", this.request.getSession());
@@ -67,15 +61,16 @@ public class WebappTransaction {
 
 	public void execute() throws IOException, URISyntaxException,
 			ScriptException, PrivilegedActionException {
+		String pathInfo = request.getPathInfo();
 		StaticManager staticManager = StaticManager.INSTANCE;
-		File staticFile = staticManager.findStatic(filePath);
+		File staticFile = staticManager.findStatic(context, pathInfo);
 		if (staticFile != null) {
 			staticManager.handle(response, staticFile);
 			return;
 		}
 		ControllerManager controllerManager = ControllerManager.INSTANCE;
 		File controllerFile = controllerManager.findController(context,
-				request, filePath);
+				pathInfo);
 		if (controllerFile != null) {
 			controllerManager.handle(response, controllerFile);
 			return;

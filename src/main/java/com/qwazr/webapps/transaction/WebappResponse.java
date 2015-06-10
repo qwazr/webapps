@@ -26,33 +26,21 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 
-import org.apache.commons.lang3.StringUtils;
-
-import com.qwazr.webapps.template.FileTemplateManager;
-import com.qwazr.webapps.transaction.FilePathResolver.FilePath;
-
-import freemarker.template.TemplateException;
-
 public class WebappResponse implements HttpServletResponse {
 
 	private final HttpServletResponse response;
 
-	private final String viewPrefix;
-
 	private Map<String, Object> variables;
 
-	WebappResponse(HttpServletResponse response, FilePath filePath) {
+	WebappResponse(HttpServletResponse response) {
 		this.response = response;
 		this.variables = null;
-		this.viewPrefix = filePath != null && filePath.contextPath != null ? filePath.contextPath
-				: StringUtils.EMPTY;
 	}
 
 	public WebappResponse(WebappResponse src) {
 		this.variables = src.variables == null ? null
 				: new TreeMap<String, Object>(src.variables);
 		this.response = src.response;
-		this.viewPrefix = src.viewPrefix;
 	}
 
 	Map<String, Object> getVariables() {
@@ -73,11 +61,6 @@ public class WebappResponse implements HttpServletResponse {
 
 	public WebappResponse setVariable(String name, Object value) {
 		return variable(name, value);
-	}
-
-	public void view(String templatePath) throws IOException, TemplateException {
-		FileTemplateManager.INSTANCE.template(viewPrefix + "/view/"
-				+ templatePath, variables, response);
 	}
 
 	@Override

@@ -29,7 +29,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import com.qwazr.webapps.transaction.FilePathResolver.FilePath;
 import com.qwazr.webapps.transaction.body.HttpBodyInterface;
 
 public class WebappHttpRequestImpl implements WebappHttpRequest {
@@ -40,11 +39,11 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 	private final HttpServletRequest request;
 	private final HttpBodyInterface body;
 
-	WebappHttpRequestImpl(ApplicationContext context, FilePath filePath,
+	WebappHttpRequestImpl(ApplicationContext context,
 			HttpServletRequest request, HttpBodyInterface body) {
 		this.context = context;
-		this.contextPath = context.getRootPath() + context.getContextPath();
-		this.pathInfo = filePath.requestPath;
+		this.contextPath = context.getContextPath();
+		this.pathInfo = request.getPathInfo();
 		this.request = request;
 		this.body = body;
 	}
