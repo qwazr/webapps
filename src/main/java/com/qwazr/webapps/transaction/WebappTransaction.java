@@ -33,6 +33,8 @@ import com.qwazr.webapps.transaction.body.HttpBodyInterface;
 
 public class WebappTransaction {
 
+	private final FilePath filePath;
+
 	private final ApplicationContext context;
 	private final WebappHttpRequest request;
 	private final WebappResponse response;
@@ -41,10 +43,19 @@ public class WebappTransaction {
 			HttpServletResponse response, HttpBodyInterface body)
 			throws JsonParseException, JsonMappingException, IOException {
 		this.response = new WebappResponse(response);
-		this.context = WebappManager.INSTANCE.findApplicationContext(
-				new FilePath(request.getPathInfo()), this);
-		if (context == null)
-			throw new FileNotFoundException("No application found");
+		FilePath fp = new FilePath(request.getPathInfo(), false);
+		// First we try to find a sub context
+		ApplicationContext ctx = WebappManager.INSTANCE.findApplicationContext(
+				fp, this);
+		if (ctx == null) {
+			// The we test the ROOT context
+			fp = new FilePath(request.getPathInfo(), true);
+			ctx = WebappManager.INSTANCE.findApplicationContext(fp, this);
+			if (ctx == null)
+				throw new FileNotFoundException("No application found");
+		}
+		this.filePath = fp;
+		this.context = ctx;
 		this.request = new WebappHttpRequestImpl(context, request, body);
 		this.response.variable("request", this.request);
 		this.response.variable("response", this.response);
@@ -57,6 +68,10 @@ public class WebappTransaction {
 
 	WebappResponse getResponse() {
 		return response;
+	}
+
+	FilePath getFilePath() {
+		return filePath;
 	}
 
 	public void execute() throws IOException, URISyntaxException,

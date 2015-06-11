@@ -88,13 +88,16 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 			JsonMappingException, IOException {
 		if (filePath == null)
 			return null;
-		WebappDefinition webappDefinition = get(filePath.contextPath);
+		if (filePath.contextPath == null)
+			return null;
+		WebappDefinition webappDefinition = get(filePath.contextPath.isEmpty() ? "ROOT"
+				: filePath.contextPath);
 		if (webappDefinition == null)
-			throw new IOException("Not WEB application found.");
+			return null;
 		ApplicationContext applicationContext = getApplicationContext(
 				filePath.contextPath, webappDefinition);
 		if (applicationContext == null)
-			throw new IOException("Not context found.");
+			return null;
 		applicationContext.apply(transaction.getResponse());
 		return applicationContext;
 	}

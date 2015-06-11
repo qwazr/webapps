@@ -49,7 +49,7 @@ public class ControllerManager {
 		INSTANCE = new ControllerManager(dataDir);
 	}
 
-	final File dataDir;
+	final private File dataDir;
 
 	final private ScriptEngine scriptEngine;
 
@@ -62,9 +62,10 @@ public class ControllerManager {
 	File findController(ApplicationContext context, String requestPath)
 			throws URISyntaxException, IOException {
 		// First we try to find the controller using configuration mapping
-		File ctrlrFile = context.findController(requestPath);
-		if (ctrlrFile == null)
+		String ctrlrPath = context.findController(requestPath);
+		if (ctrlrPath == null)
 			return null;
+		File ctrlrFile = new File(dataDir, ctrlrPath);
 		if (!ctrlrFile.exists())
 			throw new FileNotFoundException("Controller not found");
 		if (!ctrlrFile.isFile())

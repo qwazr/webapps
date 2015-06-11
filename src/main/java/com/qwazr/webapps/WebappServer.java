@@ -118,7 +118,7 @@ public class WebappServer extends AbstractServer {
 			webapps_directory.mkdir();
 		// Create the singletons
 		ControllerManager.load(data_directory);
-		StaticManager.load();
+		StaticManager.load(data_directory);
 		WebappManager.load(webapps_directory);
 	}
 
@@ -126,8 +126,8 @@ public class WebappServer extends AbstractServer {
 	public void load() throws IOException {
 		File currentDataDir = getCurrentDataDir();
 		ClusterServer.load(getWebApplicationPublicAddress(), currentDataDir);
-		ConnectorManager.load(currentDataDir, null);
-		ToolsManager.load(currentDataDir, null);
+		ConnectorManager.load(currentDataDir);
+		ToolsManager.load(currentDataDir);
 		load(currentDataDir);
 	}
 

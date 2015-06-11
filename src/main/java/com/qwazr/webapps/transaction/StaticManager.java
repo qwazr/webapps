@@ -30,25 +30,28 @@ public class StaticManager {
 
 	static volatile StaticManager INSTANCE = null;
 
-	public static void load() throws IOException {
+	public static void load(File dataDir) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
-		INSTANCE = new StaticManager();
+		INSTANCE = new StaticManager(dataDir);
 	}
+
+	private final File dataDir;
 
 	private final MimetypesFileTypeMap mimeTypeMap;
 
-	private StaticManager() {
+	private StaticManager(File dataDir) {
+		this.dataDir = dataDir;
 		mimeTypeMap = new MimetypesFileTypeMap();
 	}
 
 	File findStatic(ApplicationContext context, String requestPath)
 			throws URISyntaxException, IOException {
 		// First we try to find the root directory using configuration mapping
-		File staticRootFile = context.findStatic(requestPath);
-		if (staticRootFile == null)
+		String staticPath = context.findStatic(requestPath);
+		if (staticPath == null)
 			return null;
-		File staticFile = new File(staticRootFile, requestPath);
+		File staticFile = new File(dataDir, staticPath);
 		if (!staticFile.exists())
 			throw new FileNotFoundException("File not found");
 		if (!staticFile.isFile())
@@ -62,6 +65,7 @@ public class StaticManager {
 			response.setContentType(type);
 		response.setContentLengthLong(staticFile.length());
 		response.setDateHeader("Last-Modified", staticFile.lastModified());
+		response.setHeader("Cache-Control", "1");
 		InputStream inputStream = new FileInputStream(staticFile);
 		try {
 			IOUtils.copy(inputStream, response.getOutputStream());
@@ -69,5 +73,4 @@ public class StaticManager {
 			IOUtils.closeQuietly(inputStream);
 		}
 	}
-
 }

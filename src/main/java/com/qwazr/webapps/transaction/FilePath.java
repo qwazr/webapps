@@ -15,21 +15,25 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import org.apache.commons.lang.StringUtils;
+
 public class FilePath {
 
+	final String pathInfo;
 	final String contextPath;
 	final String localPath;
 
-	FilePath(String pathInfo) {
+	FilePath(String pathInfo, boolean forceRoot) {
+		this.pathInfo = pathInfo;
 		int i1 = pathInfo.indexOf('/');
-		if (i1 == -1) {
-			contextPath = "ROOT";
+		if (i1 == -1 || forceRoot) {
+			contextPath = StringUtils.EMPTY;
 			localPath = pathInfo;
 			return;
 		}
 		int i2 = pathInfo.indexOf('/', ++i1);
 		if (i2 == -1) {
-			contextPath = "ROOT";
+			contextPath = StringUtils.EMPTY;
 			localPath = pathInfo.substring(i1);
 			return;
 		}

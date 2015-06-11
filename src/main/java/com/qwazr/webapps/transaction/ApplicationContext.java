@@ -15,19 +15,12 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import javax.servlet.http.HttpSession;
-
-import org.apache.commons.lang3.StringUtils;
-import org.apache.commons.lang3.tuple.Pair;
 
 import com.fasterxml.jackson.core.JsonParseException;
 import com.fasterxml.jackson.databind.JsonMappingException;
@@ -41,9 +34,9 @@ public class ApplicationContext {
 
 	private final Map<String, WebappHttpSessionImpl> sessions;
 
-	private final List<Pair<Matcher, File>> controllerMatchers;
+	private final List<PathBind> controllerMatchers;
 
-	private final List<Pair<Matcher, File>> staticMatchers;
+	private final List<PathBind> staticMatchers;
 
 	private final LockUtils.ReadWriteLock sessionsLock = new LockUtils.ReadWriteLock();
 
@@ -53,43 +46,13 @@ public class ApplicationContext {
 		this.contextPath = contextPath.intern();
 
 		// Load the resources
-		controllerMatchers = loadMatchers(webappDefinition.controllers);
-		staticMatchers = loadMatchers(webappDefinition.statics);
+		controllerMatchers = PathBind
+				.loadMatchers(webappDefinition.controllers);
+		staticMatchers = PathBind.loadMatchers(webappDefinition.statics);
 
 		// Prepare the sessions
 		this.sessions = oldContext != null ? oldContext.sessions
 				: new HashMap<String, WebappHttpSessionImpl>();
-	}
-
-	/**
-	 * Load the matcher map by reading the configuration file
-	 * 
-	 * @param configuration
-	 * @return the matcher map
-	 */
-	private static List<Pair<Matcher, File>> loadMatcherConf(
-			Map<String, String> patternMap, List<Pair<Matcher, File>> matchers) {
-		if (patternMap == null)
-			return null;
-		if (matchers == null)
-			matchers = new ArrayList<Pair<Matcher, File>>(patternMap.size());
-		for (Map.Entry<String, String> entry : patternMap.entrySet()) {
-			String patternString = entry.getKey();
-			File destination = new File(ControllerManager.INSTANCE.dataDir,
-					entry.getValue());
-			Matcher matcher = Pattern.compile(patternString).matcher(
-					StringUtils.EMPTY);
-			matchers.add(Pair.of(matcher, destination));
-		}
-		return matchers;
-	}
-
-	private static List<Pair<Matcher, File>> loadMatchers(
-			Map<String, String> patternMap) {
-		List<Pair<Matcher, File>> matchers = null;
-		if (patternMap != null)
-			matchers = loadMatcherConf(patternMap, matchers);
-		return matchers;
 	}
 
 	void close() {
@@ -141,22 +104,12 @@ public class ApplicationContext {
 		return contextPath;
 	}
 
-	static File findMatchingFile(String requestPath,
-			List<Pair<Matcher, File>> matchers) {
-		if (matchers == null)
-			return null;
-		for (Pair<Matcher, File> matcher : matchers)
-			if (matcher.getLeft().reset(requestPath).find())
-				return matcher.getRight();
-		return null;
+	String findStatic(String requestPath) {
+		return PathBind.findMatchingPath(requestPath, staticMatchers);
 	}
 
-	File findStatic(String requestPath) {
-		return findMatchingFile(requestPath, staticMatchers);
-	}
-
-	File findController(String requestPath) {
-		return findMatchingFile(requestPath, controllerMatchers);
+	String findController(String requestPath) {
+		return PathBind.findMatchingPath(requestPath, controllerMatchers);
 	}
 
 	public String getContextId() {
