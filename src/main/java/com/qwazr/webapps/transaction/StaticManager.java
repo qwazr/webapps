@@ -42,7 +42,8 @@ public class StaticManager {
 
 	private StaticManager(File dataDir) {
 		this.dataDir = dataDir;
-		mimeTypeMap = new MimetypesFileTypeMap();
+		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream(
+				"/com/qwazr/webapps/mime.types"));
 	}
 
 	File findStatic(ApplicationContext context, String requestPath)
