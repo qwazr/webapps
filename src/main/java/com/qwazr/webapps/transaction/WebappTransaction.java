@@ -40,9 +40,9 @@ public class WebappTransaction {
 	public WebappTransaction(HttpServletRequest request,
 			HttpServletResponse response, HttpBodyInterface body)
 			throws JsonParseException, JsonMappingException, IOException {
-		this.context = WebappManager.INSTANCE.findApplicationContext(
-				request.getPathInfo(), this);
 		this.response = new WebappResponse(response);
+		this.context = WebappManager.INSTANCE.findApplicationContext(
+				new FilePath(request.getPathInfo()), this);
 		if (context == null)
 			throw new FileNotFoundException("No application found");
 		this.request = new WebappHttpRequestImpl(context, request, body);

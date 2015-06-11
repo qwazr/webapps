@@ -83,16 +83,16 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 		}
 	}
 
-	public ApplicationContext findApplicationContext(String contextPath,
+	public ApplicationContext findApplicationContext(FilePath filePath,
 			WebappTransaction transaction) throws JsonParseException,
 			JsonMappingException, IOException {
-		if (contextPath == null)
+		if (filePath == null)
 			return null;
-		WebappDefinition webappDefinition = get(contextPath);
+		WebappDefinition webappDefinition = get(filePath.contextPath);
 		if (webappDefinition == null)
 			throw new IOException("Not WEB application found.");
 		ApplicationContext applicationContext = getApplicationContext(
-				contextPath, webappDefinition);
+				filePath.contextPath, webappDefinition);
 		if (applicationContext == null)
 			throw new IOException("Not context found.");
 		applicationContext.apply(transaction.getResponse());

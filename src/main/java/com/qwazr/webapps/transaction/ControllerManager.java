@@ -43,15 +43,18 @@ public class ControllerManager {
 
 	public static volatile ControllerManager INSTANCE = null;
 
-	public static void load() throws IOException {
+	public static void load(File dataDir) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
-		INSTANCE = new ControllerManager();
+		INSTANCE = new ControllerManager(dataDir);
 	}
+
+	final File dataDir;
 
 	final private ScriptEngine scriptEngine;
 
-	private ControllerManager() {
+	private ControllerManager(File dataDir) {
+		this.dataDir = dataDir;
 		ScriptEngineManager manager = new ScriptEngineManager();
 		scriptEngine = manager.getEngineByName("nashorn");
 	}

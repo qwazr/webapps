@@ -75,7 +75,8 @@ public class ApplicationContext {
 			matchers = new ArrayList<Pair<Matcher, File>>(patternMap.size());
 		for (Map.Entry<String, String> entry : patternMap.entrySet()) {
 			String patternString = entry.getKey();
-			File destination = new File(entry.getValue());
+			File destination = new File(ControllerManager.INSTANCE.dataDir,
+					entry.getValue());
 			Matcher matcher = Pattern.compile(patternString).matcher(
 					StringUtils.EMPTY);
 			matchers.add(Pair.of(matcher, destination));

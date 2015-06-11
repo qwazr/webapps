@@ -117,7 +117,7 @@ public class WebappServer extends AbstractServer {
 		if (!webapps_directory.exists())
 			webapps_directory.mkdir();
 		// Create the singletons
-		ControllerManager.load();
+		ControllerManager.load(data_directory);
 		StaticManager.load();
 		WebappManager.load(webapps_directory);
 	}
