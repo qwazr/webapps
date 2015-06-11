@@ -115,6 +115,7 @@ public class ControllerManager {
 	void handle(WebappResponse response, File controllerFile)
 			throws IOException, ScriptException, PrivilegedActionException {
 		Bindings bindings = scriptEngine.createBindings();
+		response.setHeader("Cache-Control", "max-age=0, no-cache, no-store");
 		Map<String, Object> variables = response.getVariables();
 		if (variables != null)
 			for (Map.Entry<String, Object> entry : variables.entrySet())

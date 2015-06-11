@@ -43,7 +43,7 @@ public class WebappResponse implements HttpServletResponse {
 		this.response = src.response;
 	}
 
-	Map<String, Object> getVariables() {
+	public Map<String, Object> getVariables() {
 		return variables;
 	}
 

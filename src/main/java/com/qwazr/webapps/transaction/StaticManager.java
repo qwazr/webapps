@@ -65,7 +65,9 @@ public class StaticManager {
 			response.setContentType(type);
 		response.setContentLengthLong(staticFile.length());
 		response.setDateHeader("Last-Modified", staticFile.lastModified());
-		response.setHeader("Cache-Control", "1");
+		response.setHeader("Cache-Control", "max-age=86400");
+		response.setDateHeader("Expires",
+				System.currentTimeMillis() + 86400 * 1000);
 		InputStream inputStream = new FileInputStream(staticFile);
 		try {
 			IOUtils.copy(inputStream, response.getOutputStream());
