@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,20 +15,8 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FilePermission;
-import java.io.FileReader;
-import java.io.IOException;
-import java.net.SocketPermission;
-import java.net.URISyntaxException;
-import java.security.AccessControlContext;
-import java.security.CodeSource;
-import java.security.Permissions;
-import java.security.PrivilegedActionException;
-import java.security.ProtectionDomain;
-import java.security.cert.Certificate;
-import java.util.Map;
+import com.qwazr.utils.IOUtils;
+import com.qwazr.utils.ScriptUtils;
 
 import javax.management.MBeanPermission;
 import javax.management.MBeanServerPermission;
@@ -36,8 +24,12 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-
-import com.qwazr.utils.ScriptUtils;
+import java.io.*;
+import java.net.SocketPermission;
+import java.net.URISyntaxException;
+import java.security.*;
+import java.security.cert.Certificate;
+import java.util.Map;
 
 public class ControllerManager {
 
@@ -107,15 +99,17 @@ public class ControllerManager {
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
 			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[] { new ProtectionDomain(
-							new CodeSource(null, (Certificate[]) null), pm) });
+					new ProtectionDomain[]{new ProtectionDomain(
+							new CodeSource(null, (Certificate[]) null), pm)});
 		}
 	}
 
 	void handle(WebappResponse response, File controllerFile)
 			throws IOException, ScriptException, PrivilegedActionException {
-		Bindings bindings = scriptEngine.createBindings();
 		response.setHeader("Cache-Control", "max-age=0, no-cache, no-store");
+		Bindings bindings = scriptEngine.createBindings();
+		IOUtils.CloseableList closeables = new IOUtils.CloseableList();
+		bindings.put("closeable", closeables);
 		Map<String, Object> variables = response.getVariables();
 		if (variables != null)
 			for (Map.Entry<String, Object> entry : variables.entrySet())
@@ -127,6 +121,9 @@ public class ControllerManager {
 					bindings);
 		} finally {
 			fileReader.close();
+			closeables.close();
 		}
 	}
+
+
 }
