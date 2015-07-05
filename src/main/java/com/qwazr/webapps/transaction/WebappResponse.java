@@ -5,7 +5,7 @@
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
  *
- *    http://www.apache.org/licenses/LICENSE-2.0
+ * http://www.apache.org/licenses/LICENSE-2.0
  *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
@@ -15,16 +15,16 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import java.io.IOException;
-import java.io.PrintWriter;
-import java.util.Collection;
-import java.util.Locale;
-import java.util.Map;
-import java.util.TreeMap;
+import com.qwazr.utils.IOUtils;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
+import java.io.*;
+import java.util.Collection;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 
 public class WebappResponse implements HttpServletResponse {
 
@@ -81,6 +81,20 @@ public class WebappResponse implements HttpServletResponse {
 	@Override
 	public PrintWriter getWriter() throws IOException {
 		return response.getWriter();
+	}
+
+	public void sendFile(File file) throws IOException {
+		FileInputStream fis = new FileInputStream(file);
+		try {
+			BufferedInputStream bis = new BufferedInputStream(fis);
+			try {
+				IOUtils.copy(bis, response.getOutputStream());
+			} finally {
+				IOUtils.closeQuietly(bis);
+			}
+		} finally {
+			IOUtils.closeQuietly(fis);
+		}
 	}
 
 	@Override
