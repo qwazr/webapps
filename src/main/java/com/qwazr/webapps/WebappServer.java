@@ -15,22 +15,6 @@
  **/
 package com.qwazr.webapps;
 
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.session.Session;
-import io.undertow.server.session.SessionListener;
-import io.undertow.servlet.api.ServletInfo;
-
-import java.io.File;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.servlet.ServletException;
-
-import org.apache.commons.cli.CommandLine;
-import org.apache.commons.cli.ParseException;
-import org.apache.commons.lang.StringUtils;
-
 import com.qwazr.cluster.ClusterServer;
 import com.qwazr.cluster.manager.ClusterManager;
 import com.qwazr.connectors.ConnectorManager;
@@ -41,6 +25,20 @@ import com.qwazr.utils.server.ServletApplication;
 import com.qwazr.webapps.transaction.ControllerManager;
 import com.qwazr.webapps.transaction.StaticManager;
 import com.qwazr.webapps.transaction.WebappManager;
+import io.undertow.server.HttpServerExchange;
+import io.undertow.server.session.Session;
+import io.undertow.server.session.SessionListener;
+import io.undertow.servlet.api.DeploymentInfo;
+import io.undertow.servlet.api.ServletInfo;
+import org.apache.commons.cli.CommandLine;
+import org.apache.commons.cli.ParseException;
+import org.apache.commons.lang.StringUtils;
+
+import javax.servlet.ServletException;
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 public class WebappServer extends AbstractServer {
 

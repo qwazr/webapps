@@ -15,6 +15,7 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import com.qwazr.job.script.ScriptConsole;
 import com.qwazr.utils.IOUtils;
 import com.qwazr.utils.ScriptUtils;
 
@@ -110,6 +111,7 @@ public class ControllerManager {
 		Bindings bindings = scriptEngine.createBindings();
 		IOUtils.CloseableList closeables = new IOUtils.CloseableList();
 		bindings.put("closeable", closeables);
+		bindings.put("console", new ScriptConsole());
 		Map<String, Object> variables = response.getVariables();
 		if (variables != null)
 			for (Map.Entry<String, Object> entry : variables.entrySet())
