@@ -98,9 +98,9 @@ public class ApplicationContext {
 	}
     }
 
-    final public void apply(WebappResponse response) {
-	response.variable("connectors", ConnectorManager.INSTANCE.getReadOnlyMap());
-	response.variable("tools", ToolsManager.INSTANCE.getReadOnlyMap());
+    final public void apply(WebappResponse response) throws IOException {
+	response.variable("connectors", ConnectorManager.INSTANCE);
+	response.variable("tools", ToolsManager.INSTANCE);
     }
 
     public String getContextPath() {
