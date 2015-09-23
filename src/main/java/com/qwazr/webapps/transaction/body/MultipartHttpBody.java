@@ -17,24 +17,20 @@ package com.qwazr.webapps.transaction.body;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Response.Status;
-
-import com.qwazr.webapps.exception.WebappHtmlException;
-import com.qwazr.webapps.exception.WebappHtmlException.Title;
-import io.undertow.util.MultipartParser;
-
+import javax.servlet.http.Part;
+import javax.ws.rs.core.Form;
+import javax.ws.rs.core.MultivaluedMap;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
 
-public interface HttpBodyInterface {
+public class MultipartHttpBody implements HttpBodyInterface {
 
-    public static HttpBodyInterface newEntity(HttpServletRequest request) throws IOException, ServletException {
-	String contentType = request.getContentType();
-	if ("application/x-www-form-urlencoded".equals(contentType))
-	    return new FormHttpBody(request);
-	if (contentType.startsWith("multipart/form-data"))
-	    return new MultipartHttpBody(request);
-	throw new WebappHtmlException(Status.NOT_ACCEPTABLE, Title.BODY_ERROR,
-			"Not supported content type: " + contentType);
+    private final Collection<Part> parts;
+
+    MultipartHttpBody(HttpServletRequest request) throws IOException, ServletException {
+	parts = request.getParts();
     }
 
 }

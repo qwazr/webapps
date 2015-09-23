@@ -34,6 +34,7 @@ import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
 import org.apache.commons.lang.StringUtils;
 
+import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
@@ -61,9 +62,13 @@ public class WebappServer extends AbstractServer {
 	public WebappApplication() {
 	}
 
+	//TODO Parameters for fileupload limitation
+	private final static MultipartConfigElement multipartConfigElement = new MultipartConfigElement("/tmp");
+
 	@Override protected List<ServletInfo> getServletInfos() {
 	    List<ServletInfo> servletInfos = new ArrayList<ServletInfo>();
-	    servletInfos.add(new ServletInfo("WebAppServlet", WebappHttpServlet.class).addMapping("/*"));
+	    servletInfos.add(new ServletInfo("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
+			    .setMultipartConfig(multipartConfigElement));
 	    return servletInfos;
 	}
 
