@@ -15,17 +15,16 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.Part;
 import java.io.IOException;
 import java.security.Principal;
 import java.util.Collection;
 import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
-
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.Part;
 
 public interface WebappHttpRequest {
 
