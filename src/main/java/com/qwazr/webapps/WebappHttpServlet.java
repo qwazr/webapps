@@ -15,16 +15,15 @@
  **/
 package com.qwazr.webapps;
 
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.qwazr.webapps.exception.AbstractWebappException;
 import com.qwazr.webapps.transaction.WebappTransaction;
 import com.qwazr.webapps.transaction.body.HttpBodyInterface;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 public class WebappHttpServlet extends HttpServlet {
 
@@ -51,31 +50,38 @@ public class WebappHttpServlet extends HttpServlet {
 	}
     }
 
-    @Override public void doDelete(HttpServletRequest request, HttpServletResponse response) {
+    @Override
+    public void doDelete(HttpServletRequest request, HttpServletResponse response) {
 	handle(request, response, false);
     }
 
-    @Override public void doGet(HttpServletRequest request, HttpServletResponse response) {
+    @Override
+    public void doGet(HttpServletRequest request, HttpServletResponse response) {
 	handle(request, response, false);
     }
 
-    @Override public void doHead(HttpServletRequest request, HttpServletResponse response) {
+    @Override
+    public void doHead(HttpServletRequest request, HttpServletResponse response) {
 	handle(request, response, false);
     }
 
-    @Override public void doPost(HttpServletRequest request, HttpServletResponse response) {
+    @Override
+    public void doPost(HttpServletRequest request, HttpServletResponse response) {
 	handle(request, response, true);
     }
 
-    @Override public void doPut(HttpServletRequest request, HttpServletResponse response) {
+    @Override
+    public void doPut(HttpServletRequest request, HttpServletResponse response) {
 	handle(request, response, true);
     }
 
-    @Override public void doOptions(HttpServletRequest request, HttpServletResponse response) {
+    @Override
+    public void doOptions(HttpServletRequest request, HttpServletResponse response) {
 	handle(request, response, false);
     }
 
-    @Override public void doTrace(HttpServletRequest request, HttpServletResponse response) {
+    @Override
+    public void doTrace(HttpServletRequest request, HttpServletResponse response) {
 	handle(request, response, false);
     }
 

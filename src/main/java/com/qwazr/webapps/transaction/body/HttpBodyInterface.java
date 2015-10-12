@@ -15,26 +15,28 @@
  **/
 package com.qwazr.webapps.transaction.body;
 
+import com.qwazr.webapps.exception.WebappHtmlException;
+import com.qwazr.webapps.exception.WebappHtmlException.Title;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Response.Status;
-
-import com.qwazr.webapps.exception.WebappHtmlException;
-import com.qwazr.webapps.exception.WebappHtmlException.Title;
-import io.undertow.util.MultipartParser;
-
 import java.io.IOException;
 
 public interface HttpBodyInterface {
 
     public static HttpBodyInterface newEntity(HttpServletRequest request) throws IOException, ServletException {
 	String contentType = request.getContentType();
-	if ("application/x-www-form-urlencoded".equals(contentType))
-	    return new FormHttpBody(request);
-	if (contentType.startsWith("multipart/form-data"))
-	    return new MultipartHttpBody(request);
-	throw new WebappHtmlException(Status.NOT_ACCEPTABLE, Title.BODY_ERROR,
-			"Not supported content type: " + contentType);
+	if (contentType != null) {
+	    if ("application/x-www-form-urlencoded".equals(contentType))
+		return new FormHttpBody(request);
+	    if (contentType.startsWith("multipart/form-data"))
+		return new MultipartHttpBody(request);
+	    if (contentType.startsWith("application/xml"))
+		return new XMLHttpBody(request);
+	}
+	throw new WebappHtmlException(Status.NOT_ACCEPTABLE, Title.BODY_ERROR, "Not supported content type: "
+		+ contentType);
     }
 
 }

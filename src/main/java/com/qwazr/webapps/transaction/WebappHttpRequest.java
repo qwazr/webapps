@@ -15,6 +15,8 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import com.qwazr.webapps.transaction.body.HttpBodyInterface;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
@@ -115,5 +117,7 @@ public interface WebappHttpRequest {
     Collection<Part> getParts() throws IOException, ServletException;
 
     Part getPart(String name) throws IOException, ServletException;
+
+    HttpBodyInterface getBody();
 
 }

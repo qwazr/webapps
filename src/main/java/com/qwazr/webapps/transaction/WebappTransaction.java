@@ -15,21 +15,20 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.PrivilegedActionException;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.databind.JsonMappingException;
+import com.qwazr.webapps.exception.WebappHtmlException;
+import com.qwazr.webapps.transaction.body.HttpBodyInterface;
 
 import javax.script.ScriptException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response.Status;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.qwazr.webapps.exception.WebappHtmlException;
-import com.qwazr.webapps.transaction.body.HttpBodyInterface;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.net.URISyntaxException;
+import java.security.PrivilegedActionException;
 
 public class WebappTransaction {
 
@@ -40,7 +39,7 @@ public class WebappTransaction {
     private final WebappResponse response;
 
     public WebappTransaction(HttpServletRequest request, HttpServletResponse response, HttpBodyInterface body)
-		    throws JsonParseException, JsonMappingException, IOException {
+	    throws JsonParseException, JsonMappingException, IOException {
 	this.response = new WebappResponse(response);
 	FilePath fp = new FilePath(request.getPathInfo(), false);
 	// First we try to find a sub context
