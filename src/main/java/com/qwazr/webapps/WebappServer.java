@@ -25,10 +25,10 @@ import com.qwazr.utils.server.ServletApplication;
 import com.qwazr.webapps.transaction.ControllerManager;
 import com.qwazr.webapps.transaction.StaticManager;
 import com.qwazr.webapps.transaction.WebappManager;
+import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.session.Session;
 import io.undertow.server.session.SessionListener;
-import io.undertow.servlet.api.DeploymentInfo;
 import io.undertow.servlet.api.ServletInfo;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
@@ -43,98 +43,116 @@ import java.util.List;
 
 public class WebappServer extends AbstractServer {
 
-    public final static String SERVICE_NAME_WEBAPPS = "webapps";
+	public final static String SERVICE_NAME_WEBAPPS = "webapps";
 
-    private final static ServerDefinition serverDefinition = new ServerDefinition();
+	private final static ServerDefinition serverDefinition = new ServerDefinition();
 
-    static {
-	serverDefinition.defaultWebApplicationTcpPort = 9095;
-	serverDefinition.mainJarPath = "qwazr-webapps.jar";
-	serverDefinition.defaultDataDirName = "qwazr";
-    }
-
-    private WebappServer() {
-	super(serverDefinition);
-    }
-
-    public static class WebappApplication extends ServletApplication implements SessionListener {
-
-	public WebappApplication() {
+	static {
+		serverDefinition.defaultWebApplicationTcpPort = 9095;
+		serverDefinition.mainJarPath = "qwazr-webapps.jar";
+		serverDefinition.defaultDataDirName = "qwazr";
 	}
 
-	//TODO Parameters for fileupload limitation
-	private final static MultipartConfigElement multipartConfigElement = new MultipartConfigElement("/tmp");
-
-	@Override protected List<ServletInfo> getServletInfos() {
-	    List<ServletInfo> servletInfos = new ArrayList<ServletInfo>();
-	    servletInfos.add(new ServletInfo("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
-			    .setMultipartConfig(multipartConfigElement));
-	    return servletInfos;
+	private WebappServer() {
+		super(serverDefinition);
 	}
 
-	@Override protected SessionListener getSessionListener() {
-	    return this;
+	public static class WebappApplication extends ServletApplication implements SessionListener {
+
+		public WebappApplication() {
+		}
+
+		//TODO Parameters for fileupload limitation
+		private final static MultipartConfigElement multipartConfigElement = new MultipartConfigElement("/tmp");
+
+		@Override
+		protected List<ServletInfo> getServletInfos() {
+			List<ServletInfo> servletInfos = new ArrayList<ServletInfo>();
+			servletInfos.add(new ServletInfo("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
+							.setMultipartConfig(multipartConfigElement));
+			return servletInfos;
+		}
+
+		@Override
+		protected SessionListener getSessionListener() {
+			return this;
+		}
+
+		@Override
+		public void sessionCreated(Session session, HttpServerExchange exchange) {
+		}
+
+		@Override
+		public void sessionDestroyed(Session session, HttpServerExchange exchange, SessionDestroyedReason reason) {
+			WebappManager.INSTANCE.destroySession(session.getId());
+		}
+
+		@Override
+		public void attributeAdded(Session session, String name, Object value) {
+		}
+
+		@Override
+		public void attributeUpdated(Session session, String name, Object newValue, Object oldValue) {
+		}
+
+		@Override
+		public void attributeRemoved(Session session, String name, Object oldValue) {
+		}
+
+		@Override
+		public void sessionIdChanged(Session session, String oldSessionId) {
+		}
+
+		@Override
+		protected String getContextPath() {
+			return StringUtils.EMPTY;
+		}
+
 	}
 
-	@Override public void sessionCreated(Session session, HttpServerExchange exchange) {
+	public static void load(File data_directory) throws IOException {
+
+		File webapps_directory = new File(data_directory, SERVICE_NAME_WEBAPPS);
+		if (!webapps_directory.exists())
+			webapps_directory.mkdir();
+		// Create the singletons
+		ControllerManager.load(data_directory);
+		StaticManager.load(data_directory);
+		WebappManager.load(webapps_directory);
 	}
 
-	@Override public void sessionDestroyed(Session session, HttpServerExchange exchange,
-			SessionDestroyedReason reason) {
-	    WebappManager.INSTANCE.destroySession(session.getId());
+	@Override
+	public void load() throws IOException {
+		File currentDataDir = getCurrentDataDir();
+		ClusterServer.load(getWebApplicationPublicAddress(), currentDataDir);
+		ConnectorManager.load(currentDataDir);
+		ToolsManager.load(currentDataDir);
+		load(currentDataDir);
 	}
 
-	@Override public void attributeAdded(Session session, String name, Object value) {
+	@Override
+	public Class<WebappApplication> getServletApplication() {
+		return WebappApplication.class;
 	}
 
-	@Override public void attributeUpdated(Session session, String name, Object newValue, Object oldValue) {
+	@Override
+	protected IdentityManager getIdentityManager(String realm) {
+		return null;
 	}
 
-	@Override public void attributeRemoved(Session session, String name, Object oldValue) {
+	@Override
+	protected Class<RestApplication> getRestApplication() {
+		return null;
 	}
 
-	@Override public void sessionIdChanged(Session session, String oldSessionId) {
+	public static void main(String[] args) throws IOException, ParseException, ServletException, InstantiationException,
+					IllegalAccessException {
+		new WebappServer().start(args);
+		ClusterManager.INSTANCE.registerMe(SERVICE_NAME_WEBAPPS);
 	}
 
-	@Override protected String getContextPath() {
-	    return StringUtils.EMPTY;
+	@Override
+	public void commandLine(CommandLine cmd) throws IOException, ParseException {
 	}
-
-    }
-
-    public static void load(File data_directory) throws IOException {
-
-	File webapps_directory = new File(data_directory, SERVICE_NAME_WEBAPPS);
-	if (!webapps_directory.exists())
-	    webapps_directory.mkdir();
-	// Create the singletons
-	ControllerManager.load(data_directory);
-	StaticManager.load(data_directory);
-	WebappManager.load(webapps_directory);
-    }
-
-    @Override public void load() throws IOException {
-	File currentDataDir = getCurrentDataDir();
-	ClusterServer.load(getWebApplicationPublicAddress(), currentDataDir);
-	ConnectorManager.load(currentDataDir);
-	ToolsManager.load(currentDataDir);
-	load(currentDataDir);
-    }
-
-    @Override public ServletApplication getServletApplication() {
-	return new WebappApplication();
-    }
-
-    @Override protected RestApplication getRestApplication() {
-	return null;
-    }
-
-    public static void main(String[] args) throws IOException, ParseException, ServletException {
-	new WebappServer().start(args);
-	ClusterManager.INSTANCE.registerMe(SERVICE_NAME_WEBAPPS);
-    }
-
-    @Override public void commandLine(CommandLine cmd) throws IOException, ParseException {
-    }
 
 }
