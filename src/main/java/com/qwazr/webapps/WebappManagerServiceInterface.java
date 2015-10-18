@@ -15,8 +15,10 @@
  **/
 package com.qwazr.webapps;
 
+import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.Path;
 
+@RolesAllowed(WebappServer.SERVICE_NAME_WEBAPPS)
 @Path("/webapps")
 public interface WebappManagerServiceInterface {
 
