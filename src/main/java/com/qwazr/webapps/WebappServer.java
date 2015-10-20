@@ -1,12 +1,12 @@
 /**
  * Copyright 2014-2015 Emmanuel Keller / QWAZR
- * <p/>
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p/>
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -29,6 +29,7 @@ import io.undertow.security.idm.IdentityManager;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.server.session.Session;
 import io.undertow.server.session.SessionListener;
+import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.ServletInfo;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.ParseException;
@@ -63,12 +64,13 @@ public class WebappServer extends AbstractServer {
 		}
 
 		//TODO Parameters for fileupload limitation
-		private final static MultipartConfigElement multipartConfigElement = new MultipartConfigElement("/tmp");
+		private final static MultipartConfigElement multipartConfigElement = new MultipartConfigElement(
+						System.getProperty("java.io.tmpdir"));
 
 		@Override
 		protected List<ServletInfo> getServletInfos() {
 			List<ServletInfo> servletInfos = new ArrayList<ServletInfo>();
-			servletInfos.add(new ServletInfo("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
+			servletInfos.add(Servlets.servlet("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
 							.setMultipartConfig(multipartConfigElement));
 			return servletInfos;
 		}
