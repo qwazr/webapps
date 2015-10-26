@@ -26,10 +26,7 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 public class FileClassCompilerLoader implements Closeable, AutoCloseable {
 
@@ -46,28 +43,33 @@ public class FileClassCompilerLoader implements Closeable, AutoCloseable {
 	private final LockUtils.ReadWriteLock mapRwl;
 
 	public FileClassCompilerLoader(List<String> classPath, File sourceRootFile) throws MalformedURLException {
-		this.classPath = buildClassPath(classPath);
+		List<URL> urlList = new ArrayList<URL>();
+		if (sourceRootFile != null)
+			urlList.add(sourceRootFile.toURI().toURL());
+		this.classPath = buildClassPath(classPath, urlList);
 		this.sourceRootFile = sourceRootFile;
 		this.sourceRootPrefix = sourceRootFile.getAbsolutePath();
-		this.sourceRootURLs = new URL[] { sourceRootFile.toURI().toURL() };
+		this.sourceRootURLs = urlList.toArray(new URL[urlList.size()]);
 		this.sourceRootPrefixLength = sourceRootPrefix.length();
 		lastModifiedMap = new HashMap<String, Long>();
 		mapRwl = new LockUtils.ReadWriteLock();
 	}
 
-	private final static String buildClassPath(List<String> classPath) {
+	private final static String buildClassPath(List<String> classPath, Collection<URL> urlCollection)
+					throws MalformedURLException {
 		final List<String> classPathes = new ArrayList<String>();
-		String scp = System.getProperty("java.class.path");
-		if (scp != null)
-			classPathes.add(scp);
 		if (classPath != null) {
 			for (String cp : classPath) {
 				File file = new File(cp);
 				if (file.isDirectory()) {
-					for (File f : file.listFiles((FileFilter) FileFileFilter.FILE))
+					for (File f : file.listFiles((FileFilter) FileFileFilter.FILE)) {
 						classPathes.add(f.getAbsolutePath());
-				} else if (file.isDirectory())
+						urlCollection.add(f.toURI().toURL());
+					}
+				} else if (file.isFile()) {
 					classPathes.add(file.getAbsolutePath());
+					urlCollection.add(file.toURI().toURL());
+				}
 			}
 		}
 		if (classPathes.isEmpty())
@@ -129,7 +131,6 @@ public class FileClassCompilerLoader implements Closeable, AutoCloseable {
 				options = new ArrayList<String>();
 				options.add("-classpath");
 				options.add(classPath);
-				System.out.println(classPath);
 			} else
 				options = null;
 			JavaCompiler.CompilationTask task = compiler
