@@ -60,13 +60,15 @@ public class FileClassCompilerLoader implements Closeable, AutoCloseable {
 		String scp = System.getProperty("java.class.path");
 		if (scp != null)
 			classPathes.add(scp);
-		for (String cp : classPath) {
-			File file = new File(cp);
-			if (file.isDirectory()) {
-				for (File f : file.listFiles((FileFilter) FileFileFilter.FILE))
-					classPathes.add(f.getAbsolutePath());
-			} else if (file.isDirectory())
-				classPathes.add(file.getAbsolutePath());
+		if (classPath != null) {
+			for (String cp : classPath) {
+				File file = new File(cp);
+				if (file.isDirectory()) {
+					for (File f : file.listFiles((FileFilter) FileFileFilter.FILE))
+						classPathes.add(f.getAbsolutePath());
+				} else if (file.isDirectory())
+					classPathes.add(file.getAbsolutePath());
+			}
 		}
 		if (classPathes.isEmpty())
 			return null;
