@@ -18,6 +18,7 @@ package com.qwazr.webapps.transaction;
 import com.qwazr.utils.LockUtils;
 import com.qwazr.utils.StringUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.filefilter.FileFileFilter;
 
 import javax.script.ScriptException;
 import javax.tools.*;
@@ -39,20 +40,37 @@ public class FileClassCompilerLoader implements Closeable, AutoCloseable {
 	private final String sourceRootPrefix;
 	private final int sourceRootPrefixLength;
 	private final URL[] sourceRootURLs;
-	private final List<String> classPath;
+	private final String classPath;
 
 	private final Map<String, Long> lastModifiedMap;
 	private final LockUtils.ReadWriteLock mapRwl;
 
 	public FileClassCompilerLoader(List<String> classPath, File sourceRootFile) throws MalformedURLException {
-		this.classPath = classPath;
+		this.classPath = buildClassPath(classPath);
 		this.sourceRootFile = sourceRootFile;
 		this.sourceRootPrefix = sourceRootFile.getAbsolutePath();
 		this.sourceRootURLs = new URL[] { sourceRootFile.toURI().toURL() };
 		this.sourceRootPrefixLength = sourceRootPrefix.length();
 		lastModifiedMap = new HashMap<String, Long>();
 		mapRwl = new LockUtils.ReadWriteLock();
+	}
 
+	private final static String buildClassPath(List<String> classPath) {
+		final List<String> classPathes = new ArrayList<String>();
+		String scp = System.getProperty("java.class.path");
+		if (scp != null)
+			classPathes.add(scp);
+		for (String cp : classPath) {
+			File file = new File(cp);
+			if (file.isDirectory()) {
+				for (File f : file.listFiles((FileFilter) FileFileFilter.FILE))
+					classPathes.add(f.getAbsolutePath());
+			} else if (file.isDirectory())
+				classPathes.add(file.getAbsolutePath());
+		}
+		if (classPathes.isEmpty())
+			return null;
+		return StringUtils.join(classPathes, ';');
 	}
 
 	private synchronized void resetClassLoader(boolean closeOnly) throws IOException {
@@ -104,9 +122,14 @@ public class FileClassCompilerLoader implements Closeable, AutoCloseable {
 			Iterable<? extends JavaFileObject> sourceFiles = fileManager.getJavaFileObjects(sourceFile);
 			StringWriter sw = new StringWriter();
 			PrintWriter pw = new PrintWriter(sw);
-			List<String> options = new ArrayList<String>();
-			options.add("-classpath");
-			options.add(System.getProperty("java.class.path"));
+			List<String> options;
+			if (classPath != null) {
+				options = new ArrayList<String>();
+				options.add("-classpath");
+				options.add(classPath);
+				System.out.println(classPath);
+			} else
+				options = null;
 			JavaCompiler.CompilationTask task = compiler
 							.getTask(pw, fileManager, diagnostics, options, null, sourceFiles);
 			if (!task.call()) {
