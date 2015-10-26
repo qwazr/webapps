@@ -15,6 +15,7 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -29,5 +30,6 @@ public class WebappDefinition {
 	@JsonIgnoreProperties(ignoreUnknown = true)
 	public static class JavacDefinition {
 		public final String source_root = null;
+		public final List<String> classpath = null;
 	}
 }

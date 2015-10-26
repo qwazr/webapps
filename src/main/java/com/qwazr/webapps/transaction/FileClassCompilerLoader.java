@@ -25,7 +25,9 @@ import java.io.*;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public class FileClassCompilerLoader implements Closeable, AutoCloseable {
@@ -37,11 +39,13 @@ public class FileClassCompilerLoader implements Closeable, AutoCloseable {
 	private final String sourceRootPrefix;
 	private final int sourceRootPrefixLength;
 	private final URL[] sourceRootURLs;
+	private final List<String> classPath;
 
 	private final Map<String, Long> lastModifiedMap;
 	private final LockUtils.ReadWriteLock mapRwl;
 
-	public FileClassCompilerLoader(File sourceRootFile) throws MalformedURLException {
+	public FileClassCompilerLoader(List<String> classPath, File sourceRootFile) throws MalformedURLException {
+		this.classPath = classPath;
 		this.sourceRootFile = sourceRootFile;
 		this.sourceRootPrefix = sourceRootFile.getAbsolutePath();
 		this.sourceRootURLs = new URL[] { sourceRootFile.toURI().toURL() };
@@ -100,7 +104,11 @@ public class FileClassCompilerLoader implements Closeable, AutoCloseable {
 			Iterable<? extends JavaFileObject> sourceFiles = fileManager.getJavaFileObjects(sourceFile);
 			StringWriter sw = new StringWriter();
 			PrintWriter pw = new PrintWriter(sw);
-			JavaCompiler.CompilationTask task = compiler.getTask(pw, fileManager, diagnostics, null, null, sourceFiles);
+			List<String> options = new ArrayList<String>();
+			options.add("-classpath");
+			options.add(System.getProperty("java.class.path"));
+			JavaCompiler.CompilationTask task = compiler
+							.getTask(pw, fileManager, diagnostics, options, null, sourceFiles);
 			if (!task.call()) {
 				for (Diagnostic<? extends JavaFileObject> diagnostic : diagnostics.getDiagnostics())
 					pw.format("Error on line %d in %s%n%s%n", diagnostic.getLineNumber(),

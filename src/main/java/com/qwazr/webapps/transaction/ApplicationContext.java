@@ -60,7 +60,8 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 		staticMatchers = PathBind.loadMatchers(webappDefinition.statics);
 
 		if (webappDefinition.javac != null && webappDefinition.javac.source_root != null) {
-			compilerLoader = new FileClassCompilerLoader(new File(webappDefinition.javac.source_root));
+			compilerLoader = new FileClassCompilerLoader(webappDefinition.javac.classpath,
+							new File(webappDefinition.javac.source_root));
 		} else {
 			compilerLoader = null;
 		}
