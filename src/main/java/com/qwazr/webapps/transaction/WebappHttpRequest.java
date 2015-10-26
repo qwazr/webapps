@@ -1,12 +1,12 @@
 /**
  * Copyright 2014-2015 Emmanuel Keller / QWAZR
- * <p/>
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p/>
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -19,6 +19,7 @@ import com.qwazr.webapps.transaction.body.HttpBodyInterface;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.Cookie;
+import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.Part;
 import java.io.IOException;
@@ -28,96 +29,96 @@ import java.util.Enumeration;
 import java.util.Locale;
 import java.util.Map;
 
-public interface WebappHttpRequest {
+public interface WebappHttpRequest extends HttpServletRequest {
 
-    String getCharacterEncoding();
+	String getCharacterEncoding();
 
-    int getContentLength();
+	int getContentLength();
 
-    long getContentLengthLong();
+	long getContentLengthLong();
 
-    String getContentType();
+	String getContentType();
 
-    String getParameter(String name);
+	String getParameter(String name);
 
-    Enumeration<String> getParameterNames();
+	Enumeration<String> getParameterNames();
 
-    String[] getParameterValues(String name);
+	String[] getParameterValues(String name);
 
-    Map<String, String[]> getParameterMap();
+	Map<String, String[]> getParameterMap();
 
-    String getProtocol();
+	String getProtocol();
 
-    String getServerName();
+	String getServerName();
 
-    String getScheme();
+	String getScheme();
 
-    int getServerPort();
+	int getServerPort();
 
-    String getRemoteAddr();
+	String getRemoteAddr();
 
-    String getRemoteHost();
+	String getRemoteHost();
 
-    Locale getLocale();
+	Locale getLocale();
 
-    Enumeration<Locale> getLocales();
+	Enumeration<Locale> getLocales();
 
-    boolean isSecure();
+	boolean isSecure();
 
-    int getRemotePort();
+	int getRemotePort();
 
-    String getAuthType();
+	String getAuthType();
 
-    Cookie[] getCookies();
+	Cookie[] getCookies();
 
-    long getDateHeader(String name);
+	long getDateHeader(String name);
 
-    String getHeader(String name);
+	String getHeader(String name);
 
-    Enumeration<String> getHeaders(String name);
+	Enumeration<String> getHeaders(String name);
 
-    Enumeration<String> getHeaderNames();
+	Enumeration<String> getHeaderNames();
 
-    int getIntHeader(String name);
+	int getIntHeader(String name);
 
-    String getMethod();
+	String getMethod();
 
-    String getPathInfo();
+	String getPathInfo();
 
-    String getContextPath();
+	String getContextPath();
 
-    String getQueryString();
+	String getQueryString();
 
-    String getRemoteUser();
+	String getRemoteUser();
 
-    boolean isUserInRole(String role);
+	boolean isUserInRole(String role);
 
-    Principal getUserPrincipal();
+	Principal getUserPrincipal();
 
-    String getRequestedSessionId();
+	String getRequestedSessionId();
 
-    String getRequestURI();
+	String getRequestURI();
 
-    WebappHttpSession getSession(boolean create);
+	WebappHttpSession getSession(boolean create);
 
-    WebappHttpSession getSession();
+	WebappHttpSession getSession();
 
-    boolean isRequestedSessionIdValid();
+	boolean isRequestedSessionIdValid();
 
-    boolean isRequestedSessionIdFromCookie();
+	boolean isRequestedSessionIdFromCookie();
 
-    boolean isRequestedSessionIdFromURL();
+	boolean isRequestedSessionIdFromURL();
 
-    boolean authenticate(HttpServletResponse response) throws IOException, ServletException;
+	boolean authenticate(HttpServletResponse response) throws IOException, ServletException;
 
-    void login(String username, String password) throws ServletException;
+	void login(String username, String password) throws ServletException;
 
-    void logout() throws ServletException;
+	void logout() throws ServletException;
 
-    Collection<Part> getParts() throws IOException, ServletException;
+	Collection<Part> getParts() throws IOException, ServletException;
 
-    Part getPart(String name) throws IOException, ServletException;
+	Part getPart(String name) throws IOException, ServletException;
 
-    HttpBodyInterface getBody();
+	HttpBodyInterface getBody();
 
 }

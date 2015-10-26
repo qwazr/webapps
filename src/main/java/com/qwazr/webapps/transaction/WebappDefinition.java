@@ -1,12 +1,12 @@
 /**
  * Copyright 2014-2015 Emmanuel Keller / QWAZR
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -22,7 +22,12 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class WebappDefinition {
 
-	public Map<String, String> controllers;
-	public Map<String, String> statics;
+	public final Map<String, String> controllers = null;
+	public final Map<String, String> statics = null;
+	public final JavacDefinition javac = null;
 
+	@JsonIgnoreProperties(ignoreUnknown = true)
+	public static class JavacDefinition {
+		public final String source_root = null;
+	}
 }

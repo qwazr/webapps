@@ -85,9 +85,9 @@ public class WebappException extends AbstractWebappException {
 		printWriter.print("<body><h3>");
 		printWriter.print(error.title.title);
 		printWriter.println("</h3>");
-		printWriter.print("<div>");
+		printWriter.print("<pre>");
 		printWriter.print(message);
-		printWriter.println("</div></body></html>");
+		printWriter.println("</pre></body></html>");
 	}
 
 	private void sendQuietlyXML(HttpServletResponse response) throws IOException {

@@ -21,6 +21,7 @@ import com.qwazr.webapps.exception.WebappException;
 import com.qwazr.webapps.transaction.body.HttpBodyInterface;
 
 import javax.script.ScriptException;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response.Status;
@@ -59,19 +60,25 @@ public class WebappTransaction {
 		this.response.variable("session", this.request.getSession());
 	}
 
-	WebappHttpRequest getRequest() {
+	final ApplicationContext getContext() {
+		return context;
+	}
+
+	final WebappHttpRequest getRequest() {
 		return request;
 	}
 
-	WebappResponse getResponse() {
+	final WebappResponse getResponse() {
 		return response;
 	}
 
-	FilePath getFilePath() {
+	final FilePath getFilePath() {
 		return filePath;
 	}
 
-	public void execute() throws IOException, URISyntaxException, ScriptException, PrivilegedActionException {
+	public void execute() throws IOException, URISyntaxException, ScriptException, PrivilegedActionException,
+					InterruptedException, ClassNotFoundException, IllegalAccessException, InstantiationException,
+					ServletException {
 		String pathInfo = request.getPathInfo();
 		StaticManager staticManager = StaticManager.INSTANCE;
 		File staticFile = staticManager.findStatic(context, pathInfo);
@@ -82,7 +89,7 @@ public class WebappTransaction {
 		ControllerManager controllerManager = ControllerManager.INSTANCE;
 		File controllerFile = controllerManager.findController(context, pathInfo);
 		if (controllerFile != null) {
-			controllerManager.handle(response, controllerFile);
+			controllerManager.handle(this, controllerFile);
 			return;
 		}
 		throw new WebappException(Status.NOT_FOUND);

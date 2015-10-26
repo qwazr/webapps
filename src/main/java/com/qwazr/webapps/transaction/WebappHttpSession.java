@@ -15,7 +15,9 @@
  **/
 package com.qwazr.webapps.transaction;
 
-public interface WebappHttpSession {
+import javax.servlet.http.HttpSession;
+
+public interface WebappHttpSession extends HttpSession {
 
 	long getCreationTime();
 

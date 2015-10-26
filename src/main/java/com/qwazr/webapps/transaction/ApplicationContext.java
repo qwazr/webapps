@@ -1,12 +1,12 @@
 /**
  * Copyright 2014-2015 Emmanuel Keller / QWAZR
- * <p/>
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- * <p/>
+ * <p>
  * http://www.apache.org/licenses/LICENSE-2.0
- * <p/>
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,7 +15,11 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import java.io.Closeable;
+import java.io.File;
 import java.io.IOException;
+import java.net.URL;
+import java.net.URLClassLoader;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,99 +31,113 @@ import com.fasterxml.jackson.databind.JsonMappingException;
 import com.qwazr.connectors.ConnectorManager;
 import com.qwazr.tools.ToolsManager;
 import com.qwazr.utils.LockUtils;
+import com.qwazr.utils.StringUtils;
+import org.apache.commons.io.FilenameUtils;
 
-public class ApplicationContext {
+public class ApplicationContext implements Closeable, AutoCloseable {
 
-    private final String contextPath;
+	private final String contextPath;
 
-    private final WebappDefinition webappDefinition;
+	private final WebappDefinition webappDefinition;
 
-    private final Map<String, WebappHttpSessionImpl> sessions;
+	private final Map<String, WebappHttpSessionImpl> sessions;
 
-    private final List<PathBind> controllerMatchers;
+	private final List<PathBind> controllerMatchers;
 
-    private final List<PathBind> staticMatchers;
+	private final List<PathBind> staticMatchers;
 
-    private final LockUtils.ReadWriteLock sessionsLock = new LockUtils.ReadWriteLock();
+	private final FileClassCompilerLoader compilerLoader;
 
-    ApplicationContext(String contextPath, WebappDefinition webappDefinition, ApplicationContext oldContext)
-		    throws JsonParseException, JsonMappingException, IOException {
-	this.contextPath = contextPath.intern();
-	this.webappDefinition = webappDefinition;
+	private final LockUtils.ReadWriteLock sessionsLock = new LockUtils.ReadWriteLock();
 
-	// Load the resources
-	controllerMatchers = PathBind.loadMatchers(webappDefinition.controllers);
-	staticMatchers = PathBind.loadMatchers(webappDefinition.statics);
+	ApplicationContext(String contextPath, WebappDefinition webappDefinition, ApplicationContext oldContext)
+					throws JsonParseException, JsonMappingException, IOException {
+		this.contextPath = contextPath.intern();
+		this.webappDefinition = webappDefinition;
 
-	// Prepare the sessions
-	this.sessions = oldContext != null ? oldContext.sessions : new HashMap<String, WebappHttpSessionImpl>();
-    }
+		// Load the resources
+		controllerMatchers = PathBind.loadMatchers(webappDefinition.controllers);
+		staticMatchers = PathBind.loadMatchers(webappDefinition.statics);
 
-    WebappDefinition getWebappDefinition() {
-	return webappDefinition;
-    }
-
-    void close() {
-	if (controllerMatchers != null)
-	    controllerMatchers.clear();
-    }
-
-    WebappHttpSession getSessionOrCreate(HttpSession session) {
-	if (session == null)
-	    return null;
-	String id = session.getId().intern();
-	sessionsLock.r.lock();
-	try {
-	    WebappHttpSession webappSession = sessions.get(id);
-	    if (webappSession != null)
-		return webappSession;
-	} finally {
-	    sessionsLock.r.unlock();
+		if (webappDefinition.javac != null && webappDefinition.javac.source_root != null) {
+			compilerLoader = new FileClassCompilerLoader(new File(webappDefinition.javac.source_root));
+		} else {
+			compilerLoader = null;
+		}
+		// Prepare the sessions
+		this.sessions = oldContext != null ? oldContext.sessions : new HashMap<String, WebappHttpSessionImpl>();
 	}
-	sessionsLock.w.lock();
-	try {
-	    WebappHttpSessionImpl webappSession = sessions.get(id);
-	    if (webappSession != null)
-		return webappSession;
-	    webappSession = new WebappHttpSessionImpl(this, id);
-	    sessions.put(id, webappSession);
-	    return webappSession;
-	} finally {
-	    sessionsLock.w.unlock();
+
+	WebappDefinition getWebappDefinition() {
+		return webappDefinition;
 	}
-    }
 
-    void invalidateSession(String sessionId) {
-	sessionsLock.w.lock();
-	try {
-	    sessions.remove(sessionId);
-	} finally {
-	    sessionsLock.w.unlock();
+	public void close() throws IOException {
+		if (controllerMatchers != null)
+			controllerMatchers.clear();
+		if (compilerLoader != null)
+			compilerLoader.close();
 	}
-    }
 
-    final public void apply(WebappResponse response) throws IOException {
-	response.variable("connectors", ConnectorManager.INSTANCE);
-	response.variable("tools", ToolsManager.INSTANCE);
-    }
+	WebappHttpSession getSessionOrCreate(HttpSession session) {
+		if (session == null)
+			return null;
+		String id = session.getId().intern();
+		sessionsLock.r.lock();
+		try {
+			WebappHttpSession webappSession = sessions.get(id);
+			if (webappSession != null)
+				return webappSession;
+		} finally {
+			sessionsLock.r.unlock();
+		}
+		sessionsLock.w.lock();
+		try {
+			WebappHttpSessionImpl webappSession = sessions.get(id);
+			if (webappSession != null)
+				return webappSession;
+			webappSession = new WebappHttpSessionImpl(this, id);
+			sessions.put(id, webappSession);
+			return webappSession;
+		} finally {
+			sessionsLock.w.unlock();
+		}
+	}
 
-    public String getContextPath() {
-	return contextPath;
-    }
+	FileClassCompilerLoader getCompilerLoader() {
+		return compilerLoader;
+	}
 
-    String findStatic(String requestPath) {
-	return PathBind.findMatchingPath(requestPath, staticMatchers);
-    }
+	void invalidateSession(String sessionId) {
+		sessionsLock.w.lock();
+		try {
+			sessions.remove(sessionId);
+		} finally {
+			sessionsLock.w.unlock();
+		}
+	}
 
-    String findController(String requestPath) {
-	return PathBind.findMatchingPath(requestPath, controllerMatchers);
-    }
+	final public void apply(WebappResponse response) throws IOException {
+		response.variable("connectors", ConnectorManager.INSTANCE);
+		response.variable("tools", ToolsManager.INSTANCE);
+	}
 
-    public String getContextId() {
-	String cpath = contextPath;
-	if (cpath.endsWith("/"))
-	    cpath = cpath.substring(0, cpath.length() - 1);
-	return cpath;
-    }
+	public String getContextPath() {
+		return contextPath;
+	}
 
+	String findStatic(String requestPath) {
+		return PathBind.findMatchingPath(requestPath, staticMatchers);
+	}
+
+	String findController(String requestPath) {
+		return PathBind.findMatchingPath(requestPath, controllerMatchers);
+	}
+
+	public String getContextId() {
+		String cpath = contextPath;
+		if (cpath.endsWith("/"))
+			cpath = cpath.substring(0, cpath.length() - 1);
+		return cpath;
+	}
 }
