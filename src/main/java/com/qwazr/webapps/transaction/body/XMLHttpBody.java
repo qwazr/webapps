@@ -15,8 +15,12 @@
  **/
 package com.qwazr.webapps.transaction.body;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
+import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
+import org.xml.sax.SAXParseException;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -27,18 +31,41 @@ import java.io.IOException;
 
 public class XMLHttpBody extends InputStreamHttpBody {
 
-    XMLHttpBody(HttpServletRequest request) throws IOException, ServletException {
-	super(request);
-    }
+	private static final Logger logger = LoggerFactory.getLogger(XMLHttpBody.class);
 
-    public Document getDom(Boolean validating, Boolean namespaceAware) throws IOException, SAXException,
-	    ParserConfigurationException {
-	final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-	if (namespaceAware)
-	    documentBuilderFactory.setNamespaceAware(namespaceAware);
-	if (validating)
-	    documentBuilderFactory.setValidating(validating);
-	DocumentBuilder builder = documentBuilderFactory.newDocumentBuilder();
-	return builder.parse(inputStream);
-    }
+	XMLHttpBody(HttpServletRequest request) throws IOException, ServletException {
+		super(request);
+	}
+
+	public Document getDom(Boolean validating, Boolean namespaceAware)
+					throws IOException, SAXException, ParserConfigurationException {
+		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
+		if (namespaceAware)
+			documentBuilderFactory.setNamespaceAware(namespaceAware);
+		if (validating)
+			documentBuilderFactory.setValidating(validating);
+		DocumentBuilder builder = documentBuilderFactory.newDocumentBuilder();
+		builder.setErrorHandler(ToolErrorHandler.INSTANCE);
+		return builder.parse(inputStream);
+	}
+
+	private static class ToolErrorHandler implements ErrorHandler {
+
+		private static final ToolErrorHandler INSTANCE = new ToolErrorHandler();
+
+		@Override
+		public void warning(SAXParseException exception) throws SAXException {
+			logger.warn(exception.getMessage(), exception);
+		}
+
+		@Override
+		public void error(SAXParseException exception) throws SAXException {
+			logger.error(exception.getMessage(), exception);
+		}
+
+		@Override
+		public void fatalError(SAXParseException exception) throws SAXException {
+			throw exception;
+		}
+	}
 }
