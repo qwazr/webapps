@@ -19,17 +19,12 @@ import java.util.List;
 import java.util.Map;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.qwazr.utils.FileClassCompilerLoader;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class WebappDefinition {
 
 	public final Map<String, String> controllers = null;
 	public final Map<String, String> statics = null;
-	public final JavacDefinition javac = null;
-
-	@JsonIgnoreProperties(ignoreUnknown = true)
-	public static class JavacDefinition {
-		public final String source_root = null;
-		public final List<String> classpath = null;
-	}
+	public final FileClassCompilerLoader.JavacDefinition javac = null;
 }
