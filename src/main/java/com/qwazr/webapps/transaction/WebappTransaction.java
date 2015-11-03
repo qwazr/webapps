@@ -40,7 +40,7 @@ public class WebappTransaction {
 	private final WebappResponse response;
 
 	public WebappTransaction(HttpServletRequest request, HttpServletResponse response, HttpBodyInterface body)
-					throws JsonParseException, JsonMappingException, IOException {
+			throws JsonParseException, JsonMappingException, IOException {
 		this.response = new WebappResponse(response);
 		FilePath fp = new FilePath(request.getPathInfo(), false);
 		// First we try to find a sub context
@@ -76,9 +76,9 @@ public class WebappTransaction {
 		return filePath;
 	}
 
-	public void execute() throws IOException, URISyntaxException, ScriptException, PrivilegedActionException,
-					InterruptedException, ClassNotFoundException, IllegalAccessException, InstantiationException,
-					ServletException {
+	public void execute()
+			throws IOException, URISyntaxException, ScriptException, PrivilegedActionException, InterruptedException,
+			ReflectiveOperationException, ServletException {
 		String pathInfo = request.getPathInfo();
 		StaticManager staticManager = StaticManager.INSTANCE;
 		File staticFile = staticManager.findStatic(context, pathInfo);
