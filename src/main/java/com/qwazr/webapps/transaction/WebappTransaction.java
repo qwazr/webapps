@@ -40,7 +40,7 @@ public class WebappTransaction {
 	private final WebappResponse response;
 
 	public WebappTransaction(HttpServletRequest request, HttpServletResponse response, HttpBodyInterface body)
-			throws JsonParseException, JsonMappingException, IOException {
+			throws IOException, URISyntaxException {
 		this.response = new WebappResponse(response);
 		FilePath fp = new FilePath(request.getPathInfo(), false);
 		// First we try to find a sub context

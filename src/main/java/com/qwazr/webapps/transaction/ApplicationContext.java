@@ -26,6 +26,7 @@ import javax.servlet.http.HttpSession;
 import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +48,7 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 	private final LockUtils.ReadWriteLock sessionsLock = new LockUtils.ReadWriteLock();
 
 	ApplicationContext(String contextPath, WebappDefinition webappDefinition, ApplicationContext oldContext)
-					throws JsonParseException, JsonMappingException, IOException {
+			throws IOException, URISyntaxException {
 		this.contextPath = contextPath.intern();
 		this.webappDefinition = webappDefinition;
 
