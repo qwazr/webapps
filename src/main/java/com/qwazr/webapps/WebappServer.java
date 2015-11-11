@@ -17,8 +17,8 @@ package com.qwazr.webapps;
 
 import com.qwazr.cluster.ClusterServer;
 import com.qwazr.cluster.manager.ClusterManager;
-import com.qwazr.connectors.ConnectorManager;
-import com.qwazr.tools.ToolsManager;
+import com.qwazr.connectors.ConnectorManagerImpl;
+import com.qwazr.tools.ToolsManagerImpl;
 import com.qwazr.utils.server.AbstractServer;
 import com.qwazr.utils.server.RestApplication;
 import com.qwazr.utils.server.ServletApplication;
@@ -127,8 +127,8 @@ public class WebappServer extends AbstractServer {
 	public void load() throws IOException {
 		File currentDataDir = getCurrentDataDir();
 		ClusterServer.load(getWebApplicationPublicAddress(), currentDataDir);
-		ConnectorManager.load(currentDataDir);
-		ToolsManager.load(currentDataDir);
+		ConnectorManagerImpl.load(currentDataDir);
+		ToolsManagerImpl.load(currentDataDir);
 		load(currentDataDir);
 	}
 

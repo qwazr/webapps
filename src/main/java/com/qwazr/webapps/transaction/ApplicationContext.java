@@ -15,16 +15,11 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.qwazr.connectors.ConnectorManager;
-import com.qwazr.tools.ToolsManager;
 import com.qwazr.utils.FileClassCompilerLoader;
 import com.qwazr.utils.LockUtils;
 
 import javax.servlet.http.HttpSession;
 import java.io.Closeable;
-import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
@@ -48,7 +43,7 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 	private final LockUtils.ReadWriteLock sessionsLock = new LockUtils.ReadWriteLock();
 
 	ApplicationContext(String contextPath, WebappDefinition webappDefinition, ApplicationContext oldContext)
-			throws IOException, URISyntaxException {
+					throws IOException, URISyntaxException {
 		this.contextPath = contextPath.intern();
 		this.webappDefinition = webappDefinition;
 
@@ -57,7 +52,7 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 		staticMatchers = PathBind.loadMatchers(webappDefinition.statics);
 
 		if (webappDefinition.javac != null && webappDefinition.javac.source_root != null) {
-			compilerLoader = new FileClassCompilerLoader(webappDefinition.javac);
+			compilerLoader = FileClassCompilerLoader.newInstance(webappDefinition.javac);
 		} else {
 			compilerLoader = null;
 		}
@@ -112,11 +107,6 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 		} finally {
 			sessionsLock.w.unlock();
 		}
-	}
-
-	final public void apply(WebappResponse response) throws IOException {
-		response.variable("connectors", ConnectorManager.INSTANCE);
-		response.variable("tools", ToolsManager.INSTANCE);
 	}
 
 	public String getContextPath() {

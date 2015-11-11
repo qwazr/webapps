@@ -15,20 +15,17 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import com.qwazr.utils.LockUtils;
+import com.qwazr.utils.json.DirectoryJsonManager;
+import com.qwazr.utils.server.ServerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.qwazr.utils.LockUtils;
-import com.qwazr.utils.json.DirectoryJsonManager;
-import com.qwazr.utils.server.ServerException;
 
 public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 
@@ -51,11 +48,11 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 
 	private WebappManager(File webappDirectory) throws IOException, ServerException {
 		super(webappDirectory, WebappDefinition.class);
-		applicationContextMap = new ConcurrentHashMap<String, ApplicationContext>();
+		applicationContextMap = new ConcurrentHashMap<>();
 	}
 
 	private ApplicationContext getApplicationContext(String contextPath, WebappDefinition webappDefinition)
-			throws IOException, URISyntaxException {
+					throws IOException, URISyntaxException {
 		contextsLock.r.lock();
 		try {
 			ApplicationContext existingContext = applicationContextMap.get(contextPath);
@@ -71,7 +68,7 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 				return existingContext;
 			logger.info("Load application " + contextPath);
 			ApplicationContext applicationContext = new ApplicationContext(contextPath, webappDefinition,
-					existingContext);
+							existingContext);
 			applicationContextMap.put(contextPath, applicationContext);
 			return applicationContext;
 		} finally {
@@ -79,8 +76,7 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 		}
 	}
 
-	public ApplicationContext findApplicationContext(FilePath filePath, WebappTransaction transaction)
-			throws IOException, URISyntaxException {
+	ApplicationContext findApplicationContext(FilePath filePath) throws IOException, URISyntaxException {
 		if (filePath == null)
 			return null;
 		if (filePath.contextPath == null)
@@ -91,13 +87,13 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 		ApplicationContext applicationContext = getApplicationContext(filePath.contextPath, webappDefinition);
 		if (applicationContext == null)
 			return null;
-		applicationContext.apply(transaction.getResponse());
 		return applicationContext;
 	}
 
 	public void destroySession(String id) {
 		id = id.intern();
-		logger.info("Invalid session " + id);
+		if (logger.isInfoEnabled())
+			logger.info("Invalid session " + id);
 		contextsLock.r.lock();
 		try {
 			for (ApplicationContext context : applicationContextMap.values())

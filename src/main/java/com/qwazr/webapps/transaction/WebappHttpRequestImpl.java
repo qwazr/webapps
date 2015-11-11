@@ -50,12 +50,12 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 
 	@Override
 	public Object getAttribute(String name) {
-		return null;
+		return request.getAttribute(name);
 	}
 
 	@Override
 	public Enumeration<String> getAttributeNames() {
-		return null;
+		return request.getAttributeNames();
 	}
 
 	@Override
@@ -145,12 +145,12 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 
 	@Override
 	public void setAttribute(String name, Object o) {
-
+		request.setAttribute(name, o);
 	}
 
 	@Override
 	public void removeAttribute(String name) {
-
+		request.removeAttribute(name);
 	}
 
 	@Override
@@ -174,6 +174,7 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 	}
 
 	@Override
+	@Deprecated
 	public String getRealPath(String path) {
 		return null;
 	}
@@ -363,6 +364,7 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 	}
 
 	@Override
+	@Deprecated
 	public boolean isRequestedSessionIdFromUrl() {
 		return false;
 	}
