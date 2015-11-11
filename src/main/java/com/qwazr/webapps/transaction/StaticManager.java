@@ -60,7 +60,7 @@ public class StaticManager {
 		return staticFile;
 	}
 
-	void handle(WebappResponse response, File staticFile) throws IOException {
+	void handle(WebappHttpResponse response, File staticFile) throws IOException {
 		String type = mimeTypeMap.getContentType(staticFile);
 		if (type != null)
 			response.setContentType(type);

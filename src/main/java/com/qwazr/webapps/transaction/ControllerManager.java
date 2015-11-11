@@ -27,17 +27,13 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
-import javax.servlet.GenericServlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
-import javax.tools.*;
 import java.io.*;
 import java.net.SocketPermission;
 import java.net.URISyntaxException;
 import java.security.*;
 import java.security.cert.Certificate;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 public class ControllerManager {
@@ -112,7 +108,7 @@ public class ControllerManager {
 
 	private void handleJavascript(WebappTransaction transaction, File controllerFile)
 			throws IOException, ScriptException, PrivilegedActionException {
-		WebappResponse response = transaction.getResponse();
+		WebappHttpResponse response = transaction.getResponse();
 		response.setHeader("Cache-Control", "max-age=0, no-cache, no-store");
 		Bindings bindings = scriptEngine.createBindings();
 		IOUtils.CloseableList closeables = new IOUtils.CloseableList();

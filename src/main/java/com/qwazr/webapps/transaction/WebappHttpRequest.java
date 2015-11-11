@@ -31,6 +31,8 @@ import java.util.Map;
 
 public interface WebappHttpRequest extends HttpServletRequest {
 
+	Map<String, Object> getAttributes();
+	
 	String getCharacterEncoding();
 
 	int getContentLength();

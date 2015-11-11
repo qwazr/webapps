@@ -34,6 +34,7 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 	private final String pathInfo;
 	private final ApplicationContext context;
 	private final HttpServletRequest request;
+	private final WebappAttributes attributes;
 	private final HttpBodyInterface body;
 
 	WebappHttpRequestImpl(ApplicationContext context, HttpServletRequest request, HttpBodyInterface body) {
@@ -41,11 +42,17 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 		this.contextPath = context.getContextPath();
 		this.pathInfo = request.getPathInfo();
 		this.request = request;
+		this.attributes = new WebappAttributes(request);
 		this.body = body;
 	}
 
 	public HttpBodyInterface getBody() {
 		return body;
+	}
+
+	@Override
+	public Map<String, Object> getAttributes() {
+		return attributes;
 	}
 
 	@Override

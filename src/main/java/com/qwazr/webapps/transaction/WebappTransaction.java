@@ -37,11 +37,10 @@ public class WebappTransaction {
 
 	private final ApplicationContext context;
 	private final WebappHttpRequest request;
-	private final WebappResponse response;
+	private final WebappHttpResponse response;
 
 	public WebappTransaction(HttpServletRequest request, HttpServletResponse response, HttpBodyInterface body)
 					throws IOException, URISyntaxException {
-		this.response = new WebappResponse(response);
 		FilePath fp = new FilePath(request.getPathInfo(), false);
 		// First we try to find a sub context
 		ApplicationContext ctx = WebappManager.INSTANCE.findApplicationContext(fp);
@@ -57,6 +56,7 @@ public class WebappTransaction {
 		this.request = new WebappHttpRequestImpl(context, request, body);
 		this.request.setAttribute("tools", ToolsManagerImpl.getInstance());
 		this.request.setAttribute("connectors", ConnectorManagerImpl.getInstance());
+		this.response = new WebappHttpResponse(this.request.getAttributes(), response);
 		this.response.variable("tools", ToolsManagerImpl.getInstance());
 		this.response.variable("connectors", ConnectorManagerImpl.getInstance());
 		this.response.variable("request", this.request);
@@ -72,7 +72,7 @@ public class WebappTransaction {
 		return request;
 	}
 
-	final WebappResponse getResponse() {
+	final WebappHttpResponse getResponse() {
 		return response;
 	}
 
