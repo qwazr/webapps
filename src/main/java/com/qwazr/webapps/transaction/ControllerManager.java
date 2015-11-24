@@ -89,14 +89,14 @@ public class ControllerManager {
 			// Required for templates
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
-			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
+			INSTANCE = new AccessControlContext(new ProtectionDomain[] {
+							new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
 		}
 	}
 
 	void handle(WebappTransaction transaction, File controllerFile)
-			throws IOException, ScriptException, PrivilegedActionException, InterruptedException,
-			ReflectiveOperationException, ServletException {
+					throws IOException, ScriptException, PrivilegedActionException, InterruptedException,
+					ReflectiveOperationException, ServletException {
 		String ext = FilenameUtils.getExtension(controllerFile.getName());
 		if (StringUtils.isEmpty(ext))
 			throw new ScriptException("Unsupported controller extension: " + ext);
@@ -107,7 +107,7 @@ public class ControllerManager {
 	}
 
 	private void handleJavascript(WebappTransaction transaction, File controllerFile)
-			throws IOException, ScriptException, PrivilegedActionException {
+					throws IOException, ScriptException, PrivilegedActionException {
 		WebappHttpResponse response = transaction.getResponse();
 		response.setHeader("Cache-Control", "max-age=0, no-cache, no-store");
 		Bindings bindings = scriptEngine.createBindings();
@@ -128,11 +128,18 @@ public class ControllerManager {
 	}
 
 	private void handleJava(WebappTransaction transaction, File controllerFile)
-			throws IOException, InterruptedException, ScriptException, ReflectiveOperationException,
-			IllegalAccessException, InstantiationException, ServletException {
+					throws IOException, InterruptedException, ScriptException, ReflectiveOperationException,
+					ServletException {
+		IOUtils.CloseableList closeables = new IOUtils.CloseableList();
+		WebappHttpResponse response = transaction.getResponse();
+		response.getVariables().put("closeable", closeables);
 		HttpServlet servlet = (HttpServlet) transaction.getContext().getCompilerLoader().loadClass(controllerFile)
-				.newInstance();
-		servlet.service(transaction.getRequest(), transaction.getResponse());
+						.newInstance();
+		try {
+			servlet.service(transaction.getRequest(), transaction.getResponse());
+		} finally {
+			closeables.close();
+		}
 	}
 
 }
