@@ -17,109 +17,16 @@ package com.qwazr.webapps.transaction;
 
 import com.qwazr.webapps.transaction.body.HttpBodyInterface;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.Part;
-import java.io.IOException;
-import java.security.Principal;
-import java.util.Collection;
-import java.util.Enumeration;
-import java.util.Locale;
 import java.util.Map;
 
 public interface WebappHttpRequest extends HttpServletRequest {
 
 	Map<String, Object> getAttributes();
+
+	Map<String, String[]> getParameters();
 	
-	String getCharacterEncoding();
-
-	int getContentLength();
-
-	long getContentLengthLong();
-
-	String getContentType();
-
-	String getParameter(String name);
-
-	Enumeration<String> getParameterNames();
-
-	String[] getParameterValues(String name);
-
-	Map<String, String[]> getParameterMap();
-
-	String getProtocol();
-
-	String getServerName();
-
-	String getScheme();
-
-	int getServerPort();
-
-	String getRemoteAddr();
-
-	String getRemoteHost();
-
-	Locale getLocale();
-
-	Enumeration<Locale> getLocales();
-
-	boolean isSecure();
-
-	int getRemotePort();
-
-	String getAuthType();
-
-	Cookie[] getCookies();
-
-	long getDateHeader(String name);
-
-	String getHeader(String name);
-
-	Enumeration<String> getHeaders(String name);
-
-	Enumeration<String> getHeaderNames();
-
-	int getIntHeader(String name);
-
-	String getMethod();
-
-	String getPathInfo();
-
-	String getContextPath();
-
-	String getQueryString();
-
-	String getRemoteUser();
-
-	boolean isUserInRole(String role);
-
-	Principal getUserPrincipal();
-
-	String getRequestedSessionId();
-
-	String getRequestURI();
-
-	WebappHttpSession getSession(boolean create);
-
-	WebappHttpSession getSession();
-
-	boolean isRequestedSessionIdValid();
-
-	boolean isRequestedSessionIdFromCookie();
-
-	boolean isRequestedSessionIdFromURL();
-
-	boolean authenticate(HttpServletResponse response) throws IOException, ServletException;
-
-	void login(String username, String password) throws ServletException;
-
-	void logout() throws ServletException;
-
-	Collection<Part> getParts() throws IOException, ServletException;
-
-	Part getPart(String name) throws IOException, ServletException;
+	Map<String, String> getHeadersMap();
 
 	HttpBodyInterface getBody();
 

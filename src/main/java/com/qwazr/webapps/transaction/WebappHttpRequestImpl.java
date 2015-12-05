@@ -34,7 +34,8 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 	private final String pathInfo;
 	private final ApplicationContext context;
 	private final HttpServletRequest request;
-	private final WebappAttributes attributes;
+	private final WebappRequestMaps.WebappAttributes attributes;
+	private final WebappRequestMaps.WebappHeaders headers;
 	private final HttpBodyInterface body;
 
 	WebappHttpRequestImpl(ApplicationContext context, HttpServletRequest request, HttpBodyInterface body) {
@@ -42,7 +43,8 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 		this.contextPath = context.getContextPath();
 		this.pathInfo = request.getPathInfo();
 		this.request = request;
-		this.attributes = new WebappAttributes(request);
+		this.attributes = new WebappRequestMaps.WebappAttributes(request);
+		this.headers = new WebappRequestMaps.WebappHeaders(request);
 		this.body = body;
 	}
 
@@ -53,6 +55,16 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 	@Override
 	public Map<String, Object> getAttributes() {
 		return attributes;
+	}
+
+	@Override
+	public Map<String, String[]> getParameters() {
+		return getParameterMap();
+	}
+
+	@Override
+	public Map<String, String> getHeadersMap() {
+		return headers;
 	}
 
 	@Override
@@ -72,7 +84,6 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 
 	@Override
 	public void setCharacterEncoding(String env) throws UnsupportedEncodingException {
-
 	}
 
 	@Override
