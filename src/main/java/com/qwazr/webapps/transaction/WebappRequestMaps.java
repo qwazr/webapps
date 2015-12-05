@@ -22,7 +22,11 @@ public abstract class WebappRequestMaps<T> implements Map<String, T> {
 
 	protected abstract Enumeration<String> getNames();
 
+	protected abstract void setValue(String name, T value);
+
 	protected abstract T getValue(String name);
+
+	protected abstract void removeValue(String name);
 
 	@Override
 	public int size() {
@@ -42,14 +46,14 @@ public abstract class WebappRequestMaps<T> implements Map<String, T> {
 
 	@Override
 	public boolean containsKey(Object key) {
-		return getValue(key.toString()) != null;
+		return get(key.toString()) != null;
 	}
 
 	@Override
 	public boolean containsValue(Object value) {
 		Enumeration<String> names = getNames();
 		while (names.hasMoreElements()) {
-			if (value.equals(getValue(names.nextElement())))
+			if (value.equals(get(names.nextElement())))
 				return true;
 		}
 		return false;
@@ -57,36 +61,44 @@ public abstract class WebappRequestMaps<T> implements Map<String, T> {
 
 	@Override
 	public T get(Object key) {
+		if (key == null)
+			return null;
 		return getValue(key.toString());
 	}
 
 	@Override
-	public T put(String key, T value) {
-		throw new RuntimeException("This map is read only");
+	public T put(String key, Object value) {
+		if (key == null)
+			return null;
+		if (value == null)
+			return remove(key);
+		T oldValue = getValue(key);
+		setValue(key, (T) value);
+		return oldValue;
 	}
 
 	@Override
 	public T remove(Object key) {
-		throw new RuntimeException("This map is read only");
+		if (key == null)
+			return null;
+		T oldValue = get(key);
+		removeValue(key.toString());
+		return oldValue;
 	}
 
 	@Override
 	public void putAll(Map<? extends String, ? extends T> m) {
-		throw new RuntimeException("This map is read only");
+		if (m == null)
+			return;
+		for (Map.Entry<? extends String, ? extends T> entry : m.entrySet())
+			put(entry.getKey(), entry.getValue());
 	}
 
 	@Override
 	public void clear() {
-		throw new RuntimeException("This map is read only");
-	}
-
-	@Override
-	public Set<String> keySet() {
-		final LinkedHashSet<String> keys = new LinkedHashSet<String>();
-		Enumeration<String> names = getNames();
+		final Enumeration<String> names = getNames();
 		while (names.hasMoreElements())
-			keys.add(names.nextElement());
-		return keys;
+			removeValue(names.nextElement());
 	}
 
 	private Map<String, T> toMap() {
@@ -94,9 +106,14 @@ public abstract class WebappRequestMaps<T> implements Map<String, T> {
 		final Enumeration<String> names = getNames();
 		while (names.hasMoreElements()) {
 			final String key = names.nextElement();
-			map.put(key, getValue(key));
+			map.put(key, get(key));
 		}
 		return map;
+	}
+
+	@Override
+	public Set<String> keySet() {
+		return toMap().keySet();
 	}
 
 	@Override
@@ -123,9 +140,20 @@ public abstract class WebappRequestMaps<T> implements Map<String, T> {
 		}
 
 		@Override
+		protected void setValue(String name, Object value) {
+			request.setAttribute(name, value);
+		}
+
+		@Override
 		protected Object getValue(String name) {
 			return request.getAttribute(name);
 		}
+
+		@Override
+		protected void removeValue(String name) {
+			request.removeAttribute(name);
+		}
+
 	}
 
 	public static class WebappHeaders extends WebappRequestMaps<String> {
@@ -144,6 +172,16 @@ public abstract class WebappRequestMaps<T> implements Map<String, T> {
 		@Override
 		protected String getValue(String name) {
 			return request.getHeader(name);
+		}
+
+		@Override
+		protected void setValue(String name, String value) {
+			throw new RuntimeException("This map is read only");
+		}
+
+		@Override
+		protected void removeValue(String name) {
+			throw new RuntimeException("This map is read only");
 		}
 
 		public long getDate(String name) {

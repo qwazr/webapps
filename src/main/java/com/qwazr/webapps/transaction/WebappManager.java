@@ -25,6 +25,7 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
@@ -74,6 +75,14 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 		} finally {
 			contextsLock.w.unlock();
 		}
+	}
+
+	public Set<String> getNameSet() {
+		return super.nameSet();
+	}
+
+	public WebappDefinition getWebAppDefinition(String name) throws IOException {
+		return super.get(name);
 	}
 
 	ApplicationContext findApplicationContext(FilePath filePath) throws IOException, URISyntaxException {
