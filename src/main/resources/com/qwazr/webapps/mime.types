@@ -320,3 +320,7 @@ application/vis5d			v5d
 application/iges			igs
 # Autocad WHIP vector drawings
 drawing/x-dwf				dwf
+
+# Additional
+application/xml         xml
+application/json            json

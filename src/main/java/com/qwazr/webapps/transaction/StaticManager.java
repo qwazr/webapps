@@ -1,12 +1,12 @@
 /**
  * Copyright 2014-2015 Emmanuel Keller / QWAZR
- *
+ * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
  * You may obtain a copy of the License at
- *
- *    http://www.apache.org/licenses/LICENSE-2.0
- *
+ * <p>
+ * http://www.apache.org/licenses/LICENSE-2.0
+ * <p>
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an "AS IS" BASIS,
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
@@ -15,16 +15,11 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.net.URISyntaxException;
+import org.apache.commons.io.IOUtils;
 
 import javax.activation.MimetypesFileTypeMap;
-
-import org.apache.commons.io.IOUtils;
+import java.io.*;
+import java.net.URISyntaxException;
 
 public class StaticManager {
 
@@ -42,17 +37,15 @@ public class StaticManager {
 
 	private StaticManager(File dataDir) {
 		this.dataDir = dataDir;
-		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream(
-				"/com/qwazr/webapps/mime.types"));
+		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 	}
 
-	File findStatic(ApplicationContext context, String requestPath)
-			throws URISyntaxException, IOException {
+	File findStatic(ApplicationContext context, String requestPath) throws URISyntaxException, IOException {
 		// First we try to find the root directory using configuration mapping
 		String staticPath = context.findStatic(requestPath);
 		if (staticPath == null)
 			return null;
-		File staticFile = new File(dataDir, staticPath);
+		File staticFile = staticPath.startsWith("/") ? new File(staticPath) : new File(dataDir, staticPath);
 		if (!staticFile.exists())
 			throw new FileNotFoundException("File not found");
 		if (!staticFile.isFile())
@@ -67,8 +60,7 @@ public class StaticManager {
 		response.setContentLengthLong(staticFile.length());
 		response.setDateHeader("Last-Modified", staticFile.lastModified());
 		response.setHeader("Cache-Control", "max-age=86400");
-		response.setDateHeader("Expires",
-				System.currentTimeMillis() + 86400 * 1000);
+		response.setDateHeader("Expires", System.currentTimeMillis() + 86400 * 1000);
 		InputStream inputStream = new FileInputStream(staticFile);
 		try {
 			IOUtils.copy(inputStream, response.getOutputStream());
