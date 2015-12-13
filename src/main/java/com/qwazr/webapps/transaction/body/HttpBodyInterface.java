@@ -25,7 +25,7 @@ import java.io.IOException;
 
 public interface HttpBodyInterface {
 
-	public static HttpBodyInterface newEntity(HttpServletRequest request) throws IOException, ServletException {
+	static HttpBodyInterface newEntity(HttpServletRequest request) throws IOException, ServletException {
 		String contentType = request.getContentType();
 		if (contentType != null) {
 			if ("application/x-www-form-urlencoded".equals(contentType))

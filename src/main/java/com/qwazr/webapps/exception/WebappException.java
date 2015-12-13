@@ -39,7 +39,7 @@ public class WebappException extends AbstractWebappException {
 	 */
 	private static final long serialVersionUID = -1221758741584043195L;
 
-	public static enum Title {
+	public enum Title {
 
 		ERROR, SCRIPT_ERROR, QUERY_ERROR, VIEW_ERROR, BODY_ERROR, NOT_FOUND_ERROR;
 
@@ -67,7 +67,7 @@ public class WebappException extends AbstractWebappException {
 	}
 
 	public WebappException(Status status) {
-		this(status, (Title) null, (String) null);
+		this(status, null, (String) null);
 	}
 
 	public WebappException(Status status, Title title, Throwable e) {

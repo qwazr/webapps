@@ -31,10 +31,10 @@ public interface WebappManagerServiceInterface {
 
 	@GET
 	@Produces(MediaType.APPLICATION_JSON)
-	public Set<String> list();
+	Set<String> list();
 
 	@GET
 	@Path("/{webapp-name}")
 	@Produces(MediaType.APPLICATION_JSON)
-	public WebappDefinition get(@PathParam("webapp-name") String webappName);
+	WebappDefinition get(@PathParam("webapp-name") String webappName);
 }
