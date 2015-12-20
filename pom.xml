@@ -10,7 +10,7 @@
     <parent>
         <groupId>com.qwazr</groupId>
         <artifactId>qwazr-parent</artifactId>
-        <version>1.0.0-SNAPSHOT</version>
+        <version>1.0.1-SNAPSHOT</version>
     </parent>
 
     <dependencies>
@@ -29,7 +29,6 @@
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-connectors</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
             <exclusions>
                 <exclusion>
                     <artifactId>asm</artifactId>
@@ -40,22 +39,18 @@
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-tools</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-utils</artifactId>
-            <version>1.0.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-cluster</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-job</artifactId>
-            <version>1.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
