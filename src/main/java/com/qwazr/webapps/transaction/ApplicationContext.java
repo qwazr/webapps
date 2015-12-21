@@ -25,6 +25,7 @@ import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ExecutorService;
 
 public class ApplicationContext implements Closeable, AutoCloseable {
 
@@ -42,8 +43,8 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 
 	private final LockUtils.ReadWriteLock sessionsLock = new LockUtils.ReadWriteLock();
 
-	ApplicationContext(String contextPath, WebappDefinition webappDefinition, ApplicationContext oldContext)
-					throws IOException, URISyntaxException {
+	ApplicationContext(ExecutorService executorService, String contextPath, WebappDefinition webappDefinition,
+			ApplicationContext oldContext) throws IOException, URISyntaxException {
 		this.contextPath = contextPath.intern();
 		this.webappDefinition = webappDefinition;
 
@@ -52,7 +53,7 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 		staticMatchers = PathBind.loadMatchers(webappDefinition.statics);
 
 		if (webappDefinition.javac != null && webappDefinition.javac.source_root != null) {
-			compilerLoader = FileClassCompilerLoader.newInstance(webappDefinition.javac);
+			compilerLoader = FileClassCompilerLoader.newInstance(executorService, webappDefinition.javac);
 		} else {
 			compilerLoader = null;
 		}

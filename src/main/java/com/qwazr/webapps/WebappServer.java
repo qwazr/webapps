@@ -41,10 +41,14 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class WebappServer extends AbstractServer {
 
 	public final static String SERVICE_NAME_WEBAPPS = "webapps";
+
+	private final ExecutorService executorService;
 
 	private final static ServerDefinition serverDefinition = new ServerDefinition();
 
@@ -56,6 +60,7 @@ public class WebappServer extends AbstractServer {
 
 	private WebappServer() {
 		super(serverDefinition);
+		executorService = Executors.newCachedThreadPool();
 	}
 
 	public static class WebappApplication extends ServletApplication implements SessionListener {
@@ -65,13 +70,13 @@ public class WebappServer extends AbstractServer {
 
 		//TODO Parameters for fileupload limitation
 		private final static MultipartConfigElement multipartConfigElement = new MultipartConfigElement(
-						System.getProperty("java.io.tmpdir"));
+				System.getProperty("java.io.tmpdir"));
 
 		@Override
 		protected List<ServletInfo> getServletInfos() {
 			List<ServletInfo> servletInfos = new ArrayList<ServletInfo>();
 			servletInfos.add(Servlets.servlet("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
-							.setMultipartConfig(multipartConfigElement));
+					.setMultipartConfig(multipartConfigElement));
 			return servletInfos;
 		}
 
@@ -112,7 +117,7 @@ public class WebappServer extends AbstractServer {
 
 	}
 
-	public static void load(File data_directory) throws IOException {
+	public static void load(ExecutorService executorService, File data_directory) throws IOException {
 
 		File webapps_directory = new File(data_directory, SERVICE_NAME_WEBAPPS);
 		if (!webapps_directory.exists())
@@ -120,7 +125,7 @@ public class WebappServer extends AbstractServer {
 		// Create the singletons
 		ControllerManager.load(data_directory);
 		StaticManager.load(data_directory);
-		WebappManager.load(webapps_directory);
+		WebappManager.load(executorService, webapps_directory);
 	}
 
 	@Override
@@ -129,7 +134,7 @@ public class WebappServer extends AbstractServer {
 		ClusterServer.load(getWebApplicationPublicAddress(), currentDataDir);
 		ConnectorManagerImpl.load(currentDataDir);
 		ToolsManagerImpl.load(currentDataDir);
-		load(currentDataDir);
+		load(executorService, currentDataDir);
 	}
 
 	@Override
@@ -147,8 +152,8 @@ public class WebappServer extends AbstractServer {
 		return null;
 	}
 
-	public static void main(String[] args) throws IOException, ParseException, ServletException, InstantiationException,
-					IllegalAccessException {
+	public static void main(String[] args)
+			throws IOException, ParseException, ServletException, InstantiationException, IllegalAccessException {
 		new WebappServer().start(args);
 		ClusterManager.INSTANCE.registerMe(SERVICE_NAME_WEBAPPS);
 	}

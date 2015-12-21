@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
 
 public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 
@@ -34,26 +35,28 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 
 	public static volatile WebappManager INSTANCE = null;
 
-	public static void load(File webappDirectory) throws IOException {
+	public static void load(ExecutorService executorService, File webappDirectory) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
 		try {
-			INSTANCE = new WebappManager(webappDirectory);
+			INSTANCE = new WebappManager(executorService, webappDirectory);
 		} catch (ServerException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
+	private final ExecutorService executorService;
 	private final Map<String, ApplicationContext> applicationContextMap;
 	private final LockUtils.ReadWriteLock contextsLock = new LockUtils.ReadWriteLock();
 
-	private WebappManager(File webappDirectory) throws IOException, ServerException {
+	private WebappManager(ExecutorService executorService, File webappDirectory) throws IOException, ServerException {
 		super(webappDirectory, WebappDefinition.class);
+		this.executorService = executorService;
 		applicationContextMap = new ConcurrentHashMap<>();
 	}
 
 	private ApplicationContext getApplicationContext(String contextPath, WebappDefinition webappDefinition)
-					throws IOException, URISyntaxException {
+			throws IOException, URISyntaxException {
 		contextsLock.r.lock();
 		try {
 			ApplicationContext existingContext = applicationContextMap.get(contextPath);
@@ -68,8 +71,8 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 			if (existingContext != null && existingContext.getWebappDefinition() == webappDefinition)
 				return existingContext;
 			logger.info("Load application " + contextPath);
-			ApplicationContext applicationContext = new ApplicationContext(contextPath, webappDefinition,
-							existingContext);
+			ApplicationContext applicationContext = new ApplicationContext(executorService, contextPath,
+					webappDefinition, existingContext);
 			applicationContextMap.put(contextPath, applicationContext);
 			return applicationContext;
 		} finally {
