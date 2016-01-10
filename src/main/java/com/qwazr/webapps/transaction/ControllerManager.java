@@ -15,7 +15,7 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import com.qwazr.job.script.ScriptConsole;
+import com.qwazr.scripts.ScriptConsole;
 import com.qwazr.utils.IOUtils;
 import com.qwazr.utils.ScriptUtils;
 import com.qwazr.utils.StringUtils;

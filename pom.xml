@@ -50,7 +50,7 @@
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
-            <artifactId>qwazr-job</artifactId>
+            <artifactId>qwazr-scripts</artifactId>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
