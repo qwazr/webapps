@@ -16,7 +16,6 @@
 package com.qwazr.webapps;
 
 import com.qwazr.cluster.ClusterServer;
-import com.qwazr.cluster.manager.ClusterManager;
 import com.qwazr.connectors.ConnectorManagerImpl;
 import com.qwazr.tools.ToolsManagerImpl;
 import com.qwazr.utils.server.AbstractServer;
@@ -155,7 +154,6 @@ public class WebappServer extends AbstractServer {
 	public static void main(String[] args)
 			throws IOException, ParseException, ServletException, InstantiationException, IllegalAccessException {
 		new WebappServer().start(args);
-		ClusterManager.INSTANCE.registerMe(SERVICE_NAME_WEBAPPS);
 	}
 
 	@Override
