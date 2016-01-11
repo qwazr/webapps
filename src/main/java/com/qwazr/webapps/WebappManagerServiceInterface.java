@@ -16,6 +16,7 @@
 package com.qwazr.webapps;
 
 import com.qwazr.webapps.transaction.WebappDefinition;
+import com.qwazr.webapps.transaction.WebappManager;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
@@ -25,7 +26,7 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 import java.util.Set;
 
-@RolesAllowed(WebappServer.SERVICE_NAME_WEBAPPS)
+@RolesAllowed(WebappManager.SERVICE_NAME_WEBAPPS)
 @Path("/webapps")
 public interface WebappManagerServiceInterface {
 

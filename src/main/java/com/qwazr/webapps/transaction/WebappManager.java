@@ -18,6 +18,8 @@ package com.qwazr.webapps.transaction;
 import com.qwazr.utils.LockUtils;
 import com.qwazr.utils.json.DirectoryJsonManager;
 import com.qwazr.utils.server.ServerException;
+import com.qwazr.webapps.WebappManagerServiceImpl;
+import com.qwazr.webapps.WebappManagerServiceInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,18 +33,33 @@ import java.util.concurrent.ExecutorService;
 
 public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 
+	public final static String SERVICE_NAME_WEBAPPS = "webapps";
+
 	private static final Logger logger = LoggerFactory.getLogger(WebappManager.class);
 
 	public static volatile WebappManager INSTANCE = null;
 
-	public static void load(ExecutorService executorService, File webappDirectory) throws IOException {
+	public synchronized static Class<? extends WebappManagerServiceInterface> load(ExecutorService executorService,
+			File data_directory) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
+		ControllerManager.load(data_directory);
+		StaticManager.load(data_directory);
+		File webapps_directory = new File(data_directory, SERVICE_NAME_WEBAPPS);
+		if (!webapps_directory.exists())
+			webapps_directory.mkdir();
 		try {
-			INSTANCE = new WebappManager(executorService, webappDirectory);
+			INSTANCE = new WebappManager(executorService, webapps_directory);
+			return WebappManagerServiceImpl.class;
 		} catch (ServerException e) {
 			throw new RuntimeException(e);
 		}
+	}
+
+	public static WebappManager getInstance() {
+		if (INSTANCE == null)
+			throw new RuntimeException("The webapps service is not enabled");
+		return INSTANCE;
 	}
 
 	private final ExecutorService executorService;
