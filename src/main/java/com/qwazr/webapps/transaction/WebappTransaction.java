@@ -90,9 +90,9 @@ public class WebappTransaction {
 			return;
 		}
 		ControllerManager controllerManager = ControllerManager.INSTANCE;
-		File controllerFile = controllerManager.findController(context, pathInfo);
-		if (controllerFile != null) {
-			controllerManager.handle(this, controllerFile);
+		String controllerPath = context.findController(pathInfo);
+		if (controllerPath != null) {
+			controllerManager.handle(this, controllerPath);
 			return;
 		}
 		throw new WebappException(Status.NOT_FOUND);

@@ -15,7 +15,6 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import com.qwazr.utils.FileClassCompilerLoader;
 import com.qwazr.utils.LockUtils;
 
 import javax.servlet.http.HttpSession;
@@ -39,12 +38,10 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 
 	private final List<PathBind> staticMatchers;
 
-	private final FileClassCompilerLoader compilerLoader;
-
 	private final LockUtils.ReadWriteLock sessionsLock = new LockUtils.ReadWriteLock();
 
 	ApplicationContext(ExecutorService executorService, String contextPath, WebappDefinition webappDefinition,
-			ApplicationContext oldContext) throws IOException, URISyntaxException {
+					ApplicationContext oldContext) throws IOException, URISyntaxException {
 		this.contextPath = contextPath.intern();
 		this.webappDefinition = webappDefinition;
 
@@ -52,11 +49,6 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 		controllerMatchers = PathBind.loadMatchers(webappDefinition.controllers);
 		staticMatchers = PathBind.loadMatchers(webappDefinition.statics);
 
-		if (webappDefinition.javac != null && webappDefinition.javac.source_root != null) {
-			compilerLoader = FileClassCompilerLoader.newInstance(executorService, webappDefinition.javac);
-		} else {
-			compilerLoader = null;
-		}
 		// Prepare the sessions
 		this.sessions = oldContext != null ? oldContext.sessions : new HashMap<String, WebappHttpSessionImpl>();
 	}
@@ -68,8 +60,6 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 	public void close() throws IOException {
 		if (controllerMatchers != null)
 			controllerMatchers.clear();
-		if (compilerLoader != null)
-			compilerLoader.close();
 	}
 
 	WebappHttpSession getSessionOrCreate(HttpSession session) {
@@ -95,10 +85,6 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 		} finally {
 			sessionsLock.w.unlock();
 		}
-	}
-
-	FileClassCompilerLoader getCompilerLoader() {
-		return compilerLoader;
 	}
 
 	void invalidateSession(String sessionId) {

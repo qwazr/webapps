@@ -15,7 +15,9 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import com.qwazr.compiler.CompilerManager;
 import com.qwazr.scripts.ScriptConsole;
+import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.IOUtils;
 import com.qwazr.utils.ScriptUtils;
 import com.qwazr.utils.StringUtils;
@@ -35,6 +37,7 @@ import java.net.URISyntaxException;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.util.Map;
+import java.util.Objects;
 
 public class ControllerManager {
 
@@ -56,17 +59,18 @@ public class ControllerManager {
 		scriptEngine = manager.getEngineByName("nashorn");
 	}
 
-	File findController(ApplicationContext context, String requestPath) throws URISyntaxException, IOException {
-		// First we try to find the controller using configuration mapping
-		String ctrlrPath = context.findController(requestPath);
-		if (ctrlrPath == null)
-			return null;
-		File ctrlrFile = new File(dataDir, ctrlrPath);
-		if (!ctrlrFile.exists())
-			throw new FileNotFoundException("Controller not found");
-		if (!ctrlrFile.isFile())
-			throw new FileNotFoundException("Controller not found");
-		return ctrlrFile;
+	void handle(WebappTransaction transaction, String controllerPath)
+					throws URISyntaxException, IOException, InterruptedException, ReflectiveOperationException,
+					ServletException, ScriptException, PrivilegedActionException {
+		if (controllerPath == null)
+			return;
+		File controllerFile = new File(dataDir, controllerPath);
+		if (controllerFile.exists()) {
+			if (!controllerFile.isFile())
+				throw new FileNotFoundException("Controller not found: " + controllerPath);
+			handleFile(transaction, controllerFile);
+		} else
+			handleJavaClass(transaction, controllerPath);
 	}
 
 	public static class RestrictedAccessControlContext {
@@ -89,25 +93,24 @@ public class ControllerManager {
 			// Required for templates
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
-			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
+			INSTANCE = new AccessControlContext(new ProtectionDomain[] {
+							new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
 		}
 	}
 
-	void handle(WebappTransaction transaction, File controllerFile)
-			throws IOException, ScriptException, PrivilegedActionException, InterruptedException,
-			ReflectiveOperationException, ServletException {
+	private void handleFile(WebappTransaction transaction, File controllerFile)
+					throws IOException, ScriptException, PrivilegedActionException, InterruptedException,
+					ReflectiveOperationException, ServletException {
 		String ext = FilenameUtils.getExtension(controllerFile.getName());
 		if (StringUtils.isEmpty(ext))
-			throw new ScriptException("Unsupported controller extension: " + ext);
+			throw new ScriptException("Unsupported controller " + controllerFile.getName());
 		if ("js".equals(ext))
 			handleJavascript(transaction, controllerFile);
-		else if ("java".equals(ext))
-			handleJava(transaction, controllerFile);
+		throw new ScriptException("Unsupported controller extension: " + controllerFile.getName());
 	}
 
 	private void handleJavascript(WebappTransaction transaction, File controllerFile)
-			throws IOException, ScriptException, PrivilegedActionException {
+					throws IOException, ScriptException, PrivilegedActionException {
 		WebappHttpResponse response = transaction.getResponse();
 		response.setHeader("Cache-Control", "max-age=0, no-cache, no-store");
 		Bindings bindings = scriptEngine.createBindings();
@@ -127,13 +130,16 @@ public class ControllerManager {
 		}
 	}
 
-	private void handleJava(WebappTransaction transaction, File controllerFile)
-			throws IOException, InterruptedException, ScriptException, ReflectiveOperationException, ServletException {
+	private void handleJavaClass(WebappTransaction transaction, String className)
+					throws IOException, InterruptedException, ScriptException, ReflectiveOperationException,
+					ServletException {
 		IOUtils.CloseableList closeables = new IOUtils.CloseableList();
 		WebappHttpResponse response = transaction.getResponse();
 		response.getVariables().put("closeable", closeables);
-		HttpServlet servlet = (HttpServlet) transaction.getContext().getCompilerLoader().loadClass(controllerFile)
-				.newInstance();
+		Class<? extends HttpServlet> servletClass = ClassLoaderUtils
+						.findClass(CompilerManager.getJavaClassLoader(), className);
+		Objects.requireNonNull(servletClass, "Class not found: " + className);
+		HttpServlet servlet = servletClass.newInstance();
 		try {
 			servlet.service(transaction.getRequest(), transaction.getResponse());
 		} finally {

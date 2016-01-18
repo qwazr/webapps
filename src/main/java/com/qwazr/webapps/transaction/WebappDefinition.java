@@ -15,15 +15,13 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import java.util.Map;
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.qwazr.utils.FileClassCompilerLoader;
+
+import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public class WebappDefinition {
 
 	public final Map<String, String> controllers = null;
 	public final Map<String, String> statics = null;
-	public final FileClassCompilerLoader.JavacDefinition javac = null;
 }
