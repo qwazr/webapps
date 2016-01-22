@@ -22,7 +22,6 @@ import io.undertow.server.session.Session;
 import io.undertow.server.session.SessionListener;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.ServletInfo;
-import org.apache.commons.lang.StringUtils;
 
 import javax.servlet.MultipartConfigElement;
 import java.util.ArrayList;
@@ -35,19 +34,14 @@ public class WebappApplication extends ServletApplication implements SessionList
 
 	//TODO Parameters for fileupload limitation
 	private final static MultipartConfigElement multipartConfigElement = new MultipartConfigElement(
-			System.getProperty("java.io.tmpdir"));
+					System.getProperty("java.io.tmpdir"));
 
 	@Override
 	protected List<ServletInfo> getServletInfos() {
 		List<ServletInfo> servletInfos = new ArrayList<ServletInfo>();
 		servletInfos.add(Servlets.servlet("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
-				.setMultipartConfig(multipartConfigElement));
+						.setMultipartConfig(multipartConfigElement));
 		return servletInfos;
-	}
-
-	@Override
-	protected SessionListener getSessionListener() {
-		return this;
 	}
 
 	@Override
@@ -73,11 +67,6 @@ public class WebappApplication extends ServletApplication implements SessionList
 
 	@Override
 	public void sessionIdChanged(Session session, String oldSessionId) {
-	}
-
-	@Override
-	protected String getContextPath() {
-		return StringUtils.EMPTY;
 	}
 
 }

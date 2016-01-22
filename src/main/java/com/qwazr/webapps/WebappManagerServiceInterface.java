@@ -15,6 +15,8 @@
  **/
 package com.qwazr.webapps;
 
+import com.qwazr.utils.server.ServiceInterface;
+import com.qwazr.utils.server.ServiceName;
 import com.qwazr.webapps.transaction.WebappDefinition;
 import com.qwazr.webapps.transaction.WebappManager;
 
@@ -28,14 +30,15 @@ import java.util.Set;
 
 @RolesAllowed(WebappManager.SERVICE_NAME_WEBAPPS)
 @Path("/webapps")
-public interface WebappManagerServiceInterface {
+@ServiceName(WebappManager.SERVICE_NAME_WEBAPPS)
+public interface WebappManagerServiceInterface extends ServiceInterface {
 
 	@GET
-	@Produces(MediaType.APPLICATION_JSON)
+	@Produces(ServiceInterface.APPLICATION_JSON_UTF8)
 	Set<String> list();
 
 	@GET
 	@Path("/{webapp-name}")
-	@Produces(MediaType.APPLICATION_JSON)
+	@Produces(ServiceInterface.APPLICATION_JSON_UTF8)
 	WebappDefinition get(@PathParam("webapp-name") String webappName);
 }
