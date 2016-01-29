@@ -18,6 +18,7 @@ package com.qwazr.webapps.transaction;
 import com.qwazr.utils.LockUtils;
 import com.qwazr.utils.json.DirectoryJsonManager;
 import com.qwazr.utils.server.ServerException;
+import com.qwazr.utils.server.ServletApplication;
 import com.qwazr.webapps.WebappManagerServiceImpl;
 import com.qwazr.webapps.WebappManagerServiceInterface;
 import org.slf4j.Logger;
@@ -40,7 +41,7 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 	public static volatile WebappManager INSTANCE = null;
 
 	public synchronized static Class<? extends WebappManagerServiceInterface> load(ExecutorService executorService,
-			File data_directory) throws IOException {
+					File data_directory) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
 		ControllerManager.load(data_directory);
@@ -65,15 +66,17 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 	private final ExecutorService executorService;
 	private final Map<String, ApplicationContext> applicationContextMap;
 	private final LockUtils.ReadWriteLock contextsLock = new LockUtils.ReadWriteLock();
+	private final ServletApplication servletApplication;
 
 	private WebappManager(ExecutorService executorService, File webappDirectory) throws IOException, ServerException {
 		super(webappDirectory, WebappDefinition.class);
 		this.executorService = executorService;
 		applicationContextMap = new ConcurrentHashMap<>();
+		this.servletApplication = new WebappApplication(webappDirectory);
 	}
 
 	private ApplicationContext getApplicationContext(String contextPath, WebappDefinition webappDefinition)
-			throws IOException, URISyntaxException {
+					throws IOException, URISyntaxException {
 		contextsLock.r.lock();
 		try {
 			ApplicationContext existingContext = applicationContextMap.get(contextPath);
@@ -89,12 +92,16 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 				return existingContext;
 			logger.info("Load application " + contextPath);
 			ApplicationContext applicationContext = new ApplicationContext(executorService, contextPath,
-					webappDefinition, existingContext);
+							webappDefinition, existingContext);
 			applicationContextMap.put(contextPath, applicationContext);
 			return applicationContext;
 		} finally {
 			contextsLock.w.unlock();
 		}
+	}
+
+	public ServletApplication getServletApplication() {
+		return servletApplication;
 	}
 
 	public Set<String> getNameSet() {
@@ -117,18 +124,5 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 		if (applicationContext == null)
 			return null;
 		return applicationContext;
-	}
-
-	public void destroySession(String id) {
-		id = id.intern();
-		if (logger.isInfoEnabled())
-			logger.info("Invalid session " + id);
-		contextsLock.r.lock();
-		try {
-			for (ApplicationContext context : applicationContextMap.values())
-				context.invalidateSession(id);
-		} finally {
-			contextsLock.r.unlock();
-		}
 	}
 }

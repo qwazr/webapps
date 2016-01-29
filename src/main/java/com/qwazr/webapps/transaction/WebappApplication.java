@@ -13,23 +13,31 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-package com.qwazr.webapps;
+package com.qwazr.webapps.transaction;
 
+import com.qwazr.utils.server.InFileSessionPersistenceManager;
 import com.qwazr.utils.server.ServletApplication;
-import com.qwazr.webapps.transaction.WebappManager;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.session.Session;
-import io.undertow.server.session.SessionListener;
+import com.qwazr.webapps.WebappHttpServlet;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.api.SessionPersistenceManager;
 
 import javax.servlet.MultipartConfigElement;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-public class WebappApplication extends ServletApplication implements SessionListener {
+class WebappApplication extends ServletApplication {
 
-	public WebappApplication() {
+	public final static String SESSIONS_PERSISTENCE_DIR = "sessions";
+
+	private final SessionPersistenceManager sessionPersistenceManager;
+
+	WebappApplication(File baseDir) {
+		File sessionPersistenceDir = new File(baseDir, SESSIONS_PERSISTENCE_DIR);
+		if (!sessionPersistenceDir.exists())
+			sessionPersistenceDir.mkdir();
+		sessionPersistenceManager = new InFileSessionPersistenceManager(sessionPersistenceDir);
 	}
 
 	//TODO Parameters for fileupload limitation
@@ -45,28 +53,7 @@ public class WebappApplication extends ServletApplication implements SessionList
 	}
 
 	@Override
-	public void sessionCreated(Session session, HttpServerExchange exchange) {
+	protected SessionPersistenceManager getSessionPersistenceManager() {
+		return sessionPersistenceManager;
 	}
-
-	@Override
-	public void sessionDestroyed(Session session, HttpServerExchange exchange, SessionDestroyedReason reason) {
-		WebappManager.INSTANCE.destroySession(session.getId());
-	}
-
-	@Override
-	public void attributeAdded(Session session, String name, Object value) {
-	}
-
-	@Override
-	public void attributeUpdated(Session session, String name, Object newValue, Object oldValue) {
-	}
-
-	@Override
-	public void attributeRemoved(Session session, String name, Object oldValue) {
-	}
-
-	@Override
-	public void sessionIdChanged(Session session, String oldSessionId) {
-	}
-
 }

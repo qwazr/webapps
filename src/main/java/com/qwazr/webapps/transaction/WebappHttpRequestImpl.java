@@ -353,7 +353,7 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 		HttpSession session = request.getSession(create);
 		if (session == null)
 			return null;
-		return context.getSessionOrCreate(session);
+		return new WebappHttpSessionImpl(context, session);
 	}
 
 	@Override

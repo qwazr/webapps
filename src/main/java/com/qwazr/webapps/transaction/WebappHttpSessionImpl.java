@@ -15,44 +15,36 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-
-import com.qwazr.utils.LockUtils;
-
 import javax.servlet.ServletContext;
-
+import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpSessionContext;
+import java.util.*;
 
 public class WebappHttpSessionImpl implements WebappHttpSession {
 
-	private ApplicationContext context;
-	private final String id;
-	private final long creationTime;
-	private HashMap<String, Object> attributes;
-	private final LockUtils.ReadWriteLock attrRwl = new LockUtils.ReadWriteLock();
+	private final ApplicationContext context;
+	private final HttpSession session;
+	private final AttributesMap attributesMap;
 
-	WebappHttpSessionImpl(ApplicationContext context, String id) {
+	WebappHttpSessionImpl(ApplicationContext context, HttpSession session) {
 		this.context = context;
-		this.id = id;
-		this.creationTime = System.currentTimeMillis();
-		this.attributes = null;
+		this.session = session;
+		this.attributesMap = new AttributesMap();
 	}
 
 	@Override
 	public long getCreationTime() {
-		return creationTime;
+		return session.getCreationTime();
 	}
 
 	@Override
 	public String getId() {
-		return id;
+		return session.getId();
 	}
 
 	@Override
 	public long getLastAccessedTime() {
-		return 0;
+		return session.getLastAccessedTime();
 	}
 
 	@Override
@@ -62,12 +54,12 @@ public class WebappHttpSessionImpl implements WebappHttpSession {
 
 	@Override
 	public void setMaxInactiveInterval(int interval) {
-
+		session.setMaxInactiveInterval(interval);
 	}
 
 	@Override
 	public int getMaxInactiveInterval() {
-		return 0;
+		return session.getMaxInactiveInterval();
 	}
 
 	@Override
@@ -78,107 +70,181 @@ public class WebappHttpSessionImpl implements WebappHttpSession {
 
 	@Override
 	public Object getAttribute(String name) {
-		if (name == null)
-			return null;
-		attrRwl.r.lock();
-		try {
-			if (attributes == null)
-				return null;
-			return attributes.get(name.intern());
-		} finally {
-			attrRwl.r.unlock();
-		}
+		return session.getAttribute(name);
 	}
 
 	@Override
 	@Deprecated
 	public Object getValue(String name) {
-		return getAttribute(name);
+		return session.getValue(name);
 	}
 
 	@Override
 	public Enumeration<String> getAttributeNames() {
-		return null;
+		return session.getAttributeNames();
 	}
 
 	@Override
 	@Deprecated
 	public String[] getValueNames() {
-		return new String[0];
+		return session.getValueNames();
 	}
 
 	@Override
 	public void setAttribute(String name, Object value) {
-		if (name == null)
-			return;
-		attrRwl.w.lock();
-		try {
-			if (attributes == null) {
-				if (value == null)
-					return;
-				attributes = new LinkedHashMap<String, Object>();
-			}
-			attributes.put(name.intern(), value);
-		} finally {
-			attrRwl.w.unlock();
-		}
+		session.setAttribute(name, value);
 	}
 
 	@Override
 	@Deprecated
 	public void putValue(String name, Object value) {
-		setAttribute(name, value);
+		session.putValue(name, value);
 	}
 
 	@Override
 	public boolean isAttribute(String name) {
-		if (name == null)
-			return false;
-		attrRwl.r.lock();
-		try {
-			if (attributes == null)
-				return false;
-			return attributes.containsKey(name.intern());
-		} finally {
-			attrRwl.r.unlock();
-		}
+		return session.getAttribute(name) != null;
 	}
 
 	@Override
 	public void removeAttribute(String name) {
-		if (name == null)
-			return;
-		attrRwl.w.lock();
-		try {
-			if (attributes == null)
-				return;
-			attributes.remove(name.intern());
-		} finally {
-			attrRwl.w.unlock();
-		}
+		session.removeAttribute(name);
 	}
 
 	@Override
 	@Deprecated
 	public void removeValue(String name) {
-		removeAttribute(name);
+		session.removeValue(name);
 	}
 
 	@Override
 	public void invalidate() {
-		attrRwl.w.lock();
-		try {
-			if (attributes != null)
-				attributes.clear();
-		} finally {
-			attrRwl.w.unlock();
-		}
-		context.invalidateSession(id);
+		session.invalidate();
 	}
 
 	@Override
 	public boolean isNew() {
-		return false;
+		return session.isNew();
 	}
 
+	@Override
+	public Map<String, Object> getAttributes() {
+		return attributesMap;
+	}
+
+	private class AttributesMap implements Map<String, Object> {
+		@Override
+		public int size() {
+			int i = 0;
+			Enumeration<String> e = session.getAttributeNames();
+			if (e == null)
+				return 0;
+			while (e.hasMoreElements()) {
+				e.nextElement();
+				i++;
+			}
+			return i;
+		}
+
+		@Override
+		public boolean isEmpty() {
+			Enumeration<String> e = session.getAttributeNames();
+			if (e == null)
+				return true;
+			return !e.hasMoreElements();
+		}
+
+		@Override
+		public boolean containsKey(Object key) {
+			if (key == null)
+				return false;
+			return isAttribute(key.toString());
+		}
+
+		@Override
+		public boolean containsValue(Object value) {
+			if (value == null)
+				return false;
+			Enumeration<String> e = session.getAttributeNames();
+			if (e == null)
+				return false;
+			while (e.hasMoreElements())
+				if (value.equals(e.nextElement()))
+					return true;
+			return false;
+		}
+
+		@Override
+		public Object get(Object key) {
+			if (key == null)
+				return null;
+			return session.getAttribute(key.toString());
+		}
+
+		@Override
+		public Object put(String key, Object value) {
+			Object old = session.getAttribute(key);
+			session.setAttribute(key, value);
+			return old;
+		}
+
+		@Override
+		public Object remove(Object key) {
+			if (key == null)
+				return null;
+			String attr = key.toString();
+			Object old = session.getAttribute(attr);
+			session.removeAttribute(attr);
+			return old;
+		}
+
+		@Override
+		public void putAll(Map<? extends String, ?> m) {
+			if (m == null)
+				return;
+			m.forEach((key, value) -> put(key, value));
+		}
+
+		@Override
+		public void clear() {
+			Enumeration<String> e = session.getAttributeNames();
+			if (e == null)
+				return;
+			while (e.hasMoreElements())
+				removeAttribute(e.nextElement());
+		}
+
+		@Override
+		public Set<String> keySet() {
+			LinkedHashSet<String> set = new LinkedHashSet<String>();
+			Enumeration<String> e = session.getAttributeNames();
+			if (e != null)
+				while (e.hasMoreElements())
+					set.add(e.nextElement());
+			return set;
+		}
+
+		@Override
+		public Collection<Object> values() {
+			ArrayList<Object> values = new ArrayList<>();
+			Enumeration<String> e = session.getAttributeNames();
+			if (e != null)
+				while (e.hasMoreElements())
+					values.add(session.getAttribute(e.nextElement()));
+			return values;
+		}
+
+		@Override
+		public Set<Entry<String, Object>> entrySet() {
+			LinkedHashMap<String, Object> map = new LinkedHashMap();
+			Enumeration<String> e = session.getAttributeNames();
+			if (e != null) {
+				while (e.hasMoreElements()) {
+					String key = e.nextElement();
+					map.put(key, session.getAttribute(key));
+				}
+			}
+			return map.entrySet();
+		}
+	}
 }

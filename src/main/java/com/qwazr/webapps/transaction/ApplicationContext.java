@@ -32,7 +32,7 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 
 	private final WebappDefinition webappDefinition;
 
-	private final Map<String, WebappHttpSessionImpl> sessions;
+	//private final Map<String, WebappHttpSessionImpl> sessions;
 
 	private final List<PathBind> controllerMatchers;
 
@@ -50,7 +50,7 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 		staticMatchers = PathBind.loadMatchers(webappDefinition.statics);
 
 		// Prepare the sessions
-		this.sessions = oldContext != null ? oldContext.sessions : new HashMap<String, WebappHttpSessionImpl>();
+		//this.sessions = oldContext != null ? oldContext.sessions : new HashMap<String, WebappHttpSessionImpl>();
 	}
 
 	WebappDefinition getWebappDefinition() {
@@ -62,10 +62,11 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 			controllerMatchers.clear();
 	}
 
+	/*
 	WebappHttpSession getSessionOrCreate(HttpSession session) {
 		if (session == null)
 			return null;
-		String id = session.getId().intern();
+		String id = session.getId();
 		sessionsLock.r.lock();
 		try {
 			WebappHttpSession webappSession = sessions.get(id);
@@ -79,7 +80,7 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 			WebappHttpSessionImpl webappSession = sessions.get(id);
 			if (webappSession != null)
 				return webappSession;
-			webappSession = new WebappHttpSessionImpl(this, id);
+			webappSession = new WebappHttpSessionImpl(this, session);
 			sessions.put(id, webappSession);
 			return webappSession;
 		} finally {
@@ -95,6 +96,7 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 			sessionsLock.w.unlock();
 		}
 	}
+	*/
 
 	public String getContextPath() {
 		return contextPath;
