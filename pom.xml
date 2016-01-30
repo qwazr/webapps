@@ -28,17 +28,13 @@
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
-            <artifactId>qwazr-connectors</artifactId>
+            <artifactId>qwazr-library</artifactId>
             <exclusions>
                 <exclusion>
                     <artifactId>asm</artifactId>
                     <groupId>asm</groupId>
                 </exclusion>
             </exclusions>
-        </dependency>
-        <dependency>
-            <groupId>com.qwazr</groupId>
-            <artifactId>qwazr-tools</artifactId>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
