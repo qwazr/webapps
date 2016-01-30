@@ -15,7 +15,9 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Collection;
 import java.util.Map;
@@ -23,6 +25,7 @@ import java.util.HashMap;
 import java.util.function.Consumer;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class WebappDefinition {
 
 	public final Map<String, String> controllers;
@@ -53,5 +56,10 @@ public class WebappDefinition {
 			}
 		});
 		return new WebappDefinition(controllers, statics);
+	}
+
+	@JsonIgnore
+	public boolean isEmpty() {
+		return (controllers == null || controllers.isEmpty()) && (statics == null || statics.isEmpty());
 	}
 }

@@ -26,7 +26,8 @@ public class WebappManagerServiceImpl implements WebappManagerServiceInterface {
 	@Override
 	public WebappDefinition get() {
 		try {
-			return WebappManager.INSTANCE.getWebAppDefinition();
+			WebappDefinition result = WebappManager.INSTANCE.getWebAppDefinition();
+			return result == null ? new WebappDefinition() : result;
 		} catch (IOException e) {
 			throw ServerException.getJsonException(e);
 		}

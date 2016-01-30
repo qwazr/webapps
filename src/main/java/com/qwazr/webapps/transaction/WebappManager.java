@@ -128,8 +128,10 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		try {
 			final WebappDefinition webappDefinition = JsonMapper.MAPPER.readValue(jsonFile, WebappDefinition.class);
 
-			if (webappDefinition == null)
+			if (webappDefinition == null || webappDefinition.isEmpty()) {
+				unloadWebappDefinition(jsonFile);
 				return;
+			}
 
 			if (logger.isInfoEnabled())
 				logger.info("Load WebApp configuration file: " + jsonFile.getAbsolutePath());
