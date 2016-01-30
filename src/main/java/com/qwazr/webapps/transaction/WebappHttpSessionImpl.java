@@ -22,12 +22,10 @@ import java.util.*;
 
 public class WebappHttpSessionImpl implements WebappHttpSession {
 
-	private final ApplicationContext context;
 	private final HttpSession session;
 	private final AttributesMap attributesMap;
 
-	WebappHttpSessionImpl(ApplicationContext context, HttpSession session) {
-		this.context = context;
+	WebappHttpSessionImpl(HttpSession session) {
 		this.session = session;
 		this.attributesMap = new AttributesMap();
 	}

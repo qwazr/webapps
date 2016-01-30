@@ -25,34 +25,18 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response.Status;
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.PrivilegedActionException;
 
 public class WebappTransaction {
 
-	private final FilePath filePath;
-
-	private final ApplicationContext context;
 	private final WebappHttpRequest request;
 	private final WebappHttpResponse response;
 
 	public WebappTransaction(HttpServletRequest request, HttpServletResponse response, HttpBodyInterface body)
 			throws IOException, URISyntaxException {
-		FilePath fp = new FilePath(request.getPathInfo(), false);
-		// First we try to find a sub context
-		ApplicationContext ctx = WebappManager.INSTANCE.findApplicationContext(fp);
-		if (ctx == null) {
-			// The we test the ROOT context
-			fp = new FilePath(request.getPathInfo(), true);
-			ctx = WebappManager.INSTANCE.findApplicationContext(fp);
-			if (ctx == null)
-				throw new FileNotFoundException("No application found");
-		}
-		this.filePath = fp;
-		this.context = ctx;
-		this.request = new WebappHttpRequestImpl(context, request, body);
+		this.request = new WebappHttpRequestImpl(request, body);
 		final LibraryManager library = LibraryManager.getInstance();
 		if (library != null) {
 			this.request.setAttribute("tools", library);  // Todo: deprecated
@@ -70,10 +54,6 @@ public class WebappTransaction {
 		this.response.variable("session", this.request.getSession());
 	}
 
-	final ApplicationContext getContext() {
-		return context;
-	}
-
 	final WebappHttpRequest getRequest() {
 		return request;
 	}
@@ -82,13 +62,12 @@ public class WebappTransaction {
 		return response;
 	}
 
-	final FilePath getFilePath() {
-		return filePath;
-	}
-
 	public void execute()
 			throws IOException, URISyntaxException, ScriptException, PrivilegedActionException, InterruptedException,
 			ReflectiveOperationException, ServletException {
+		final ApplicationContext context = WebappManager.INSTANCE.getApplicationContext();
+		if (context == null)
+			return;
 		String pathInfo = request.getPathInfo();
 		StaticManager staticManager = StaticManager.INSTANCE;
 		File staticFile = staticManager.findStatic(context, pathInfo);

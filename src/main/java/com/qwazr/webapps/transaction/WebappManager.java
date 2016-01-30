@@ -16,23 +16,25 @@
 package com.qwazr.webapps.transaction;
 
 import com.qwazr.utils.LockUtils;
-import com.qwazr.utils.json.DirectoryJsonManager;
+import com.qwazr.utils.file.TrackedDirectory;
+import com.qwazr.utils.file.TrackedInterface;
+import com.qwazr.utils.json.JsonMapper;
 import com.qwazr.utils.server.ServerException;
 import com.qwazr.utils.server.ServletApplication;
 import com.qwazr.webapps.WebappManagerServiceImpl;
 import com.qwazr.webapps.WebappManagerServiceInterface;
+import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutorService;
 
-public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
+public class WebappManager implements TrackedInterface.FileChangeConsumer {
 
 	public final static String SERVICE_NAME_WEBAPPS = "webapps";
 
@@ -40,17 +42,15 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 
 	public static volatile WebappManager INSTANCE = null;
 
-	public synchronized static Class<? extends WebappManagerServiceInterface> load(ExecutorService executorService,
-					File data_directory) throws IOException {
+	public synchronized static Class<? extends WebappManagerServiceInterface> load(File data_directory,
+			TrackedDirectory etcTracker, Set<String> confSet, File tempDirectory) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
 		ControllerManager.load(data_directory);
 		StaticManager.load(data_directory);
-		File webapps_directory = new File(data_directory, SERVICE_NAME_WEBAPPS);
-		if (!webapps_directory.exists())
-			webapps_directory.mkdir();
 		try {
-			INSTANCE = new WebappManager(executorService, webapps_directory);
+			INSTANCE = new WebappManager(etcTracker, confSet, tempDirectory);
+			etcTracker.register(INSTANCE);
 			return WebappManagerServiceImpl.class;
 		} catch (ServerException e) {
 			throw new RuntimeException(e);
@@ -63,66 +63,104 @@ public class WebappManager extends DirectoryJsonManager<WebappDefinition> {
 		return INSTANCE;
 	}
 
-	private final ExecutorService executorService;
-	private final Map<String, ApplicationContext> applicationContextMap;
-	private final LockUtils.ReadWriteLock contextsLock = new LockUtils.ReadWriteLock();
-	private final ServletApplication servletApplication;
+	private final TrackedDirectory etcTracker;
+	private final Set<String> confSet;
 
-	private WebappManager(ExecutorService executorService, File webappDirectory) throws IOException, ServerException {
-		super(webappDirectory, WebappDefinition.class);
-		this.executorService = executorService;
-		applicationContextMap = new ConcurrentHashMap<>();
-		this.servletApplication = new WebappApplication(webappDirectory);
+	private final ServletApplication servletApplication;
+	private volatile ApplicationContext applicationContext;
+
+	private final LockUtils.ReadWriteLock mapLock = new LockUtils.ReadWriteLock();
+	private final Map<File, WebappDefinition> webappFileMap;
+
+	private WebappManager(TrackedDirectory etcTracker, Set<String> confSet, File tempDirectory)
+			throws IOException, ServerException {
+		this.webappFileMap = new HashMap<>();
+		this.confSet = confSet;
+		this.applicationContext = null;
+		this.etcTracker = etcTracker;
+		this.servletApplication = new WebappApplication(tempDirectory);
 	}
 
-	private ApplicationContext getApplicationContext(String contextPath, WebappDefinition webappDefinition)
-					throws IOException, URISyntaxException {
-		contextsLock.r.lock();
-		try {
-			ApplicationContext existingContext = applicationContextMap.get(contextPath);
-			if (existingContext != null && existingContext.getWebappDefinition() == webappDefinition)
-				return existingContext;
-		} finally {
-			contextsLock.r.unlock();
-		}
-		contextsLock.w.lock();
-		try {
-			ApplicationContext existingContext = applicationContextMap.get(contextPath);
-			if (existingContext != null && existingContext.getWebappDefinition() == webappDefinition)
-				return existingContext;
-			logger.info("Load application " + contextPath);
-			ApplicationContext applicationContext = new ApplicationContext(executorService, contextPath,
-							webappDefinition, existingContext);
-			applicationContextMap.put(contextPath, applicationContext);
-			return applicationContext;
-		} finally {
-			contextsLock.w.unlock();
-		}
+	private ApplicationContext buildApplicationContext() {
+		if (webappFileMap.isEmpty())
+			return null;
+		WebappDefinition globalWebapp = WebappDefinition.merge((webappFileMap.values()));
+		if (logger.isInfoEnabled())
+			logger.info("Load Web application");
+		return new ApplicationContext(globalWebapp);
 	}
 
 	public ServletApplication getServletApplication() {
 		return servletApplication;
 	}
 
-	public Set<String> getNameSet() {
-		return super.nameSet();
+	public WebappDefinition getWebAppDefinition() throws IOException {
+		etcTracker.check();
+		ApplicationContext ac = applicationContext;
+		return ac == null ? null : ac.getWebappDefinition();
 	}
 
-	public WebappDefinition getWebAppDefinition(String name) throws IOException {
-		return super.get(name);
-	}
-
-	ApplicationContext findApplicationContext(FilePath filePath) throws IOException, URISyntaxException {
-		if (filePath == null)
-			return null;
-		if (filePath.contextPath == null)
-			return null;
-		WebappDefinition webappDefinition = get(filePath.contextPath.isEmpty() ? "ROOT" : filePath.contextPath);
-		if (webappDefinition == null)
-			return null;
-		ApplicationContext applicationContext = getApplicationContext(filePath.contextPath, webappDefinition);
-		if (applicationContext == null)
-			return null;
+	ApplicationContext getApplicationContext() throws IOException, URISyntaxException {
 		return applicationContext;
+	}
+
+	@Override
+	public void accept(TrackedInterface.ChangeReason changeReason, File jsonFile) {
+		if (confSet != null) {
+			String filebase = FilenameUtils.removeExtension(jsonFile.getName());
+			if (!confSet.contains(filebase))
+				return;
+		}
+		String extension = FilenameUtils.getExtension(jsonFile.getName());
+		if (!"json".equals(extension))
+			return;
+		switch (changeReason) {
+		case UPDATED:
+			loadWebappDefinition(jsonFile);
+			break;
+		case DELETED:
+			unloadWebappDefinition(jsonFile);
+			break;
+		}
+	}
+
+	private void loadWebappDefinition(File jsonFile) {
+		try {
+			final WebappDefinition webappDefinition = JsonMapper.MAPPER.readValue(jsonFile, WebappDefinition.class);
+
+			if (webappDefinition == null)
+				return;
+
+			if (logger.isInfoEnabled())
+				logger.info("Load WebApp configuration file: " + jsonFile.getAbsolutePath());
+
+			mapLock.w.lock();
+			try {
+				webappFileMap.put(jsonFile, webappDefinition);
+				applicationContext = buildApplicationContext();
+			} finally {
+				mapLock.w.unlock();
+			}
+
+		} catch (IOException e) {
+			if (logger.isErrorEnabled())
+				logger.error(e.getMessage(), e);
+			return;
+		}
+	}
+
+	private void unloadWebappDefinition(File jsonFile) {
+		final WebappDefinition webappDefinition;
+		mapLock.w.lock();
+		try {
+			webappDefinition = webappFileMap.remove(jsonFile);
+			if (webappDefinition == null)
+				return;
+			if (logger.isInfoEnabled())
+				logger.info("Unload WebApp configuration file: " + jsonFile.getAbsolutePath());
+			applicationContext = buildApplicationContext();
+		} finally {
+			mapLock.w.unlock();
+		}
 	}
 }

@@ -23,10 +23,7 @@ import com.qwazr.webapps.transaction.WebappManager;
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
 import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import java.util.Set;
 
 @RolesAllowed(WebappManager.SERVICE_NAME_WEBAPPS)
 @Path("/webapps")
@@ -34,11 +31,7 @@ import java.util.Set;
 public interface WebappManagerServiceInterface extends ServiceInterface {
 
 	@GET
+	@Path("/")
 	@Produces(ServiceInterface.APPLICATION_JSON_UTF8)
-	Set<String> list();
-
-	@GET
-	@Path("/{webapp-name}")
-	@Produces(ServiceInterface.APPLICATION_JSON_UTF8)
-	WebappDefinition get(@PathParam("webapp-name") String webappName);
+	WebappDefinition get();
 }

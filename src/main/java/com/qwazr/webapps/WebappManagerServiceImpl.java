@@ -20,19 +20,13 @@ import com.qwazr.webapps.transaction.WebappDefinition;
 import com.qwazr.webapps.transaction.WebappManager;
 
 import java.io.IOException;
-import java.util.Set;
 
 public class WebappManagerServiceImpl implements WebappManagerServiceInterface {
 
 	@Override
-	public Set<String> list() {
-		return WebappManager.INSTANCE.getNameSet();
-	}
-
-	@Override
-	public WebappDefinition get(String webappName) {
+	public WebappDefinition get() {
 		try {
-			return WebappManager.INSTANCE.getWebAppDefinition(webappName);
+			return WebappManager.INSTANCE.getWebAppDefinition();
 		} catch (IOException e) {
 			throw ServerException.getJsonException(e);
 		}

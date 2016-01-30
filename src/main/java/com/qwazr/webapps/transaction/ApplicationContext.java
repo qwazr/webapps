@@ -17,22 +17,11 @@ package com.qwazr.webapps.transaction;
 
 import com.qwazr.utils.LockUtils;
 
-import javax.servlet.http.HttpSession;
-import java.io.Closeable;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ExecutorService;
 
-public class ApplicationContext implements Closeable, AutoCloseable {
-
-	private final String contextPath;
+public class ApplicationContext {
 
 	private final WebappDefinition webappDefinition;
-
-	//private final Map<String, WebappHttpSessionImpl> sessions;
 
 	private final List<PathBind> controllerMatchers;
 
@@ -40,66 +29,17 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 
 	private final LockUtils.ReadWriteLock sessionsLock = new LockUtils.ReadWriteLock();
 
-	ApplicationContext(ExecutorService executorService, String contextPath, WebappDefinition webappDefinition,
-					ApplicationContext oldContext) throws IOException, URISyntaxException {
-		this.contextPath = contextPath.intern();
-		this.webappDefinition = webappDefinition;
+	ApplicationContext(WebappDefinition webappDefinitions) {
+		this.webappDefinition = webappDefinitions;
 
 		// Load the resources
 		controllerMatchers = PathBind.loadMatchers(webappDefinition.controllers);
 		staticMatchers = PathBind.loadMatchers(webappDefinition.statics);
 
-		// Prepare the sessions
-		//this.sessions = oldContext != null ? oldContext.sessions : new HashMap<String, WebappHttpSessionImpl>();
 	}
 
 	WebappDefinition getWebappDefinition() {
 		return webappDefinition;
-	}
-
-	public void close() throws IOException {
-		if (controllerMatchers != null)
-			controllerMatchers.clear();
-	}
-
-	/*
-	WebappHttpSession getSessionOrCreate(HttpSession session) {
-		if (session == null)
-			return null;
-		String id = session.getId();
-		sessionsLock.r.lock();
-		try {
-			WebappHttpSession webappSession = sessions.get(id);
-			if (webappSession != null)
-				return webappSession;
-		} finally {
-			sessionsLock.r.unlock();
-		}
-		sessionsLock.w.lock();
-		try {
-			WebappHttpSessionImpl webappSession = sessions.get(id);
-			if (webappSession != null)
-				return webappSession;
-			webappSession = new WebappHttpSessionImpl(this, session);
-			sessions.put(id, webappSession);
-			return webappSession;
-		} finally {
-			sessionsLock.w.unlock();
-		}
-	}
-
-	void invalidateSession(String sessionId) {
-		sessionsLock.w.lock();
-		try {
-			sessions.remove(sessionId);
-		} finally {
-			sessionsLock.w.unlock();
-		}
-	}
-	*/
-
-	public String getContextPath() {
-		return contextPath;
 	}
 
 	String findStatic(String requestPath) {
@@ -110,10 +50,4 @@ public class ApplicationContext implements Closeable, AutoCloseable {
 		return PathBind.findMatchingPath(requestPath, controllerMatchers);
 	}
 
-	public String getContextId() {
-		String cpath = contextPath;
-		if (cpath.endsWith("/"))
-			cpath = cpath.substring(0, cpath.length() - 1);
-		return cpath;
-	}
 }

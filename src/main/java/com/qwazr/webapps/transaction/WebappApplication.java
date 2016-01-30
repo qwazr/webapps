@@ -29,12 +29,12 @@ import java.util.List;
 
 class WebappApplication extends ServletApplication {
 
-	public final static String SESSIONS_PERSISTENCE_DIR = "sessions";
+	public final static String SESSIONS_PERSISTENCE_DIR = "webapp-sessions";
 
 	private final SessionPersistenceManager sessionPersistenceManager;
 
-	WebappApplication(File baseDir) {
-		File sessionPersistenceDir = new File(baseDir, SESSIONS_PERSISTENCE_DIR);
+	WebappApplication(File tempDirectory) {
+		File sessionPersistenceDir = new File(tempDirectory, SESSIONS_PERSISTENCE_DIR);
 		if (!sessionPersistenceDir.exists())
 			sessionPersistenceDir.mkdir();
 		sessionPersistenceManager = new InFileSessionPersistenceManager(sessionPersistenceDir);
@@ -42,13 +42,13 @@ class WebappApplication extends ServletApplication {
 
 	//TODO Parameters for fileupload limitation
 	private final static MultipartConfigElement multipartConfigElement = new MultipartConfigElement(
-					System.getProperty("java.io.tmpdir"));
+			System.getProperty("java.io.tmpdir"));
 
 	@Override
 	protected List<ServletInfo> getServletInfos() {
 		List<ServletInfo> servletInfos = new ArrayList<ServletInfo>();
 		servletInfos.add(Servlets.servlet("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
-						.setMultipartConfig(multipartConfigElement));
+				.setMultipartConfig(multipartConfigElement));
 		return servletInfos;
 	}
 

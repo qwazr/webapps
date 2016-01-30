@@ -32,15 +32,13 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 
 	private final String contextPath;
 	private final String pathInfo;
-	private final ApplicationContext context;
 	private final HttpServletRequest request;
 	private final WebappRequestMaps.WebappAttributes attributes;
 	private final WebappRequestMaps.WebappHeaders headers;
 	private final HttpBodyInterface body;
 
-	WebappHttpRequestImpl(ApplicationContext context, HttpServletRequest request, HttpBodyInterface body) {
-		this.context = context;
-		this.contextPath = context.getContextPath();
+	WebappHttpRequestImpl(HttpServletRequest request, HttpBodyInterface body) {
+		this.contextPath = request.getContextPath();
 		this.pathInfo = request.getPathInfo();
 		this.request = request;
 		this.attributes = new WebappRequestMaps.WebappAttributes(request);
@@ -229,7 +227,7 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 
 	@Override
 	public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse)
-					throws IllegalStateException {
+			throws IllegalStateException {
 		return null;
 	}
 
@@ -353,7 +351,7 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 		HttpSession session = request.getSession(create);
 		if (session == null)
 			return null;
-		return new WebappHttpSessionImpl(context, session);
+		return new WebappHttpSessionImpl(session);
 	}
 
 	@Override
