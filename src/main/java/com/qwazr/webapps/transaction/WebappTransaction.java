@@ -15,8 +15,7 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import com.qwazr.connectors.ConnectorManagerImpl;
-import com.qwazr.tools.ToolsManagerImpl;
+import com.qwazr.library.LibraryManager;
 import com.qwazr.webapps.exception.WebappException;
 import com.qwazr.webapps.transaction.body.HttpBodyInterface;
 
@@ -40,7 +39,7 @@ public class WebappTransaction {
 	private final WebappHttpResponse response;
 
 	public WebappTransaction(HttpServletRequest request, HttpServletResponse response, HttpBodyInterface body)
-					throws IOException, URISyntaxException {
+			throws IOException, URISyntaxException {
 		FilePath fp = new FilePath(request.getPathInfo(), false);
 		// First we try to find a sub context
 		ApplicationContext ctx = WebappManager.INSTANCE.findApplicationContext(fp);
@@ -54,11 +53,18 @@ public class WebappTransaction {
 		this.filePath = fp;
 		this.context = ctx;
 		this.request = new WebappHttpRequestImpl(context, request, body);
-		this.request.setAttribute("tools", ToolsManagerImpl.getInstance());
-		this.request.setAttribute("connectors", ConnectorManagerImpl.getInstance());
+		final LibraryManager library = LibraryManager.getInstance();
+		if (library != null) {
+			this.request.setAttribute("tools", library);  // Todo: deprecated
+			this.request.setAttribute("connectors", library);  // Todo: deprecated
+			this.request.setAttribute("library", library);
+		}
 		this.response = new WebappHttpResponse(this.request.getAttributes(), response);
-		this.response.variable("tools", ToolsManagerImpl.getInstance());
-		this.response.variable("connectors", ConnectorManagerImpl.getInstance());
+		if (library != null) {
+			this.response.variable("tools", library); // Todo: deprecated
+			this.response.variable("connectors", library); // Todo: deprecated
+			this.response.variable("library", library);
+		}
 		this.response.variable("request", this.request);
 		this.response.variable("response", this.response);
 		this.response.variable("session", this.request.getSession());
@@ -80,8 +86,9 @@ public class WebappTransaction {
 		return filePath;
 	}
 
-	public void execute() throws IOException, URISyntaxException, ScriptException, PrivilegedActionException,
-					InterruptedException, ReflectiveOperationException, ServletException {
+	public void execute()
+			throws IOException, URISyntaxException, ScriptException, PrivilegedActionException, InterruptedException,
+			ReflectiveOperationException, ServletException {
 		String pathInfo = request.getPathInfo();
 		StaticManager staticManager = StaticManager.INSTANCE;
 		File staticFile = staticManager.findStatic(context, pathInfo);
