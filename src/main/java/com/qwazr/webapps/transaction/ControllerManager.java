@@ -15,6 +15,7 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.scripts.ScriptConsole;
 import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.IOUtils;
@@ -135,7 +136,8 @@ public class ControllerManager {
 		IOUtils.CloseableList closeables = new IOUtils.CloseableList();
 		WebappHttpResponse response = transaction.getResponse();
 		response.getVariables().put("closeable", closeables);
-		Class<? extends HttpServlet> servletClass = ClassLoaderUtils.findClass(null, className);
+		Class<? extends HttpServlet> servletClass = ClassLoaderUtils
+				.findClass(ClassLoaderManager.classLoader, className);
 		Objects.requireNonNull(servletClass, "Class not found: " + className);
 		HttpServlet servlet = servletClass.newInstance();
 		try {
