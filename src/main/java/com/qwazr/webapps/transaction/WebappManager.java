@@ -32,7 +32,6 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 
 public class WebappManager implements TrackedInterface.FileChangeConsumer {
 
@@ -43,13 +42,13 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 	public static volatile WebappManager INSTANCE = null;
 
 	public synchronized static Class<? extends WebappManagerServiceInterface> load(File data_directory,
-			TrackedDirectory etcTracker, Set<String> confSet, File tempDirectory) throws IOException {
+			TrackedDirectory etcTracker, File tempDirectory) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
 		ControllerManager.load(data_directory);
 		StaticManager.load(data_directory);
 		try {
-			INSTANCE = new WebappManager(etcTracker, confSet, tempDirectory);
+			INSTANCE = new WebappManager(etcTracker, tempDirectory);
 			etcTracker.register(INSTANCE);
 			return WebappManagerServiceImpl.class;
 		} catch (ServerException e) {
@@ -64,7 +63,6 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 	}
 
 	private final TrackedDirectory etcTracker;
-	private final Set<String> confSet;
 
 	private final ServletApplication servletApplication;
 	private volatile ApplicationContext applicationContext;
@@ -72,10 +70,8 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 	private final LockUtils.ReadWriteLock mapLock = new LockUtils.ReadWriteLock();
 	private final Map<File, WebappDefinition> webappFileMap;
 
-	private WebappManager(TrackedDirectory etcTracker, Set<String> confSet, File tempDirectory)
-			throws IOException, ServerException {
+	private WebappManager(TrackedDirectory etcTracker, File tempDirectory) throws IOException, ServerException {
 		this.webappFileMap = new HashMap<>();
-		this.confSet = confSet;
 		this.applicationContext = null;
 		this.etcTracker = etcTracker;
 		this.servletApplication = new WebappApplication(tempDirectory);
@@ -106,11 +102,6 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 
 	@Override
 	public void accept(TrackedInterface.ChangeReason changeReason, File jsonFile) {
-		if (confSet != null) {
-			String filebase = FilenameUtils.removeExtension(jsonFile.getName());
-			if (!confSet.contains(filebase))
-				return;
-		}
 		String extension = FilenameUtils.getExtension(jsonFile.getName());
 		if (!"json".equals(extension))
 			return;
