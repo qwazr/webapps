@@ -16,6 +16,7 @@
 package com.qwazr.webapps.transaction;
 
 import com.qwazr.library.LibraryManager;
+import com.qwazr.utils.IOUtils;
 import com.qwazr.webapps.exception.WebappException;
 import com.qwazr.webapps.transaction.body.HttpBodyInterface;
 
@@ -24,34 +25,25 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response.Status;
+import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.security.PrivilegedActionException;
 
-public class WebappTransaction {
+public class WebappTransaction implements Closeable {
 
+	private final IOUtils.CloseableList closeables;
 	private final WebappHttpRequest request;
 	private final WebappHttpResponse response;
 
 	public WebappTransaction(HttpServletRequest request, HttpServletResponse response, HttpBodyInterface body)
 			throws IOException, URISyntaxException {
+		closeables = new IOUtils.CloseableList();
 		this.request = new WebappHttpRequestImpl(request, body);
-		final LibraryManager library = LibraryManager.getInstance();
-		if (library != null) {
-			this.request.setAttribute("tools", library);  // Todo: deprecated
-			this.request.setAttribute("connectors", library);  // Todo: deprecated
-			this.request.setAttribute("library", library);
-		}
-		this.response = new WebappHttpResponse(this.request.getAttributes(), response);
-		if (library != null) {
-			this.response.variable("tools", library); // Todo: deprecated
-			this.response.variable("connectors", library); // Todo: deprecated
-			this.response.variable("library", library);
-		}
-		this.response.variable("request", this.request);
-		this.response.variable("response", this.response);
-		this.response.variable("session", this.request.getSession());
+		this.request.setAttribute("closeable", closeables);
+		this.request.setAttribute("library", LibraryManager.getInstance());
+		this.response = new WebappHttpResponse(response);
 	}
 
 	final WebappHttpRequest getRequest() {
@@ -82,5 +74,10 @@ public class WebappTransaction {
 			return;
 		}
 		throw new WebappException(Status.NOT_FOUND);
+	}
+
+	@Override
+	public void close() throws IOException {
+		IOUtils.close(closeables);
 	}
 }

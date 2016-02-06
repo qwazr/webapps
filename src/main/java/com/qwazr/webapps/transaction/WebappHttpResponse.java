@@ -23,34 +23,13 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.*;
 import java.util.Collection;
 import java.util.Locale;
-import java.util.Map;
 
 public class WebappHttpResponse implements HttpServletResponse {
 
-	private final Map<String, Object> attributes;
 	private final HttpServletResponse response;
 
-	WebappHttpResponse(Map<String, Object> attributes, HttpServletResponse response) {
+	WebappHttpResponse(HttpServletResponse response) {
 		this.response = response;
-		this.attributes = attributes;
-	}
-
-	public Map<String, Object> getVariables() {
-		return attributes;
-	}
-
-	public WebappHttpResponse variable(String name, Object value) {
-		if (name == null)
-			return this;
-		if (value == null)
-			attributes.remove(name);
-		else
-			attributes.put(name, value);
-		return this;
-	}
-
-	public WebappHttpResponse setVariable(String name, Object value) {
-		return variable(name, value);
 	}
 
 	@Override

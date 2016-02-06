@@ -16,11 +16,9 @@
 package com.qwazr.webapps.transaction;
 
 import com.qwazr.classloader.ClassLoaderManager;
+import com.qwazr.library.LibraryManager;
 import com.qwazr.scripts.ScriptConsole;
-import com.qwazr.utils.ClassLoaderUtils;
-import com.qwazr.utils.IOUtils;
-import com.qwazr.utils.ScriptUtils;
-import com.qwazr.utils.StringUtils;
+import com.qwazr.utils.*;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.management.MBeanPermission;
@@ -36,8 +34,8 @@ import java.net.SocketPermission;
 import java.net.URISyntaxException;
 import java.security.*;
 import java.security.cert.Certificate;
-import java.util.Map;
 import java.util.Objects;
+import java.util.function.Supplier;
 
 public class ControllerManager {
 
@@ -53,10 +51,13 @@ public class ControllerManager {
 
 	final private ScriptEngine scriptEngine;
 
+	final private AccessTimeCacheMap<Class<? extends HttpServlet>, HttpServlet> servletMap;
+
 	private ControllerManager(File dataDir) {
 		this.dataDir = dataDir;
 		ScriptEngineManager manager = new ScriptEngineManager();
 		scriptEngine = manager.getEngineByName("nashorn");
+		servletMap = new AccessTimeCacheMap<>(3600);
 	}
 
 	void handle(WebappTransaction transaction, String controllerPath)
@@ -116,35 +117,37 @@ public class ControllerManager {
 		response.setHeader("Cache-Control", "max-age=0, no-cache, no-store");
 		Bindings bindings = scriptEngine.createBindings();
 		IOUtils.CloseableList closeables = new IOUtils.CloseableList();
-		bindings.put("closeable", closeables);
 		bindings.put("console", new ScriptConsole());
-		Map<String, Object> variables = response.getVariables();
-		if (variables != null)
-			for (Map.Entry<String, Object> entry : variables.entrySet())
-				bindings.put(entry.getKey(), entry.getValue());
+		bindings.put("request", transaction.getRequest());
+		bindings.put("response", transaction.getResponse());
+		bindings.put("session", transaction.getRequest().getSession());
+		bindings.putAll(transaction.getRequest().getAttributes());
 		FileReader fileReader = new FileReader(controllerFile);
 		try {
 			ScriptUtils.evalScript(scriptEngine, RestrictedAccessControlContext.INSTANCE, fileReader, bindings);
 		} finally {
 			fileReader.close();
-			closeables.close();
 		}
 	}
 
 	private void handleJavaClass(WebappTransaction transaction, String className)
 			throws IOException, InterruptedException, ScriptException, ReflectiveOperationException, ServletException {
-		IOUtils.CloseableList closeables = new IOUtils.CloseableList();
-		WebappHttpResponse response = transaction.getResponse();
-		response.getVariables().put("closeable", closeables);
-		Class<? extends HttpServlet> servletClass = ClassLoaderUtils
+		final Class<? extends HttpServlet> servletClass = ClassLoaderUtils
 				.findClass(ClassLoaderManager.classLoader, className);
 		Objects.requireNonNull(servletClass, "Class not found: " + className);
-		HttpServlet servlet = servletClass.newInstance();
-		try {
-			servlet.service(transaction.getRequest(), transaction.getResponse());
-		} finally {
-			closeables.close();
-		}
+		HttpServlet servlet = servletMap.getOrCreate(servletClass, new Supplier() {
+			@Override
+			public HttpServlet get() {
+				try {
+					HttpServlet servlet = servletClass.newInstance();
+					LibraryManager.inject(servlet);
+					return servlet;
+				} catch (InstantiationException | IllegalAccessException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		});
+		servlet.service(transaction.getRequest(), transaction.getResponse());
 	}
 
 }
