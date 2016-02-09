@@ -30,16 +30,12 @@ import java.util.Map;
 
 public class WebappHttpRequestImpl implements WebappHttpRequest {
 
-	private final String contextPath;
-	private final String pathInfo;
 	private final HttpServletRequest request;
 	private final WebappRequestMaps.WebappAttributes attributes;
 	private final WebappRequestMaps.WebappHeaders headers;
 	private final HttpBodyInterface body;
 
 	WebappHttpRequestImpl(HttpServletRequest request, HttpBodyInterface body) {
-		this.contextPath = request.getContextPath();
-		this.pathInfo = request.getPathInfo();
 		this.request = request;
 		this.attributes = new WebappRequestMaps.WebappAttributes(request);
 		this.headers = new WebappRequestMaps.WebappHeaders(request);
@@ -217,38 +213,38 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 
 	@Override
 	public ServletContext getServletContext() {
-		return null;
+		return request.getServletContext();
 	}
 
 	@Override
 	public AsyncContext startAsync() throws IllegalStateException {
-		return null;
+		return request.startAsync();
 	}
 
 	@Override
 	public AsyncContext startAsync(ServletRequest servletRequest, ServletResponse servletResponse)
 			throws IllegalStateException {
-		return null;
+		return request.startAsync(servletRequest, servletResponse);
 	}
 
 	@Override
 	public boolean isAsyncStarted() {
-		return false;
+		return request.isAsyncStarted();
 	}
 
 	@Override
 	public boolean isAsyncSupported() {
-		return false;
+		return request.isAsyncSupported();
 	}
 
 	@Override
 	public AsyncContext getAsyncContext() {
-		return null;
+		return request.getAsyncContext();
 	}
 
 	@Override
 	public DispatcherType getDispatcherType() {
-		return null;
+		return request.getDispatcherType();
 	}
 
 	@Override
@@ -293,17 +289,17 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 
 	@Override
 	public String getPathInfo() {
-		return pathInfo;
+		return request.getPathInfo();
 	}
 
 	@Override
 	public String getPathTranslated() {
-		return null;
+		return request.getPathTranslated();
 	}
 
 	@Override
 	public String getContextPath() {
-		return contextPath;
+		return request.getContextPath();
 	}
 
 	@Override
@@ -338,12 +334,12 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 
 	@Override
 	public StringBuffer getRequestURL() {
-		return null;
+		return request.getRequestURL();
 	}
 
 	@Override
 	public String getServletPath() {
-		return null;
+		return request.getServletPath();
 	}
 
 	@Override
@@ -361,7 +357,7 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 
 	@Override
 	public String changeSessionId() {
-		return null;
+		return request.changeSessionId();
 	}
 
 	@Override
@@ -382,7 +378,7 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 	@Override
 	@Deprecated
 	public boolean isRequestedSessionIdFromUrl() {
-		return false;
+		return request.isRequestedSessionIdFromUrl();
 	}
 
 	@Override
@@ -412,7 +408,7 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 
 	@Override
 	public <T extends HttpUpgradeHandler> T upgrade(Class<T> handlerClass) throws IOException, ServletException {
-		return null;
+		return request.upgrade(handlerClass);
 	}
 
 }
