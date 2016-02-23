@@ -20,8 +20,9 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Collection;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -30,15 +31,18 @@ public class WebappDefinition {
 
 	public final Map<String, String> controllers;
 	public final Map<String, String> statics;
+	public final String identity_manager;
 
 	public WebappDefinition() {
 		controllers = null;
 		statics = null;
+		identity_manager = null;
 	}
 
-	WebappDefinition(Map<String, String> controllers, Map<String, String> statics) {
+	WebappDefinition(Map<String, String> controllers, Map<String, String> statics, String identity_manager) {
 		this.controllers = controllers;
 		this.statics = statics;
+		this.identity_manager = identity_manager;
 	}
 
 	static WebappDefinition merge(Collection<WebappDefinition> webappDefinitions) {
@@ -46,6 +50,7 @@ public class WebappDefinition {
 			return null;
 		final Map<String, String> controllers = new HashMap<>();
 		final Map<String, String> statics = new HashMap<>();
+		AtomicReference<String> identityManagerRef = new AtomicReference<>(null);
 		webappDefinitions.forEach(new Consumer<WebappDefinition>() {
 			@Override
 			public void accept(WebappDefinition webappDefinition) {
@@ -53,9 +58,11 @@ public class WebappDefinition {
 					controllers.putAll(webappDefinition.controllers);
 				if (webappDefinition.statics != null)
 					statics.putAll(webappDefinition.statics);
+				if (webappDefinition.identity_manager != null)
+					identityManagerRef.set(webappDefinition.identity_manager);
 			}
 		});
-		return new WebappDefinition(controllers, statics);
+		return new WebappDefinition(controllers, statics, identityManagerRef.get());
 	}
 
 	@JsonIgnore
