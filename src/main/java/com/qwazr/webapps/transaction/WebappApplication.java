@@ -42,13 +42,13 @@ class WebappApplication extends ServletApplication {
 
 	//TODO Parameters for fileupload limitation
 	private final static MultipartConfigElement multipartConfigElement = new MultipartConfigElement(
-			System.getProperty("java.io.tmpdir"));
+					System.getProperty("java.io.tmpdir"));
 
 	@Override
 	protected List<ServletInfo> getServletInfos() {
 		List<ServletInfo> servletInfos = new ArrayList<ServletInfo>();
 		servletInfos.add(Servlets.servlet("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
-				.setMultipartConfig(multipartConfigElement));
+						.setMultipartConfig(multipartConfigElement));
 		return servletInfos;
 	}
 
@@ -56,4 +56,5 @@ class WebappApplication extends ServletApplication {
 	protected SessionPersistenceManager getSessionPersistenceManager() {
 		return sessionPersistenceManager;
 	}
+
 }

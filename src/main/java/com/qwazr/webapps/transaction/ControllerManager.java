@@ -19,6 +19,8 @@ import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
 import com.qwazr.scripts.ScriptConsole;
 import com.qwazr.utils.*;
+import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.spec.ServletConfigImpl;
 import org.apache.commons.io.FilenameUtils;
 
 import javax.management.MBeanPermission;
@@ -27,6 +29,8 @@ import javax.script.Bindings;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import java.io.*;
@@ -34,6 +38,7 @@ import java.net.SocketPermission;
 import java.net.URISyntaxException;
 import java.security.*;
 import java.security.cert.Certificate;
+import java.util.Enumeration;
 import java.util.Objects;
 import java.util.function.Supplier;
 
@@ -135,14 +140,16 @@ public class ControllerManager {
 		final Class<? extends HttpServlet> servletClass = ClassLoaderUtils
 				.findClass(ClassLoaderManager.classLoader, className);
 		Objects.requireNonNull(servletClass, "Class not found: " + className);
+		final ServletInfo servletInfo  = new ServletInfo(className, servletClass);
 		HttpServlet servlet = servletMap.getOrCreate(servletClass, new Supplier() {
 			@Override
 			public HttpServlet get() {
 				try {
 					HttpServlet servlet = servletClass.newInstance();
+					servlet.init(new ServletConfigImpl(servletInfo, transaction.getRequest().getServletContext()));
 					LibraryManager.inject(servlet);
 					return servlet;
-				} catch (InstantiationException | IllegalAccessException e) {
+				} catch (InstantiationException | IllegalAccessException | ServletException e) {
 					throw new RuntimeException(e);
 				}
 			}
