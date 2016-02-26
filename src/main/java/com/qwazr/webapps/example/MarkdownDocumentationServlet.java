@@ -70,8 +70,6 @@ public class MarkdownDocumentationServlet extends HttpServlet {
 	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
 
 		String path = request.getPathInfo().substring(remotePrefix.length());
-		if (path.length() == 0)
-			path = indexFileName;
 
 		File file = new File(documentationPath, path);
 		if (!file.exists()) {
@@ -96,6 +94,7 @@ public class MarkdownDocumentationServlet extends HttpServlet {
 			response.sendError(404, "File not found: " + file);
 			return;
 		}
+
 		request.setAttribute("currentfile", file);
 		if (file.getName().endsWith(".md")) {
 			request.setAttribute("markdown", markdownTool.toHtml(file));
