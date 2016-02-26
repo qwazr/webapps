@@ -20,15 +20,19 @@ import com.qwazr.tools.FreeMarkerTool;
 import com.qwazr.tools.MarkdownTool;
 import com.qwazr.utils.StringUtils;
 import freemarker.template.TemplateException;
+import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
+import javax.activation.MimetypesFileTypeMap;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -38,11 +42,14 @@ public class MarkdownDocumentationServlet extends HttpServlet {
 
 	protected String indexFileName = "README.md";
 
-	private File documentationPath = new File("src/main/java");
+	private File documentationPath = new File("src");
 
 	private FreeMarkerTool freemarkerTool = null;
 
 	private MarkdownTool markdownTool = null;
+
+	private final MimetypesFileTypeMap mimeTypeMap = new MimetypesFileTypeMap(
+					getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
 	private String templatePath = "src/main/resources/templates/documentation.ftl";
 
@@ -99,6 +106,21 @@ public class MarkdownDocumentationServlet extends HttpServlet {
 		if (file.getName().endsWith(".md")) {
 			request.setAttribute("markdown", markdownTool.toHtml(file));
 			request.setAttribute("filelist", getBuildList(file.getParentFile()));
+		} else if (file.isFile()) {
+			String type = mimeTypeMap.getContentType(file);
+			if (type != null)
+				response.setContentType(type);
+			response.setContentLengthLong(file.length());
+			response.setDateHeader("Last-Modified", file.lastModified());
+			response.setHeader("Cache-Control", "max-age=86400");
+			response.setDateHeader("Expires", System.currentTimeMillis() + 86400 * 1000);
+			InputStream inputStream = new FileInputStream(file);
+			try {
+				IOUtils.copy(inputStream, response.getOutputStream());
+			} finally {
+				IOUtils.closeQuietly(inputStream);
+			}
+			return;
 		} else if (file.isDirectory()) {
 			request.setAttribute("filelist", getBuildList(file));
 		} else {
