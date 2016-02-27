@@ -15,9 +15,11 @@
  **/
 package com.qwazr.webapps.exception;
 
-import java.io.IOException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
 
 public class WebappRedirectException extends AbstractWebappException {
 
@@ -28,6 +30,8 @@ public class WebappRedirectException extends AbstractWebappException {
 
 	private final String location;
 
+	private static final Logger logger = LoggerFactory.getLogger(WebappRedirectException.class);
+
 	public WebappRedirectException(String location) {
 		this.location = location;
 	}
@@ -37,7 +41,8 @@ public class WebappRedirectException extends AbstractWebappException {
 		try {
 			response.sendRedirect(location);
 		} catch (IOException e) {
-			e.printStackTrace();
+			if (logger.isWarnEnabled())
+				logger.warn("Redirect failed - " + e.getMessage(), e);
 		}
 	}
 

@@ -15,18 +15,16 @@
  **/
 package com.qwazr.webapps.exception;
 
-import java.io.FileNotFoundException;
-import java.security.PrivilegedActionException;
+import com.datastax.driver.core.exceptions.QueryValidationException;
+import com.qwazr.utils.ExceptionUtils;
+import com.qwazr.webapps.exception.WebappException.Title;
+import freemarker.template.TemplateException;
 
 import javax.script.ScriptException;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response.Status;
-
-import com.datastax.driver.core.exceptions.QueryValidationException;
-import com.qwazr.utils.ExceptionUtils;
-import com.qwazr.webapps.exception.WebappException.Title;
-
-import freemarker.template.TemplateException;
+import java.io.FileNotFoundException;
+import java.security.PrivilegedActionException;
 
 public abstract class AbstractWebappException extends RuntimeException {
 
@@ -52,14 +50,10 @@ public abstract class AbstractWebappException extends RuntimeException {
 			return new WebappException(Status.INTERNAL_SERVER_ERROR, Title.QUERY_ERROR, e);
 		else if (e instanceof TemplateException)
 			return new WebappException(Status.INTERNAL_SERVER_ERROR, Title.VIEW_ERROR, e);
-		System.err.println("EXCEPTION TYPE: " + e.getClass().getName());
-		e.printStackTrace();
 		return new WebappException(Status.INTERNAL_SERVER_ERROR, Title.ERROR, e);
 	}
 
 	public static AbstractWebappException newInstance(Error e) {
-		System.err.println("ERROR TYPE: " + e.getClass().getName());
-		e.printStackTrace();
 		return new WebappException(Status.INTERNAL_SERVER_ERROR, Title.ERROR, e);
 	}
 

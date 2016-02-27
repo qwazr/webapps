@@ -15,22 +15,16 @@
  **/
 package com.qwazr.webapps.exception;
 
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.PrintWriter;
-
-import javax.script.ScriptException;
-import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Response.Status;
-
 import com.jamesmurty.utils.XMLBuilder2;
 import com.qwazr.utils.json.JsonMapper;
-import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.datastax.driver.core.exceptions.QueryValidationException;
-
-import freemarker.template.TemplateException;
+import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Response.Status;
+import java.io.IOException;
+import java.io.PrintWriter;
 
 public class WebappException extends AbstractWebappException {
 
@@ -38,6 +32,8 @@ public class WebappException extends AbstractWebappException {
 	 *
 	 */
 	private static final long serialVersionUID = -1221758741584043195L;
+
+	private static final Logger logger = LoggerFactory.getLogger(WebappException.class);
 
 	public enum Title {
 
@@ -118,7 +114,8 @@ public class WebappException extends AbstractWebappException {
 			}
 			sendQuietlyHTML(response);
 		} catch (IOException e) {
-			e.printStackTrace();
+			if (logger.isWarnEnabled())
+				logger.warn(e.getMessage(), e);
 		}
 	}
 
