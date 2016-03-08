@@ -16,10 +16,12 @@
 package com.qwazr.webapps.example;
 
 import com.qwazr.library.LibraryManager;
+import com.qwazr.tools.AsciiDoctorTool;
 import com.qwazr.tools.FreeMarkerTool;
 import com.qwazr.tools.MarkdownTool;
 import com.qwazr.utils.StringUtils;
 import freemarker.template.TemplateException;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.commons.lang3.tuple.Pair;
 
@@ -48,8 +50,10 @@ public class MarkdownDocumentationServlet extends HttpServlet {
 
 	private MarkdownTool markdownTool = null;
 
+	private AsciiDoctorTool asciiDoctorTool = null;
+
 	private final MimetypesFileTypeMap mimeTypeMap = new MimetypesFileTypeMap(
-					getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
+			getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
 	private String templatePath = "src/main/resources/templates/documentation.ftl";
 
@@ -68,6 +72,8 @@ public class MarkdownDocumentationServlet extends HttpServlet {
 		freemarkerTool = LibraryManager.getInstance().getLibrary(StringUtils.isEmpty(p) ? "freemarker" : p);
 		p = config.getInitParameter("markdownTool");
 		markdownTool = LibraryManager.getInstance().getLibrary(StringUtils.isEmpty(p) ? "markdown" : p);
+		p = config.getInitParameter("asciiDoctorTool");
+		asciiDoctorTool = LibraryManager.getInstance().getLibrary(StringUtils.isEmpty(p) ? "asciiDoctorTool" : p);
 		p = config.getInitParameter("templatePath");
 		if (!StringUtils.isEmpty(p))
 			templatePath = p;
@@ -103,9 +109,14 @@ public class MarkdownDocumentationServlet extends HttpServlet {
 		}
 
 		request.setAttribute("currentfile", file);
-		if (file.getName().endsWith(".md")) {
+		final String extension = FilenameUtils.getExtension(file.getName());
+		final List<File> fileList = getBuildList(file.getParentFile());
+		if ("md".equals(extension)) {
 			request.setAttribute("markdown", markdownTool.toHtml(file));
-			request.setAttribute("filelist", getBuildList(file.getParentFile()));
+			request.setAttribute("filelist", fileList);
+		} else if ("adoc".equals(extension)) {
+			request.setAttribute("markdown", asciiDoctorTool.convertFile(file));
+			request.setAttribute("filelist", fileList);
 		} else if (file.isFile()) {
 			String type = mimeTypeMap.getContentType(file);
 			if (type != null)
@@ -151,26 +162,33 @@ public class MarkdownDocumentationServlet extends HttpServlet {
 		List<File> list = new ArrayList();
 		for (File file : parentFile.listFiles()) {
 			if (file.isDirectory()) {
-				if (isMarkdownFile(file))
+				if (isDocFile(file))
 					list.add(file);
 			} else if (file.isFile()) {
-				if (file.getName().endsWith(".md"))
+				if (isDocFile(file.getName()))
 					list.add(file);
 			}
 		}
 		return list;
 	}
 
-	protected boolean isMarkdownFile(File parentFile) {
+	protected boolean isDocFile(File parentFile) {
 		for (File file : parentFile.listFiles()) {
 			if (file.isFile()) {
-				if (file.getName().endsWith(".md"))
+				if (isDocFile(file.getName()))
 					return true;
 			} else if (file.isDirectory()) {
-				if (this.isMarkdownFile(file))
+				if (isDocFile(file))
 					return true;
 			}
 		}
 		return false;
+	}
+
+	protected boolean isDocFile(String fileName) {
+		final String extension = FilenameUtils.getExtension(fileName);
+		if (extension == null)
+			return false;
+		return "md".equals(extension) || "adoc".equals(extension);
 	}
 }
