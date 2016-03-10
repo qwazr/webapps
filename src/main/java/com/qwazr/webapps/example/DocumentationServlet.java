@@ -53,7 +53,7 @@ public class DocumentationServlet extends HttpServlet {
 	private AsciiDoctorTool asciiDoctorTool = null;
 
 	private final MimetypesFileTypeMap mimeTypeMap = new MimetypesFileTypeMap(
-			getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
+					getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
 	private String templatePath = "src/main/resources/templates/documentation.ftl";
 
@@ -119,7 +119,7 @@ public class DocumentationServlet extends HttpServlet {
 			request.setAttribute("markdown", markdownTool.toHtml(file));
 			request.setAttribute("filelist", fileList);
 		} else if ("adoc".equals(extension)) {
-			request.setAttribute("markdown", asciiDoctorTool.convertFile(file));
+			request.setAttribute("adoc", asciiDoctorTool.convertFile(file));
 			request.setAttribute("filelist", fileList);
 		} else if (file.isFile()) {
 			String type = mimeTypeMap.getContentType(file);
