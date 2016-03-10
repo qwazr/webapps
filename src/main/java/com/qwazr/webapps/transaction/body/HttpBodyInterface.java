@@ -17,6 +17,7 @@ package com.qwazr.webapps.transaction.body;
 
 import com.qwazr.webapps.exception.WebappException;
 import com.qwazr.webapps.exception.WebappException.Title;
+import org.apache.http.entity.ContentType;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -26,17 +27,19 @@ import java.io.IOException;
 public interface HttpBodyInterface {
 
 	static HttpBodyInterface newEntity(HttpServletRequest request) throws IOException, ServletException {
-		String contentType = request.getContentType();
-		if (contentType != null) {
-			if ("application/x-www-form-urlencoded".equals(contentType))
+		final String contentTypeString = request.getContentType();
+		if (contentTypeString != null) {
+			final ContentType contentType = ContentType.parse(contentTypeString);
+			final String mimeType = contentType.getMimeType();
+			if ("application/x-www-form-urlencoded".equals(mimeType))
 				return new FormHttpBody(request);
-			if (contentType.startsWith("multipart/form-data"))
+			if ("multipart/form-data".equals(mimeType))
 				return new MultipartHttpBody(request);
-			if (contentType.startsWith("application/xml"))
+			if ("application/xml".equals(mimeType))
 				return new XMLHttpBody(request);
 		}
 		throw new WebappException(Status.NOT_ACCEPTABLE, Title.BODY_ERROR,
-						"Not supported content type: " + contentType);
+				"Not supported content type: " + contentTypeString);
 	}
 
 }
