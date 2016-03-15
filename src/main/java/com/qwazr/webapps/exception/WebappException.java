@@ -103,6 +103,7 @@ public class WebappException extends AbstractWebappException {
 	public void sendQuietly(HttpServletResponse response) {
 		try {
 			String contentType = response.getContentType();
+			response.setStatus(error.status);
 			if (contentType != null) {
 				if (contentType.startsWith("application/xml")) {
 					sendQuietlyXML(response);

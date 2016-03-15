@@ -46,10 +46,10 @@ public class WebappHttpServlet extends HttpServlet {
 			logger.info(request.getRequestURI() + "\t" + response.getStatus());
 		} catch (Exception e) {
 			AbstractWebappException.newInstance(e).sendQuietly(response);
-			logger.error(request.getRequestURI() + "\t" + response.getStatus());
+			logger.error(request.getRequestURI() + "\t" + response.getStatus(), e);
 		} catch (Error e) {
 			AbstractWebappException.newInstance(e).sendQuietly(response);
-			logger.error(request.getRequestURI() + "\t" + response.getStatus());
+			logger.error(request.getRequestURI() + "\t" + response.getStatus(), e);
 		} finally {
 			IOUtils.close(transaction);
 		}
