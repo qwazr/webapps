@@ -49,7 +49,8 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		StaticManager.load(data_directory);
 		try {
 			INSTANCE = new WebappManager(etcTracker, tempDirectory);
-			etcTracker.register(INSTANCE);
+			if (etcTracker != null)
+				etcTracker.register(INSTANCE);
 			return WebappManagerServiceImpl.class;
 		} catch (ServerException e) {
 			throw new RuntimeException(e);
@@ -91,7 +92,8 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 	}
 
 	public WebappDefinition getWebAppDefinition() throws IOException {
-		etcTracker.check();
+		if (etcTracker != null)
+			etcTracker.check();
 		ApplicationContext ac = applicationContext;
 		return ac == null ? null : ac.getWebappDefinition();
 	}
