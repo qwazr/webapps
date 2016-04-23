@@ -18,13 +18,13 @@ package com.qwazr.webapps.test;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
+import org.apache.http.util.EntityUtils;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import javax.servlet.ServletException;
-import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
@@ -37,13 +37,13 @@ public class FullTest {
 		TestServer.startServer();
 	}
 
-	private void checkResult(HttpResponse response) {
+	private void checkResult(HttpResponse response) throws IOException {
 		Assert.assertNotNull(response);
 		Assert.assertEquals(200, response.getStatusLine().getStatusCode());
 		HttpEntity entity = response.getEntity();
 		Assert.assertNotNull(entity);
-		Assert.assertEquals(MediaType.TEXT_HTML, entity.getContentType().getValue());
-		Assert.assertTrue(entity.toString().contains(TestServlet.TEST_STRING));
+		Assert.assertEquals("text/html; charset=UTF-8", entity.getContentType().getValue());
+		Assert.assertTrue(EntityUtils.toString(entity).contains(TestServlet.TEST_STRING));
 	}
 
 	@Test

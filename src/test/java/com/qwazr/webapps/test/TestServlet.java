@@ -24,7 +24,7 @@ import java.io.IOException;
 
 public class TestServlet extends HttpServlet {
 
-	public final static String TEST_STRING = "h1>Test QWAZR Webapp</h1>";
+	public final static String TEST_STRING = "<h1>Test QWAZR Webapp</h1>";
 
 	protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 		resp.setContentType(MediaType.TEXT_HTML);

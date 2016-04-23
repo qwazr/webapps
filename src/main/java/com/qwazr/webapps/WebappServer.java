@@ -16,6 +16,7 @@
 package com.qwazr.webapps;
 
 import com.qwazr.cluster.manager.ClusterManager;
+import com.qwazr.utils.file.TrackedDirectory;
 import com.qwazr.utils.server.AbstractServer;
 import com.qwazr.utils.server.ServerConfiguration;
 import com.qwazr.utils.server.ServiceInterface;
@@ -38,11 +39,15 @@ public class WebappServer extends AbstractServer<ServerConfiguration> {
 	@Override
 	public ServletApplication load(Collection<Class<? extends ServiceInterface>> services) throws IOException {
 		File currentDataDir = getCurrentDataDir();
+		File currentEtcDir = getCurrentEtcDir();
 		File currentTempDir = new File(currentDataDir, "tmp");
 		currentTempDir.mkdir();
+		TrackedDirectory etcTracker = new TrackedDirectory(currentEtcDir, null);
 		services.add(ClusterManager.load(executorService, getWebServicePublicAddress(), null));
-		services.add(WebappManager.load(currentDataDir, null, currentTempDir));
-		return WebappManager.getInstance().getServletApplication();
+		services.add(WebappManager.load(currentDataDir, etcTracker, currentTempDir));
+		ServletApplication servletApplication = WebappManager.getInstance().getServletApplication();
+		etcTracker.check();
+		return servletApplication;
 	}
 
 	@Override

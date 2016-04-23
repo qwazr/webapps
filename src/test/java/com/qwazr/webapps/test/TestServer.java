@@ -17,6 +17,7 @@ package com.qwazr.webapps.test;
 
 import com.google.common.io.Files;
 import com.qwazr.webapps.WebappServer;
+import org.apache.commons.io.FileUtils;
 
 import javax.servlet.ServletException;
 import java.io.File;
@@ -34,7 +35,8 @@ public class TestServer {
 			return;
 		final File dataDir = Files.createTempDir();
 		System.setProperty("QWAZR_DATA", dataDir.getAbsolutePath());
-		System.setProperty("QWAZR_ETC", new File("src/test/java/com/qwazr/webapps/test/etc").getAbsolutePath());
+		FileUtils.copyDirectory(new File("src/test/js"), dataDir);
+		System.setProperty("QWAZR_ETC", new File("src/test/resources/com/qwazr/webapps/test/etc").getAbsolutePath());
 		WebappServer.main(new String[] {});
 		serverStarted = true;
 	}
