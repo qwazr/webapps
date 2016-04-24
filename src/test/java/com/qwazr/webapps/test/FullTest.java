@@ -31,7 +31,7 @@ import java.net.URISyntaxException;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class FullTest {
 
-	private final static String TEXT_HTML_UTF8 = "text/html; charset=UTF-8";
+	private final static String TEXT_HTML = "text/html";
 	private final static String TEXT_CSS = "text/css";
 
 	@Test
@@ -50,7 +50,7 @@ public class FullTest {
 	private HttpEntity checkEntity(HttpResponse response, String contentType, String testString) throws IOException {
 		final HttpEntity entity = response.getEntity();
 		Assert.assertNotNull(entity);
-		Assert.assertEquals(contentType, entity.getContentType().getValue());
+		Assert.assertTrue(entity.getContentType().getValue().startsWith(contentType));
 		Assert.assertTrue(EntityUtils.toString(entity).contains(testString));
 		return entity;
 	}
@@ -58,13 +58,13 @@ public class FullTest {
 	@Test
 	public void test100javaServlet() throws IOException {
 		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/java"), 200);
-		checkEntity(response, TEXT_HTML_UTF8, TestServlet.TEST_STRING);
+		checkEntity(response, TEXT_HTML, TestServlet.TEST_STRING);
 	}
 
 	@Test
 	public void test200javascriptServlet() throws IOException {
 		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/javascript"), 200);
-		checkEntity(response, TEXT_HTML_UTF8, TestServlet.TEST_STRING);
+		checkEntity(response, TEXT_HTML, TestServlet.TEST_STRING);
 	}
 
 	@Test
