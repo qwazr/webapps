@@ -37,7 +37,8 @@ public class TestServer {
 		System.setProperty("QWAZR_DATA", dataDir.getAbsolutePath());
 		FileUtils.copyDirectoryToDirectory(new File("src/test/js"), dataDir);
 		FileUtils.copyDirectoryToDirectory(new File("src/test/css"), dataDir);
-		System.setProperty("QWAZR_ETC", new File("src/test/resources/com/qwazr/webapps/test/etc").getAbsolutePath());
+		System.setProperty("QWAZR_ETC_DIR",
+				new File("src/test/resources/com/qwazr/webapps/test/etc").getAbsolutePath());
 		WebappServer.main(new String[] {});
 		serverStarted = true;
 	}
