@@ -31,28 +31,45 @@ import java.net.URISyntaxException;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class FullTest {
 
+	private final static String TEXT_HTML_UTF8 = "text/html; charset=UTF-8";
+	private final static String TEXT_CSS = "text/css";
+
 	@Test
 	public void test000StartServer()
 			throws URISyntaxException, IOException, InstantiationException, ServletException, IllegalAccessException {
 		TestServer.startServer();
 	}
 
-	private void checkResult(HttpResponse response) throws IOException {
+	private HttpResponse checkResponse(Request request, int expectedStatusCode) throws IOException {
+		final HttpResponse response = request.execute().returnResponse();
 		Assert.assertNotNull(response);
-		Assert.assertEquals(200, response.getStatusLine().getStatusCode());
-		HttpEntity entity = response.getEntity();
+		Assert.assertEquals(expectedStatusCode, response.getStatusLine().getStatusCode());
+		return response;
+	}
+
+	private HttpEntity checkEntity(HttpResponse response, String contentType, String testString) throws IOException {
+		final HttpEntity entity = response.getEntity();
 		Assert.assertNotNull(entity);
-		Assert.assertEquals("text/html; charset=UTF-8", entity.getContentType().getValue());
-		Assert.assertTrue(EntityUtils.toString(entity).contains(TestServlet.TEST_STRING));
+		Assert.assertEquals(contentType, entity.getContentType().getValue());
+		Assert.assertTrue(EntityUtils.toString(entity).contains(testString));
+		return entity;
 	}
 
 	@Test
 	public void test100javaServlet() throws IOException {
-		checkResult(Request.Get(TestServer.BASE_SERVLET_URL + "/java").execute().returnResponse());
+		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/java"), 200);
+		checkEntity(response, TEXT_HTML_UTF8, TestServlet.TEST_STRING);
 	}
 
 	@Test
 	public void test200javascriptServlet() throws IOException {
-		checkResult(Request.Get(TestServer.BASE_SERVLET_URL + "/javascript").execute().returnResponse());
+		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/javascript"), 200);
+		checkEntity(response, TEXT_HTML_UTF8, TestServlet.TEST_STRING);
+	}
+
+	@Test
+	public void test300static() throws IOException {
+		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/css/test.css"), 200);
+		checkEntity(response, TEXT_CSS, ".qwazr {");
 	}
 }

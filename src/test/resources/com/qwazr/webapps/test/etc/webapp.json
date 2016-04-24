@@ -1,9 +1,9 @@
 {
   "controllers": {
-    "^/javascript$": "controller.js",
+    "^/javascript$": "js/controller.js",
     "^/java$": "com.qwazr.webapps.test.TestServlet"
   },
   "statics": {
-    "^/css/(.*)$": "store/webapp/data/static/css/$1"
+    "^/css/(.*)$": "css/$1"
   }
 }
