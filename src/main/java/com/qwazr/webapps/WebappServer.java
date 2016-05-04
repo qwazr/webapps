@@ -43,7 +43,7 @@ public class WebappServer extends AbstractServer<ServerConfiguration> {
 		File currentTempDir = new File(currentDataDir, "tmp");
 		currentTempDir.mkdir();
 		TrackedDirectory etcTracker = new TrackedDirectory(currentEtcDir, null);
-		services.add(ClusterManager.load(executorService, getWebServicePublicAddress(), null));
+		services.add(ClusterManager.load(executorService, udpServer, getWebServicePublicAddress(), null));
 		services.add(WebappManager.load(currentDataDir, etcTracker, currentTempDir));
 		ServletApplication servletApplication = WebappManager.getInstance().getServletApplication();
 		etcTracker.check();
