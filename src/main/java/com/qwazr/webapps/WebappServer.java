@@ -27,12 +27,13 @@ import io.undertow.security.idm.IdentityManager;
 import javax.servlet.ServletException;
 import java.io.File;
 import java.io.IOException;
+import java.net.UnknownHostException;
 import java.util.Collection;
 import java.util.concurrent.Executors;
 
 public class WebappServer extends AbstractServer<ServerConfiguration> {
 
-	private WebappServer() {
+	private WebappServer() throws UnknownHostException {
 		super(Executors.newSingleThreadExecutor(), new ServerConfiguration());
 	}
 
