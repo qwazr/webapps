@@ -19,14 +19,17 @@ import com.qwazr.utils.LockUtils;
 import com.qwazr.utils.file.TrackedDirectory;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.json.JsonMapper;
+import com.qwazr.utils.server.InFileSessionPersistenceManager;
+import com.qwazr.utils.server.ServerBuilder;
 import com.qwazr.utils.server.ServerException;
-import com.qwazr.utils.server.ServletApplication;
+import com.qwazr.webapps.WebappHttpServlet;
 import com.qwazr.webapps.WebappManagerServiceImpl;
-import com.qwazr.webapps.WebappManagerServiceInterface;
+import io.undertow.servlet.Servlets;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.servlet.MultipartConfigElement;
 import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -37,20 +40,34 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 
 	public final static String SERVICE_NAME_WEBAPPS = "webapps";
 
+	public final static String SESSIONS_PERSISTENCE_DIR = "webapp-sessions";
+
+	//TODO Parameters for fileupload limitation
+	private final static MultipartConfigElement multipartConfigElement =
+			new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
+
 	private static final Logger logger = LoggerFactory.getLogger(WebappManager.class);
 
 	public static volatile WebappManager INSTANCE = null;
 
-	public synchronized static Class<? extends WebappManagerServiceInterface> load(File data_directory,
-			TrackedDirectory etcTracker, File tempDirectory) throws IOException {
+	public synchronized static void load(final ServerBuilder serverBuilder, final TrackedDirectory etcTracker,
+			final File tempDirectory) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
-		ControllerManager.load(data_directory);
-		StaticManager.load(data_directory);
+		ControllerManager.load(serverBuilder.getServerConfiguration().dataDirectory);
+		StaticManager.load(serverBuilder.getServerConfiguration().dataDirectory);
 		try {
 			INSTANCE = new WebappManager(etcTracker, tempDirectory);
 			etcTracker.register(INSTANCE);
-			return WebappManagerServiceImpl.class;
+			serverBuilder.registerWebService(WebappManagerServiceImpl.class);
+
+			File sessionPersistenceDir = new File(tempDirectory, SESSIONS_PERSISTENCE_DIR);
+			if (!sessionPersistenceDir.exists())
+				sessionPersistenceDir.mkdir();
+			serverBuilder.setSessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
+			serverBuilder.registerServlet(Servlets.servlet("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
+					.setMultipartConfig(multipartConfigElement));
+
 		} catch (ServerException e) {
 			throw new RuntimeException(e);
 		}
@@ -64,7 +81,6 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 
 	private final TrackedDirectory etcTracker;
 
-	private final ServletApplication servletApplication;
 	private volatile ApplicationContext applicationContext;
 
 	private final LockUtils.ReadWriteLock mapLock = new LockUtils.ReadWriteLock();
@@ -74,7 +90,6 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		this.webappFileMap = new HashMap<>();
 		this.applicationContext = null;
 		this.etcTracker = etcTracker;
-		this.servletApplication = new WebappApplication(tempDirectory);
 	}
 
 	private ApplicationContext buildApplicationContext() {
@@ -84,10 +99,6 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		if (logger.isInfoEnabled())
 			logger.info("Load Web application");
 		return new ApplicationContext(globalWebapp);
-	}
-
-	public ServletApplication getServletApplication() {
-		return servletApplication;
 	}
 
 	public WebappDefinition getWebAppDefinition() throws IOException {
