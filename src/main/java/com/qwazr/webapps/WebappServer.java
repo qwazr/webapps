@@ -36,7 +36,7 @@ public class WebappServer {
 		ClusterManager.load(builder, null);
 		WebappManager.load(builder, etcTracker, currentTempDir);
 		etcTracker.check();
-		return new GenericServer(builder).start(true);
+		return builder.build().start(true);
 	}
 
 	public static void main(String[] args)
