@@ -16,7 +16,6 @@
 package com.qwazr.webapps.transaction;
 
 import com.qwazr.utils.LockUtils;
-import com.qwazr.utils.file.TrackedDirectory;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.json.JsonMapper;
 import com.qwazr.utils.server.InFileSessionPersistenceManager;
@@ -57,7 +56,7 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		ControllerManager.load(serverBuilder.getServerConfiguration().dataDirectory);
 		StaticManager.load(serverBuilder.getServerConfiguration().dataDirectory);
 		try {
-			INSTANCE = new WebappManager(etcTracker, tempDirectory);
+			INSTANCE = new WebappManager(etcTracker);
 			etcTracker.register(INSTANCE);
 			serverBuilder.registerWebService(WebappManagerServiceImpl.class);
 
@@ -86,7 +85,7 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 	private final LockUtils.ReadWriteLock mapLock = new LockUtils.ReadWriteLock();
 	private final Map<File, WebappDefinition> webappFileMap;
 
-	private WebappManager(TrackedInterface etcTracker, File tempDirectory) throws IOException, ServerException {
+	private WebappManager(final TrackedInterface etcTracker) throws IOException, ServerException {
 		this.webappFileMap = new HashMap<>();
 		this.applicationContext = null;
 		this.etcTracker = etcTracker;
@@ -112,21 +111,21 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 	}
 
 	@Override
-	public void accept(TrackedInterface.ChangeReason changeReason, File jsonFile) {
+	public void accept(final TrackedInterface.ChangeReason changeReason, final File jsonFile) {
 		String extension = FilenameUtils.getExtension(jsonFile.getName());
 		if (!"json".equals(extension))
 			return;
 		switch (changeReason) {
-			case UPDATED:
-				loadWebappDefinition(jsonFile);
-				break;
-			case DELETED:
-				unloadWebappDefinition(jsonFile);
-				break;
+		case UPDATED:
+			loadWebappDefinition(jsonFile);
+			break;
+		case DELETED:
+			unloadWebappDefinition(jsonFile);
+			break;
 		}
 	}
 
-	private void loadWebappDefinition(File jsonFile) {
+	private void loadWebappDefinition(final File jsonFile) {
 		try {
 			final WebappDefinition webappDefinition = JsonMapper.MAPPER.readValue(jsonFile, WebappDefinition.class);
 
@@ -138,13 +137,10 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 			if (logger.isInfoEnabled())
 				logger.info("Load WebApp configuration file: " + jsonFile.getAbsolutePath());
 
-			mapLock.w.lock();
-			try {
+			mapLock.write(() -> {
 				webappFileMap.put(jsonFile, webappDefinition);
 				applicationContext = buildApplicationContext();
-			} finally {
-				mapLock.w.unlock();
-			}
+			});
 
 		} catch (IOException e) {
 			if (logger.isErrorEnabled())
@@ -153,18 +149,14 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		}
 	}
 
-	private void unloadWebappDefinition(File jsonFile) {
-		final WebappDefinition webappDefinition;
-		mapLock.w.lock();
-		try {
-			webappDefinition = webappFileMap.remove(jsonFile);
+	private void unloadWebappDefinition(final File jsonFile) {
+		mapLock.write(() -> {
+			final WebappDefinition webappDefinition = webappFileMap.remove(jsonFile);
 			if (webappDefinition == null)
 				return;
 			if (logger.isInfoEnabled())
 				logger.info("Unload WebApp configuration file: " + jsonFile.getAbsolutePath());
 			applicationContext = buildApplicationContext();
-		} finally {
-			mapLock.w.unlock();
-		}
+		});
 	}
 }
