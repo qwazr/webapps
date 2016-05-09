@@ -50,7 +50,7 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 
 	public static volatile WebappManager INSTANCE = null;
 
-	public synchronized static void load(final ServerBuilder serverBuilder, final TrackedDirectory etcTracker,
+	public synchronized static void load(final ServerBuilder serverBuilder, final TrackedInterface etcTracker,
 			final File tempDirectory) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
@@ -79,14 +79,14 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		return INSTANCE;
 	}
 
-	private final TrackedDirectory etcTracker;
+	private final TrackedInterface etcTracker;
 
 	private volatile ApplicationContext applicationContext;
 
 	private final LockUtils.ReadWriteLock mapLock = new LockUtils.ReadWriteLock();
 	private final Map<File, WebappDefinition> webappFileMap;
 
-	private WebappManager(TrackedDirectory etcTracker, File tempDirectory) throws IOException, ServerException {
+	private WebappManager(TrackedInterface etcTracker, File tempDirectory) throws IOException, ServerException {
 		this.webappFileMap = new HashMap<>();
 		this.applicationContext = null;
 		this.etcTracker = etcTracker;
@@ -117,12 +117,12 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		if (!"json".equals(extension))
 			return;
 		switch (changeReason) {
-		case UPDATED:
-			loadWebappDefinition(jsonFile);
-			break;
-		case DELETED:
-			unloadWebappDefinition(jsonFile);
-			break;
+			case UPDATED:
+				loadWebappDefinition(jsonFile);
+				break;
+			case DELETED:
+				unloadWebappDefinition(jsonFile);
+				break;
 		}
 	}
 

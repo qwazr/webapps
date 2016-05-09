@@ -16,7 +16,9 @@
 package com.qwazr.webapps;
 
 import com.qwazr.cluster.manager.ClusterManager;
+import com.qwazr.utils.file.TrackedDirectories;
 import com.qwazr.utils.file.TrackedDirectory;
+import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.server.GenericServer;
 import com.qwazr.utils.server.ServerBuilder;
 import com.qwazr.webapps.transaction.WebappManager;
@@ -32,7 +34,8 @@ public class WebappServer {
 		final ServerBuilder builder = new ServerBuilder();
 		final File currentTempDir = new File(builder.getServerConfiguration().dataDirectory, "tmp");
 		currentTempDir.mkdir();
-		final TrackedDirectory etcTracker = new TrackedDirectory(builder.getServerConfiguration().etcDirectory, null);
+		final TrackedInterface
+				etcTracker = TrackedInterface.build(builder.getServerConfiguration().etcDirectories, null);
 		ClusterManager.load(builder, null);
 		WebappManager.load(builder, etcTracker, currentTempDir);
 		etcTracker.check();
