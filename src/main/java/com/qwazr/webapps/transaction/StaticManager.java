@@ -40,12 +40,13 @@ public class StaticManager {
 		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 	}
 
-	File findStatic(ApplicationContext context, String requestPath) throws URISyntaxException, IOException {
+	final File findStatic(final ApplicationContext context, final String requestPath)
+			throws URISyntaxException, IOException {
 		// First we try to find the root directory using configuration mapping
-		String staticPath = context.findStatic(requestPath);
+		final String staticPath = context.findStatic(requestPath);
 		if (staticPath == null)
 			return null;
-		File staticFile = staticPath.startsWith("/") ? new File(staticPath) : new File(dataDir, staticPath);
+		final File staticFile = staticPath.startsWith("/") ? new File(staticPath) : new File(dataDir, staticPath);
 		if (!staticFile.exists())
 			throw new FileNotFoundException("File not found");
 		if (!staticFile.isFile())
@@ -53,19 +54,41 @@ public class StaticManager {
 		return staticFile;
 	}
 
-	void handle(WebappHttpResponse response, File staticFile) throws IOException {
-		String type = mimeTypeMap.getContentType(staticFile);
+	final void handle(final WebappHttpResponse response, final Long length, final String type, final Long lastModified,
+			final InputStream inputStream) throws IOException {
 		if (type != null)
 			response.setContentType(type);
-		response.setContentLengthLong(staticFile.length());
-		response.setDateHeader("Last-Modified", staticFile.lastModified());
+		if (length != null)
+			response.setContentLengthLong(length);
+		if (lastModified != null)
+			response.setDateHeader("Last-Modified", lastModified);
 		response.setHeader("Cache-Control", "max-age=86400");
 		response.setDateHeader("Expires", System.currentTimeMillis() + 86400 * 1000);
-		InputStream inputStream = new FileInputStream(staticFile);
-		try {
-			IOUtils.copy(inputStream, response.getOutputStream());
-		} finally {
-			IOUtils.closeQuietly(inputStream);
+		IOUtils.copy(inputStream, response.getOutputStream());
+
+	}
+
+	final void handle(final WebappHttpResponse response, final File staticFile) throws IOException {
+		try (final InputStream inputStream = new FileInputStream(staticFile)) {
+			final String type = mimeTypeMap.getContentType(staticFile);
+			handle(response, staticFile.length(), type, staticFile.lastModified(), inputStream);
+		}
+	}
+
+	final static String FAVICON = "/favicon.ico";
+
+	final boolean handleDefaultResource(final WebappHttpResponse response, final String requestPath)
+			throws IOException {
+		if (requestPath == null)
+			return false;
+		if (!FAVICON.equals(requestPath))
+			return false;
+		try (final InputStream inputStream = getClass().getResourceAsStream("/com/qwazr/webapps" + FAVICON)) {
+			if (inputStream == null)
+				return false;
+			final String type = mimeTypeMap.getContentType(FAVICON);
+			handle(response, null, type, null, inputStream);
+			return true;
 		}
 	}
 }

@@ -54,30 +54,32 @@ public class WebappTransaction implements Closeable {
 		return response;
 	}
 
-	public void execute()
+	final public void execute()
 			throws IOException, URISyntaxException, ScriptException, PrivilegedActionException, InterruptedException,
 			ReflectiveOperationException, ServletException {
 		final ApplicationContext context = WebappManager.INSTANCE.getApplicationContext();
 		if (context == null)
 			return;
-		String pathInfo = request.getPathInfo();
-		StaticManager staticManager = StaticManager.INSTANCE;
-		File staticFile = staticManager.findStatic(context, pathInfo);
+		final String pathInfo = request.getPathInfo();
+		final StaticManager staticManager = StaticManager.INSTANCE;
+		final File staticFile = staticManager.findStatic(context, pathInfo);
 		if (staticFile != null) {
 			staticManager.handle(response, staticFile);
 			return;
 		}
-		ControllerManager controllerManager = ControllerManager.INSTANCE;
-		String controllerPath = context.findController(pathInfo);
+		final ControllerManager controllerManager = ControllerManager.INSTANCE;
+		final String controllerPath = context.findController(pathInfo);
 		if (controllerPath != null) {
 			controllerManager.handle(this, controllerPath);
 			return;
 		}
+		if (staticManager.handleDefaultResource(response, pathInfo))
+			return;
 		throw new WebappException(Status.NOT_FOUND);
 	}
 
 	@Override
-	public void close() throws IOException {
+	final public void close() throws IOException {
 		IOUtils.close(closeables);
 	}
 }

@@ -110,6 +110,8 @@ image/vnd.dwg				dwg
 image/vnd.dxf				dxf
 # Simple Vector Format (SoftSource)
 image/vnd.svf				svf
+# Ico
+image/vnd.microsoft.icon    ico
 
 # AUDIO/VOICE/MUSIC RELATED TYPES
 
