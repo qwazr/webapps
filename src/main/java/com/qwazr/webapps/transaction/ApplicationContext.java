@@ -15,8 +15,6 @@
  **/
 package com.qwazr.webapps.transaction;
 
-import com.qwazr.utils.LockUtils;
-
 import java.util.List;
 
 public class ApplicationContext {
@@ -26,8 +24,6 @@ public class ApplicationContext {
 	private final List<PathBind> controllerMatchers;
 
 	private final List<PathBind> staticMatchers;
-
-	private final LockUtils.ReadWriteLock sessionsLock = new LockUtils.ReadWriteLock();
 
 	ApplicationContext(WebappDefinition webappDefinitions) {
 		this.webappDefinition = webappDefinitions;
