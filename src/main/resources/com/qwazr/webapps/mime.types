@@ -112,6 +112,8 @@ image/vnd.dxf				dxf
 image/vnd.svf				svf
 # Ico
 image/vnd.microsoft.icon    ico
+# Scalable Vector Graphics
+image/svg+xml               svg svgz
 
 # AUDIO/VOICE/MUSIC RELATED TYPES
 
