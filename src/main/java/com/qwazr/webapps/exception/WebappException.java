@@ -71,7 +71,12 @@ public class WebappException extends AbstractWebappException {
 	}
 
 	private void sendQuietlyHTML(HttpServletResponse response) throws IOException {
-		PrintWriter printWriter = response.getWriter();
+		PrintWriter printWriter;
+		try {
+			printWriter = response.getWriter();
+		} catch (IllegalStateException e) {
+			printWriter = new PrintWriter(response.getOutputStream());
+		}
 		String message = StringEscapeUtils.escapeHtml4(error.message);
 		response.setStatus(error.status);
 		response.setContentType("text/html");
