@@ -21,7 +21,6 @@ import com.qwazr.webapps.transaction.WebappTransaction;
 import com.qwazr.webapps.transaction.body.HttpBodyInterface;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.slf4j.ext.EventLogger;
 
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -45,7 +44,7 @@ public class WebappHttpServlet extends HttpServlet {
 				bodyEntity = HttpBodyInterface.newEntity(request);
 			transaction = new WebappTransaction(request, response, bodyEntity);
 			transaction.execute();
-			EventLogger.logEvent(new WebappLogger(request, response, System.currentTimeMillis() - time));
+			new WebappLogger(request, response, System.currentTimeMillis() - time);
 		} catch (Exception e) {
 			AbstractWebappException.newInstance(e).sendQuietly(response);
 			logger.error(request.getRequestURI() + "\t" + response.getStatus(), e);

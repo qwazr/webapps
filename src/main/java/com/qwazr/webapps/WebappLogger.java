@@ -16,11 +16,11 @@
 package com.qwazr.webapps;
 
 import org.slf4j.ext.EventData;
+import org.slf4j.ext.EventLogger;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.util.Calendar;
-
 
 public class WebappLogger extends EventData {
 
@@ -36,8 +36,6 @@ public class WebappLogger extends EventData {
 		this.response = response;
 		this.timeTaken = timeTaken;
 		this.calendar = Calendar.getInstance();
-		setEventDateTime(calendar.getTime());
-		setEventType("transfer");
 		put("c-ip", getCIp());
 		put("cs-host", getCsHost());
 		put("cs-method", getCsMethod());
@@ -52,6 +50,7 @@ public class WebappLogger extends EventData {
 		put("s-port", getSPort());
 		put("time", getTime());
 		put("timetaken", getTimeTaken());
+		EventLogger.logEvent(this);
 	}
 
 	private void span2(final StringBuilder sb, final int value) {
