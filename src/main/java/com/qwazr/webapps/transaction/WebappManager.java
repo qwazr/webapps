@@ -69,9 +69,7 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 			serverBuilder.registerServlet(Servlets.servlet("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
 					.setMultipartConfig(multipartConfigElement));
 
-			final String logFormat = INSTANCE.getWebAppDefinition().log_format;
-			if (logFormat != null && !logFormat.isEmpty())
-				serverBuilder.setServletLogReceiver(accessLogger, logFormat);
+			serverBuilder.setServletAccessLogger(accessLogger);
 
 		} catch (ServerException e) {
 			throw new RuntimeException(e);
@@ -122,12 +120,12 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		if (!"json".equals(extension))
 			return;
 		switch (changeReason) {
-			case UPDATED:
-				loadWebappDefinition(jsonFile);
-				break;
-			case DELETED:
-				unloadWebappDefinition(jsonFile);
-				break;
+		case UPDATED:
+			loadWebappDefinition(jsonFile);
+			break;
+		case DELETED:
+			unloadWebappDefinition(jsonFile);
+			break;
 		}
 	}
 

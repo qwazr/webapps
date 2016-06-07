@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.function.Consumer;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -32,13 +31,11 @@ public class WebappDefinition {
 	public final Map<String, String> controllers;
 	public final Map<String, String> statics;
 	public final String identity_manager;
-	public final String log_format;
 
 	public WebappDefinition() {
 		controllers = null;
 		statics = null;
 		identity_manager = null;
-		log_format = null;
 	}
 
 	WebappDefinition(Map<String, String> controllers, Map<String, String> statics, String identity_manager,
@@ -46,7 +43,6 @@ public class WebappDefinition {
 		this.controllers = controllers;
 		this.statics = statics;
 		this.identity_manager = identity_manager;
-		this.log_format = log_format;
 	}
 
 	static WebappDefinition merge(Collection<WebappDefinition> webappDefinitions) {
@@ -63,8 +59,6 @@ public class WebappDefinition {
 				statics.putAll(webappDefinition.statics);
 			if (webappDefinition.identity_manager != null)
 				identityManagerRef.set(webappDefinition.identity_manager);
-			if (webappDefinition.log_format != null)
-				logFormatRef.set(webappDefinition.log_format);
 		});
 		return new WebappDefinition(controllers, statics, identityManagerRef.get(), logFormatRef.get());
 	}
