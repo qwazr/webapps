@@ -30,7 +30,6 @@ import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
 import javax.script.ScriptException;
 import javax.servlet.ServletException;
-import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import java.io.*;
 import java.net.SocketPermission;
@@ -38,7 +37,6 @@ import java.net.URISyntaxException;
 import java.security.*;
 import java.security.cert.Certificate;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 public class ControllerManager {
 
@@ -64,8 +62,8 @@ public class ControllerManager {
 	}
 
 	void handle(WebappTransaction transaction, String controllerPath)
-					throws URISyntaxException, IOException, InterruptedException, ReflectiveOperationException,
-					ServletException, ScriptException, PrivilegedActionException {
+			throws URISyntaxException, IOException, InterruptedException, ReflectiveOperationException,
+			ServletException, ScriptException, PrivilegedActionException {
 		if (controllerPath == null)
 			return;
 		File controllerFile = new File(dataDir, controllerPath);
@@ -97,14 +95,14 @@ public class ControllerManager {
 			// Required for templates
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
-			INSTANCE = new AccessControlContext(new ProtectionDomain[] {
-							new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
+			INSTANCE = new AccessControlContext(
+					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
 		}
 	}
 
 	private void handleFile(WebappTransaction transaction, File controllerFile)
-					throws IOException, ScriptException, PrivilegedActionException, InterruptedException,
-					ReflectiveOperationException, ServletException {
+			throws IOException, ScriptException, PrivilegedActionException, InterruptedException,
+			ReflectiveOperationException, ServletException {
 		String ext = FilenameUtils.getExtension(controllerFile.getName());
 		if (StringUtils.isEmpty(ext))
 			throw new ScriptException("Unsupported controller " + controllerFile.getName());
@@ -115,7 +113,7 @@ public class ControllerManager {
 	}
 
 	private void handleJavascript(WebappTransaction transaction, File controllerFile)
-					throws IOException, ScriptException, PrivilegedActionException {
+			throws IOException, ScriptException, PrivilegedActionException {
 		WebappHttpResponse response = transaction.getResponse();
 		response.setHeader("Cache-Control", "max-age=0, no-cache, no-store");
 		Bindings bindings = scriptEngine.createBindings();
@@ -125,34 +123,27 @@ public class ControllerManager {
 		bindings.put("response", transaction.getResponse());
 		bindings.put("session", transaction.getRequest().getSession());
 		bindings.putAll(transaction.getRequest().getAttributes());
-		FileReader fileReader = new FileReader(controllerFile);
-		try {
+		try (final FileReader fileReader = new FileReader(controllerFile)) {
 			ScriptUtils.evalScript(scriptEngine, RestrictedAccessControlContext.INSTANCE, fileReader, bindings);
-		} finally {
-			fileReader.close();
 		}
 	}
 
 	private void handleJavaClass(WebappTransaction transaction, String className)
-					throws IOException, InterruptedException, ScriptException, ReflectiveOperationException,
-					ServletException {
-		final Class<? extends HttpServlet> servletClass = ClassLoaderUtils
-						.findClass(ClassLoaderManager.classLoader, className);
+			throws IOException, InterruptedException, ScriptException, ReflectiveOperationException, ServletException {
+		final Class<? extends HttpServlet> servletClass =
+				ClassLoaderUtils.findClass(ClassLoaderManager.classLoader, className);
 		Objects.requireNonNull(servletClass, "Class not found: " + className);
 		final ServletInfo servletInfo = new ServletInfo(className, servletClass);
 		servletInfo.getInstanceFactory().createInstance();
-		HttpServlet servlet = servletMap.getOrCreate(servletClass, new Supplier() {
-			@Override
-			public HttpServlet get() {
-				try {
-					HttpServlet servlet = servletClass.newInstance();
-					WebServlet webServlet = AnnotationsUtils.getFirstAnnotation(servletClass, WebServlet.class);
-					servlet.init(new ServletConfigImpl(servletInfo, transaction.getRequest().getServletContext()));
-					LibraryManager.inject(servlet);
-					return servlet;
-				} catch (InstantiationException | IllegalAccessException | ServletException e) {
-					throw new RuntimeException(e);
-				}
+		final HttpServlet servlet = servletMap.getOrCreate(servletClass, () -> {
+			try {
+				HttpServlet servlet1 = servletClass.newInstance();
+				//WebServlet webServlet = AnnotationsUtils.getFirstAnnotation(servletClass, WebServlet.class);
+				servlet1.init(new ServletConfigImpl(servletInfo, transaction.getRequest().getServletContext()));
+				LibraryManager.inject(servlet1);
+				return servlet1;
+			} catch (InstantiationException | IllegalAccessException | ServletException e) {
+				throw new RuntimeException(e);
 			}
 		});
 		servlet.service(transaction.getRequest(), transaction.getResponse());
