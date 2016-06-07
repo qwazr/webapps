@@ -36,20 +36,23 @@ public class WebappLogger extends EventData {
 		this.response = response;
 		this.timeTaken = timeTaken;
 		this.calendar = Calendar.getInstance();
-		put("c-ip", getCIp());
-		put("cs-host", getCsHost());
-		put("cs-method", getCsMethod());
-		put("cs-uri-query", getCsUriQuery());
-		put("cs(User-Agent)", getCsUserAgent());
-		put("cs(Username)", getCsUsername());
-		put("cs(X-Forwarded-For)", getCsXForwardedFor());
+		put("cIp", getCIp());
+		put("csHost", getCsHost());
+		put("csMethod", getCsMethod());
+		put("csUriQuery", getCsUriQuery());
+		put("csUriStem", getCsUriStem());
+		put("csUserAgent", getCsUserAgent());
+		put("csUsername", getCsUsername());
+		put("csXForwardedFor", getCsXForwardedFor());
 		put("date", getDate());
-		put("referer", getReferrer());
-		put("sc-status", getScStatus());
-		put("s-ip", getSIp());
-		put("s-port", getSPort());
+		put("csReferer", getCsReferrer());
+		put("scStatus", getScStatus());
+		put("sIp", getSIp());
+		put("sPort", getSPort());
 		put("time", getTime());
-		put("timetaken", getTimeTaken());
+		put("timeTaken", getTimeTaken());
+		put("csBytes", getCsBytes());
+		put("scBytes", getScBytes());
 		EventLogger.logEvent(this);
 	}
 
@@ -60,7 +63,8 @@ public class WebappLogger extends EventData {
 	}
 
 	public final String getDate() {
-		final StringBuilder sb = new StringBuilder(calendar.get(Calendar.YEAR));
+		final StringBuilder sb = new StringBuilder();
+		sb.append(calendar.get(Calendar.YEAR));
 		sb.append('-');
 		span2(sb, calendar.get(Calendar.MONTH) + 1);
 		sb.append('-');
@@ -69,7 +73,8 @@ public class WebappLogger extends EventData {
 	}
 
 	public final String getTime() {
-		final StringBuilder sb = new StringBuilder(calendar.get(Calendar.HOUR_OF_DAY));
+		final StringBuilder sb = new StringBuilder();
+		sb.append(calendar.get(Calendar.HOUR_OF_DAY));
 		sb.append(':');
 		span2(sb, calendar.get(Calendar.MINUTE));
 		sb.append(':');
@@ -148,15 +153,19 @@ public class WebappLogger extends EventData {
 		return replaceEmpty(request.getHeader(header));
 	}
 
+	private String getResponseHeader(final String header) {
+		return replaceEmpty(response.getHeader(header));
+	}
+
 	/**
-	 * @return the User-Agent header from the client request cs(User-Agent)
+	 * @return the User-Agent header from the client request cs-user-agent
 	 */
 	public final String getCsUserAgent() {
 		return getRequestHeader("User-Agent");
 	}
 
 	/**
-	 * @return the X-Forwarded-For header from the client request cs(X-Forwarded-For)
+	 * @return the X-Forwarded-For header from the client request cs-x-forwarded-for)
 	 */
 	public final String getCsXForwardedFor() {
 		return getRequestHeader("X-Forwarded-For");
@@ -165,15 +174,25 @@ public class WebappLogger extends EventData {
 	/**
 	 * @return the Referer header from the client request cs(Referer)
 	 */
-	public final String getReferrer() {
+	public final String getCsReferrer() {
 		return getRequestHeader("Referer");
 	}
 
 	/**
 	 * @return the Time taken for transaction to complete in milliseconds
 	 */
-	public final Long getTimeTaken() {
-		return timeTaken;
+	public final String getTimeTaken() {
+		return Long.toString(timeTaken);
+	}
+
+	//TODO Check replacement by stream counter
+	public final String getCsBytes() {
+		return getRequestHeader("Content-Length");
+	}
+
+	//TODO Check replacement by stream counter
+	public final String getScBytes() {
+		return getResponseHeader("Content-Length");
 	}
 
 }
