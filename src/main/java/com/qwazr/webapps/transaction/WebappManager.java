@@ -49,6 +49,8 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 
 	public static volatile WebappManager INSTANCE = null;
 
+	private static final Logger accessLogger = LoggerFactory.getLogger("com.qwazr.webapp.accessLogger");
+
 	public synchronized static void load(final ServerBuilder serverBuilder, final TrackedInterface etcTracker,
 			final File tempDirectory) throws IOException {
 		if (INSTANCE != null)
@@ -66,6 +68,10 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 			serverBuilder.setSessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
 			serverBuilder.registerServlet(Servlets.servlet("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
 					.setMultipartConfig(multipartConfigElement));
+
+			final String logFormat = INSTANCE.getWebAppDefinition().log_format;
+			if (logFormat != null && !logFormat.isEmpty())
+				serverBuilder.setServletLogReceiver(accessLogger, logFormat);
 
 		} catch (ServerException e) {
 			throw new RuntimeException(e);
@@ -116,12 +122,12 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		if (!"json".equals(extension))
 			return;
 		switch (changeReason) {
-		case UPDATED:
-			loadWebappDefinition(jsonFile);
-			break;
-		case DELETED:
-			unloadWebappDefinition(jsonFile);
-			break;
+			case UPDATED:
+				loadWebappDefinition(jsonFile);
+				break;
+			case DELETED:
+				unloadWebappDefinition(jsonFile);
+				break;
 		}
 	}
 
