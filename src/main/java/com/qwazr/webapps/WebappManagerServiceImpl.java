@@ -20,6 +20,7 @@ import com.qwazr.webapps.transaction.WebappDefinition;
 import com.qwazr.webapps.transaction.WebappManager;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 
 public class WebappManagerServiceImpl implements WebappManagerServiceInterface {
 
@@ -28,7 +29,7 @@ public class WebappManagerServiceImpl implements WebappManagerServiceInterface {
 		try {
 			WebappDefinition result = WebappManager.INSTANCE.getWebAppDefinition();
 			return result == null ? new WebappDefinition() : result;
-		} catch (IOException e) {
+		} catch (IOException | URISyntaxException e) {
 			throw ServerException.getJsonException(e);
 		}
 	}

@@ -21,6 +21,7 @@ import com.qwazr.utils.file.TrackedDirectory;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.server.GenericServer;
 import com.qwazr.utils.server.ServerBuilder;
+import com.qwazr.webapps.transaction.WebappDefinition;
 import com.qwazr.webapps.transaction.WebappManager;
 
 import javax.servlet.ServletException;

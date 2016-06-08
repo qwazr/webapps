@@ -15,6 +15,8 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import com.qwazr.classloader.ClassLoaderManager;
+import com.qwazr.compiler.CompilerManager;
 import com.qwazr.utils.LockUtils;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.json.JsonMapper;
@@ -24,6 +26,7 @@ import com.qwazr.utils.server.ServerException;
 import com.qwazr.webapps.WebappHttpServlet;
 import com.qwazr.webapps.WebappManagerServiceImpl;
 import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.ListenerInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +36,10 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.Map;
 
-public class WebappManager implements TrackedInterface.FileChangeConsumer {
+public class WebappManager {
 
 	public final static String SERVICE_NAME_WEBAPPS = "webapps";
 
@@ -46,6 +50,8 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 			new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
 
 	private static final Logger logger = LoggerFactory.getLogger(WebappManager.class);
+
+	public static volatile GlobalConfiguration GLOBAL_CONF = null;
 
 	public static volatile WebappManager INSTANCE = null;
 
@@ -59,8 +65,9 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		ControllerManager.load(serverBuilder.getServerConfiguration().dataDirectory);
 		StaticManager.load(serverBuilder.getServerConfiguration().dataDirectory);
 		try {
-			INSTANCE = new WebappManager(etcTracker);
-			etcTracker.register(INSTANCE);
+
+			GLOBAL_CONF = new GlobalConfiguration(etcTracker);
+
 			serverBuilder.registerWebService(WebappManagerServiceImpl.class);
 
 			File sessionPersistenceDir = new File(tempDirectory, SESSIONS_PERSISTENCE_DIR);
@@ -70,10 +77,17 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 			serverBuilder.registerServlet(Servlets.servlet("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
 					.setMultipartConfig(multipartConfigElement));
 
+			final WebappDefinition webappDefinition = GLOBAL_CONF.getWebappDefinition();
+
+			if (webappDefinition.listeners != null)
+				for (String listenerClass : webappDefinition.listeners)
+					serverBuilder.registerListener(new ListenerInfo(ClassLoaderManager.findClass(listenerClass)));
 			serverBuilder.setServletAccessLogger(accessLogger);
 
-		} catch (ServerException e) {
-			throw new RuntimeException(e);
+			INSTANCE = new WebappManager(webappDefinition);
+
+		} catch (ClassNotFoundException e) {
+			throw new ServerException(e);
 		}
 	}
 
@@ -83,85 +97,86 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 		return INSTANCE;
 	}
 
-	private final TrackedInterface etcTracker;
+	private final ApplicationContext applicationContext;
 
-	private volatile ApplicationContext applicationContext;
-
-	private final LockUtils.ReadWriteLock mapLock = new LockUtils.ReadWriteLock();
-	private final Map<File, WebappDefinition> webappFileMap;
-
-	private WebappManager(final TrackedInterface etcTracker) throws IOException, ServerException {
-		this.webappFileMap = new HashMap<>();
-		this.applicationContext = null;
-		this.etcTracker = etcTracker;
-	}
-
-	private ApplicationContext buildApplicationContext() {
-		if (webappFileMap.isEmpty())
-			return null;
-		WebappDefinition globalWebapp = WebappDefinition.merge((webappFileMap.values()));
+	private WebappManager(final WebappDefinition webappDefinition) throws IOException, ServerException {
+		this.applicationContext = new ApplicationContext(webappDefinition);
 		if (logger.isInfoEnabled())
 			logger.info("Load Web application");
-		return new ApplicationContext(globalWebapp);
 	}
 
-	public WebappDefinition getWebAppDefinition() throws IOException {
-		etcTracker.check();
-		ApplicationContext ac = applicationContext;
-		return ac == null ? null : ac.getWebappDefinition();
-	}
-
-	ApplicationContext getApplicationContext() throws IOException, URISyntaxException {
+	final ApplicationContext getApplicationContext() throws IOException, URISyntaxException {
 		return applicationContext;
 	}
 
-	@Override
-	public void accept(final TrackedInterface.ChangeReason changeReason, final File jsonFile) {
-		String extension = FilenameUtils.getExtension(jsonFile.getName());
-		if (!"json".equals(extension))
-			return;
-		switch (changeReason) {
-		case UPDATED:
-			loadWebappDefinition(jsonFile);
-			break;
-		case DELETED:
-			unloadWebappDefinition(jsonFile);
-			break;
-		}
+	public WebappDefinition getWebAppDefinition() throws IOException, URISyntaxException {
+		return getApplicationContext().getWebappDefinition();
 	}
 
-	private void loadWebappDefinition(final File jsonFile) {
-		try {
-			final WebappDefinition webappDefinition = JsonMapper.MAPPER.readValue(jsonFile, WebappDefinition.class);
+	private static class GlobalConfiguration implements TrackedInterface.FileChangeConsumer {
 
-			if (webappDefinition == null || webappDefinition.isEmpty()) {
-				unloadWebappDefinition(jsonFile);
-				return;
+		private final LockUtils.ReadWriteLock mapLock = new LockUtils.ReadWriteLock();
+
+		private final TrackedInterface etcTracker;
+		private final LinkedHashMap<File, WebappDefinition> webappFileMap;
+
+		private GlobalConfiguration(final TrackedInterface etcTracker) {
+			this.etcTracker = etcTracker;
+			webappFileMap = new LinkedHashMap<>();
+			etcTracker.register(this);
+		}
+
+		private WebappDefinition getWebappDefinition() {
+			etcTracker.check();
+			return mapLock.read(() -> WebappDefinition.merge(webappFileMap.values()));
+		}
+
+		private void loadWebappDefinition(final File jsonFile) {
+			try {
+				final WebappDefinition webappDefinition = JsonMapper.MAPPER.readValue(jsonFile, WebappDefinition.class);
+
+				if (webappDefinition == null || webappDefinition.isEmpty()) {
+					unloadWebappDefinition(jsonFile);
+					return;
+				}
+
+				if (logger.isInfoEnabled())
+					logger.info("Load WebApp configuration file: " + jsonFile.getAbsolutePath());
+
+				mapLock.write(() -> {
+					webappFileMap.put(jsonFile, webappDefinition);
+				});
+
+			} catch (IOException e) {
+				if (logger.isErrorEnabled())
+					logger.error(e.getMessage(), e);
 			}
+		}
 
-			if (logger.isInfoEnabled())
-				logger.info("Load WebApp configuration file: " + jsonFile.getAbsolutePath());
-
+		private void unloadWebappDefinition(final File jsonFile) {
 			mapLock.write(() -> {
-				webappFileMap.put(jsonFile, webappDefinition);
-				applicationContext = buildApplicationContext();
+				final WebappDefinition webappDefinition = webappFileMap.remove(jsonFile);
+				if (webappDefinition == null)
+					return;
+				if (logger.isInfoEnabled())
+					logger.info("Unload WebApp configuration file: " + jsonFile.getAbsolutePath());
 			});
+		}
 
-		} catch (IOException e) {
-			if (logger.isErrorEnabled())
-				logger.error(e.getMessage(), e);
-			return;
+		@Override
+		public void accept(final TrackedInterface.ChangeReason changeReason, final File jsonFile) {
+			String extension = FilenameUtils.getExtension(jsonFile.getName());
+			if (!"json".equals(extension))
+				return;
+			switch (changeReason) {
+				case UPDATED:
+					loadWebappDefinition(jsonFile);
+					break;
+				case DELETED:
+					unloadWebappDefinition(jsonFile);
+					break;
+			}
 		}
 	}
 
-	private void unloadWebappDefinition(final File jsonFile) {
-		mapLock.write(() -> {
-			final WebappDefinition webappDefinition = webappFileMap.remove(jsonFile);
-			if (webappDefinition == null)
-				return;
-			if (logger.isInfoEnabled())
-				logger.info("Unload WebApp configuration file: " + jsonFile.getAbsolutePath());
-			applicationContext = buildApplicationContext();
-		});
-	}
 }

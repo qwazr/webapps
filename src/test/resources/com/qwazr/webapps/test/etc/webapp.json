@@ -3,6 +3,9 @@
     "^/javascript$": "js/controller.js",
     "^/java$": "com.qwazr.webapps.test.TestServlet"
   },
+  "listeners": [
+    "com.qwazr.webapps.test.TestListener"
+  ],
   "statics": {
     "^/css/(.*)$": "css/$1"
   }

@@ -40,6 +40,14 @@ public class FullTest {
 		TestServer.startServer();
 	}
 
+	@Test
+	public void test50Listener()
+			throws URISyntaxException, IOException, InstantiationException, ServletException, IllegalAccessException {
+		Assert.assertEquals(1, TestListener.initializedListeners.size());
+		TestListener listener = TestListener.initializedListeners.iterator().next();
+		Assert.assertEquals(TestListener.class, listener.getClass());
+	}
+
 	private HttpResponse checkResponse(Request request, int expectedStatusCode) throws IOException {
 		final HttpResponse response = request.execute().returnResponse();
 		Assert.assertNotNull(response);

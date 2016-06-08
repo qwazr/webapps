@@ -19,9 +19,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicReference;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
@@ -30,18 +28,21 @@ public class WebappDefinition {
 
 	public final Map<String, String> controllers;
 	public final Map<String, String> statics;
+	public final Set<String> listeners;
 	public final String identity_manager;
 
 	public WebappDefinition() {
 		controllers = null;
 		statics = null;
 		identity_manager = null;
+		listeners = null;
 	}
 
-	WebappDefinition(Map<String, String> controllers, Map<String, String> statics, String identity_manager,
-			String log_format) {
+	WebappDefinition(Map<String, String> controllers, Map<String, String> statics, Set<String> listeners,
+			String identity_manager) {
 		this.controllers = controllers;
 		this.statics = statics;
+		this.listeners = listeners;
 		this.identity_manager = identity_manager;
 	}
 
@@ -50,21 +51,24 @@ public class WebappDefinition {
 			return null;
 		final Map<String, String> controllers = new HashMap<>();
 		final Map<String, String> statics = new HashMap<>();
+		final Set<String> listeners = new LinkedHashSet<>();
 		AtomicReference<String> identityManagerRef = new AtomicReference<>(null);
-		AtomicReference<String> logFormatRef = new AtomicReference<>(null);
 		webappDefinitions.forEach(webappDefinition -> {
 			if (webappDefinition.controllers != null)
 				controllers.putAll(webappDefinition.controllers);
 			if (webappDefinition.statics != null)
 				statics.putAll(webappDefinition.statics);
+			if (webappDefinition.listeners != null)
+				listeners.addAll(webappDefinition.listeners);
 			if (webappDefinition.identity_manager != null)
 				identityManagerRef.set(webappDefinition.identity_manager);
 		});
-		return new WebappDefinition(controllers, statics, identityManagerRef.get(), logFormatRef.get());
+		return new WebappDefinition(controllers, statics, listeners, identityManagerRef.get());
 	}
 
 	@JsonIgnore
 	public boolean isEmpty() {
-		return (controllers == null || controllers.isEmpty()) && (statics == null || statics.isEmpty());
+		return (controllers == null || controllers.isEmpty()) && (statics == null || statics.isEmpty()) &&
+				(listeners == null || listeners.isEmpty());
 	}
 }
