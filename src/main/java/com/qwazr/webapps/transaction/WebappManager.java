@@ -49,7 +49,8 @@ public class WebappManager implements TrackedInterface.FileChangeConsumer {
 
 	public static volatile WebappManager INSTANCE = null;
 
-	private static final Logger accessLogger = LoggerFactory.getLogger("com.qwazr.webapp.accessLogger");
+	private static final String ACCESS_LOG_LOGGER_NAME = "com.qwazr.webapps.accessLogger";
+	private static final Logger accessLogger = LoggerFactory.getLogger(ACCESS_LOG_LOGGER_NAME);
 
 	public synchronized static void load(final ServerBuilder serverBuilder, final TrackedInterface etcTracker,
 			final File tempDirectory) throws IOException {
