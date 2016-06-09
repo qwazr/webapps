@@ -128,7 +128,11 @@ public class WebappManager {
 
 		private WebappDefinition getWebappDefinition() {
 			etcTracker.check();
-			return mapLock.read(() -> WebappDefinition.merge(webappFileMap.values()));
+			return mapLock.read(() -> {
+				final WebappDefinition.Builder builder = new WebappDefinition.Builder();
+				builder.add(webappFileMap.values());
+				return builder.build();
+			});
 		}
 
 		private void loadWebappDefinition(final File jsonFile) {

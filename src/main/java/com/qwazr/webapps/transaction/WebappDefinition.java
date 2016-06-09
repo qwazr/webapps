@@ -20,7 +20,6 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.*;
-import java.util.concurrent.atomic.AtomicReference;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -28,47 +27,103 @@ public class WebappDefinition {
 
 	public final Map<String, String> controllers;
 	public final Map<String, String> statics;
+	public final Set<String> jaxrs;
 	public final Set<String> listeners;
 	public final String identity_manager;
 
 	public WebappDefinition() {
 		controllers = null;
 		statics = null;
+		jaxrs = null;
 		identity_manager = null;
 		listeners = null;
 	}
 
-	WebappDefinition(Map<String, String> controllers, Map<String, String> statics, Set<String> listeners,
-			String identity_manager) {
-		this.controllers = controllers;
-		this.statics = statics;
-		this.listeners = listeners;
-		this.identity_manager = identity_manager;
-	}
-
-	static WebappDefinition merge(Collection<WebappDefinition> webappDefinitions) {
-		if (webappDefinitions == null)
-			return null;
-		final Map<String, String> controllers = new HashMap<>();
-		final Map<String, String> statics = new HashMap<>();
-		final Set<String> listeners = new LinkedHashSet<>();
-		AtomicReference<String> identityManagerRef = new AtomicReference<>(null);
-		webappDefinitions.forEach(webappDefinition -> {
-			if (webappDefinition.controllers != null)
-				controllers.putAll(webappDefinition.controllers);
-			if (webappDefinition.statics != null)
-				statics.putAll(webappDefinition.statics);
-			if (webappDefinition.listeners != null)
-				listeners.addAll(webappDefinition.listeners);
-			if (webappDefinition.identity_manager != null)
-				identityManagerRef.set(webappDefinition.identity_manager);
-		});
-		return new WebappDefinition(controllers, statics, listeners, identityManagerRef.get());
+	private WebappDefinition(Builder builder) {
+		this.controllers = builder.controllers.isEmpty() ? null : new LinkedHashMap<>(builder.controllers);
+		this.statics = builder.statics.isEmpty() ? null : new LinkedHashMap<>(builder.statics);
+		this.jaxrs = builder.jaxrs.isEmpty() ? null : new LinkedHashSet<>(builder.jaxrs);
+		this.listeners = builder.listeners.isEmpty() ? null : new LinkedHashSet<>(builder.listeners);
+		this.identity_manager = builder.identity_manager;
 	}
 
 	@JsonIgnore
 	public boolean isEmpty() {
 		return (controllers == null || controllers.isEmpty()) && (statics == null || statics.isEmpty()) &&
 				(listeners == null || listeners.isEmpty());
+	}
+
+	public static class Builder {
+
+		private final Map<String, String> controllers;
+		private final Map<String, String> statics;
+		private final Set<String> jaxrs;
+		private final Set<String> listeners;
+		private String identity_manager;
+
+		Builder() {
+			controllers = new LinkedHashMap<>();
+			statics = new LinkedHashMap<>();
+			jaxrs = new LinkedHashSet<>();
+			listeners = new LinkedHashSet<>();
+			identity_manager = null;
+		}
+
+		public Builder add(WebappDefinition webappDefinition) {
+			if (webappDefinition == null)
+				return this;
+			if (webappDefinition.controllers != null)
+				controllers.putAll(webappDefinition.controllers);
+			if (webappDefinition.statics != null)
+				statics.putAll(webappDefinition.statics);
+			if (webappDefinition.jaxrs != null)
+				jaxrs.addAll(webappDefinition.jaxrs);
+			if (webappDefinition.listeners != null)
+				listeners.addAll(webappDefinition.listeners);
+			if (webappDefinition.identity_manager != null)
+				identity_manager = webappDefinition.identity_manager;
+			return this;
+		}
+
+		public Builder add(Collection<WebappDefinition> webappDefinitions) {
+			if (webappDefinitions == null)
+				return this;
+			for (WebappDefinition webappDefinition : webappDefinitions)
+				add(webappDefinition);
+			return this;
+		}
+
+		public Builder addController(String route, String className) {
+			controllers.put(route, className);
+			return this;
+		}
+
+		public Builder addStatic(String route, String path) {
+			statics.put(route, path);
+			return this;
+		}
+
+		public Builder addJaxrs(Class<?>... classes) {
+			if (classes != null)
+				for (Class<?> clazz : classes)
+					jaxrs.add(clazz.getName());
+			return this;
+		}
+
+		public Builder addListener(Class<?>... classes) {
+			if (classes != null)
+				for (Class<?> clazz : classes)
+					listeners.add(clazz.getName());
+			return this;
+		}
+
+		public Builder setIdentityManager(Class<?> identityManager) {
+			this.identity_manager = identityManager == null ? null : identityManager.getName();
+			return this;
+		}
+
+		public WebappDefinition build() {
+			return new WebappDefinition(this);
+		}
 	}
 }
