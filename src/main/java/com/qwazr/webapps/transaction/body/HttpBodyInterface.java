@@ -38,8 +38,7 @@ public interface HttpBodyInterface {
 			if ("application/xml".equals(mimeType))
 				return new XMLHttpBody(request);
 		}
-		throw new WebappException(Status.NOT_ACCEPTABLE, Title.BODY_ERROR,
-				"Not supported content type: " + contentTypeString);
+		return null;
 	}
 
 }

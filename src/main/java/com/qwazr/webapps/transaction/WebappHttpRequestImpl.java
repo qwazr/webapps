@@ -35,11 +35,11 @@ public class WebappHttpRequestImpl implements WebappHttpRequest {
 	private final WebappRequestMaps.WebappHeaders headers;
 	private final HttpBodyInterface body;
 
-	WebappHttpRequestImpl(HttpServletRequest request, HttpBodyInterface body) {
+	WebappHttpRequestImpl(HttpServletRequest request) throws IOException, ServletException {
 		this.request = request;
 		this.attributes = new WebappRequestMaps.WebappAttributes(request);
 		this.headers = new WebappRequestMaps.WebappHeaders(request);
-		this.body = body;
+		this.body = HttpBodyInterface.newEntity(request);
 	}
 
 	public HttpBodyInterface getBody() {

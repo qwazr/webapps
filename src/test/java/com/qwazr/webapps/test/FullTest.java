@@ -15,6 +15,7 @@
  **/
 package com.qwazr.webapps.test;
 
+import com.qwazr.utils.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
@@ -55,11 +56,15 @@ public class FullTest {
 		return response;
 	}
 
-	private HttpEntity checkEntity(HttpResponse response, String contentType, String testString) throws IOException {
+	private HttpEntity checkEntity(HttpResponse response, String contentType, String... testStrings)
+			throws IOException {
 		final HttpEntity entity = response.getEntity();
 		Assert.assertNotNull(entity);
 		Assert.assertTrue(entity.getContentType().getValue().startsWith(contentType));
-		Assert.assertTrue(EntityUtils.toString(entity).contains(testString));
+		String content = EntityUtils.toString(entity);
+		if (testStrings != null)
+			for (String testString : testStrings)
+				Assert.assertTrue(content.contains(testString));
 		return entity;
 	}
 
@@ -70,9 +75,27 @@ public class FullTest {
 	}
 
 	@Test
+	public void test150JaxRs() throws IOException {
+		final String pathParam = "sub-path";
+		HttpResponse response =
+				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs/service/test/" + pathParam), 200);
+		checkEntity(response, "application/json", TestJaxRs.TEST_STRING, pathParam);
+	}
+
+	@Test
 	public void test200javascriptServlet() throws IOException {
 		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/javascript"), 200);
 		checkEntity(response, TEXT_HTML, TestServlet.TEST_STRING);
+	}
+
+	private final static String PARAM_TEST_STRING = "testParam=testValue";
+
+	@Test
+	public void test210javascriptServletWithParam() throws IOException {
+		HttpResponse response =
+				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/javascript?" + PARAM_TEST_STRING), 200);
+		checkEntity(response, TEXT_HTML, TestServlet.TEST_STRING);
+		checkEntity(response, TEXT_HTML, PARAM_TEST_STRING);
 	}
 
 	@Test

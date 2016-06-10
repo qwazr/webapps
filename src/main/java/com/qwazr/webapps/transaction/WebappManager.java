@@ -16,28 +16,46 @@
 package com.qwazr.webapps.transaction;
 
 import com.qwazr.classloader.ClassLoaderManager;
-import com.qwazr.compiler.CompilerManager;
-import com.qwazr.utils.LockUtils;
+import com.qwazr.library.LibraryManager;
+import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.file.TrackedInterface;
-import com.qwazr.utils.json.JsonMapper;
 import com.qwazr.utils.server.InFileSessionPersistenceManager;
+import com.qwazr.utils.server.RestApplication;
 import com.qwazr.utils.server.ServerBuilder;
 import com.qwazr.utils.server.ServerException;
-import com.qwazr.webapps.WebappHttpServlet;
 import com.qwazr.webapps.WebappManagerServiceImpl;
 import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ListenerInfo;
+import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.util.ConstructorInstanceFactory;
 import org.apache.commons.io.FilenameUtils;
+import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.activation.MimetypesFileTypeMap;
+import javax.management.MBeanPermission;
+import javax.management.MBeanServerPermission;
+import javax.script.ScriptEngine;
+import javax.script.ScriptEngineManager;
+import javax.servlet.GenericServlet;
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.Servlet;
+import javax.servlet.http.HttpServlet;
+import javax.ws.rs.core.Application;
 import java.io.File;
+import java.io.FilePermission;
 import java.io.IOException;
+import java.lang.reflect.Constructor;
+import java.net.SocketPermission;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.Map;
+import java.security.AccessControlContext;
+import java.security.CodeSource;
+import java.security.Permissions;
+import java.security.ProtectionDomain;
+import java.security.cert.Certificate;
+import java.util.Objects;
 
 public class WebappManager {
 
@@ -51,42 +69,22 @@ public class WebappManager {
 
 	private static final Logger logger = LoggerFactory.getLogger(WebappManager.class);
 
-	public static volatile GlobalConfiguration GLOBAL_CONF = null;
-
 	public static volatile WebappManager INSTANCE = null;
 
 	private static final String ACCESS_LOG_LOGGER_NAME = "com.qwazr.webapps.accessLogger";
 	private static final Logger accessLogger = LoggerFactory.getLogger(ACCESS_LOG_LOGGER_NAME);
 
+	final static String FAVICON_PATH = "/favicon.ico";
+
+
 	public synchronized static void load(final ServerBuilder serverBuilder, final TrackedInterface etcTracker,
 			final File tempDirectory) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
-		ControllerManager.load(serverBuilder.getServerConfiguration().dataDirectory);
-		StaticManager.load(serverBuilder.getServerConfiguration().dataDirectory);
+
 		try {
-
-			GLOBAL_CONF = new GlobalConfiguration(etcTracker);
-
-			serverBuilder.registerWebService(WebappManagerServiceImpl.class);
-
-			File sessionPersistenceDir = new File(tempDirectory, SESSIONS_PERSISTENCE_DIR);
-			if (!sessionPersistenceDir.exists())
-				sessionPersistenceDir.mkdir();
-			serverBuilder.setSessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
-			serverBuilder.registerServlet(Servlets.servlet("WebAppServlet", WebappHttpServlet.class).addMapping("/*")
-					.setMultipartConfig(multipartConfigElement));
-
-			final WebappDefinition webappDefinition = GLOBAL_CONF.getWebappDefinition();
-
-			if (webappDefinition.listeners != null)
-				for (String listenerClass : webappDefinition.listeners)
-					serverBuilder.registerListener(new ListenerInfo(ClassLoaderManager.findClass(listenerClass)));
-			serverBuilder.setServletAccessLogger(accessLogger);
-
-			INSTANCE = new WebappManager(webappDefinition);
-
-		} catch (ClassNotFoundException e) {
+			INSTANCE = new WebappManager(etcTracker, serverBuilder, tempDirectory);
+		} catch (ReflectiveOperationException e) {
 			throw new ServerException(e);
 		}
 	}
@@ -97,90 +95,154 @@ public class WebappManager {
 		return INSTANCE;
 	}
 
-	private final ApplicationContext applicationContext;
+	final File dataDir;
+	final MimetypesFileTypeMap mimeTypeMap;
+	final WebappDefinition webappDefinition;
 
-	private WebappManager(final WebappDefinition webappDefinition) throws IOException, ServerException {
-		this.applicationContext = new ApplicationContext(webappDefinition);
+	final GlobalConfiguration globalConfiguration;
+	final ScriptEngine scriptEngine;
+
+	private WebappManager(final TrackedInterface etcTracker, final ServerBuilder serverBuilder,
+			final File tempDirectory) throws IOException, ServerException, ReflectiveOperationException {
 		if (logger.isInfoEnabled())
-			logger.info("Load Web application");
+			logger.info("Loading Web application");
+
+		// Load the configuration
+		globalConfiguration = new GlobalConfiguration(etcTracker);
+		webappDefinition = globalConfiguration.getWebappDefinition();
+
+		dataDir = serverBuilder.getServerConfiguration().dataDirectory;
+		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
+
+		// Register the webservice
+		serverBuilder.registerWebService(WebappManagerServiceImpl.class);
+
+		File sessionPersistenceDir = new File(tempDirectory, SESSIONS_PERSISTENCE_DIR);
+		if (!sessionPersistenceDir.exists())
+			sessionPersistenceDir.mkdir();
+		serverBuilder.setSessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
+
+		// Load the static handlers
+		if (webappDefinition.statics != null)
+			webappDefinition.statics.forEach(
+					(urlPath, filePath) -> serverBuilder.registerServlet(getStaticServlet(urlPath, filePath)));
+
+		// Prepare the Javascript interpreter
+		final ScriptEngineManager manager = new ScriptEngineManager();
+		scriptEngine = manager.getEngineByName("nashorn");
+
+		// Load the listeners
+		if (webappDefinition.listeners != null)
+			for (String listenerClass : webappDefinition.listeners)
+				serverBuilder.registerListener(new ListenerInfo(ClassLoaderManager.findClass(listenerClass)));
+		serverBuilder.setServletAccessLogger(accessLogger);
+
+		// Load the controllers
+		if (webappDefinition.controllers != null)
+			webappDefinition.controllers
+					.forEach((urlPath, filePath) -> serverBuilder
+							.registerServlet(getController(urlPath, filePath)));
+
+		// Set the default favicon
+		serverBuilder.registerServlet(getDefaultFaviconServlet());
 	}
 
-	final ApplicationContext getApplicationContext() throws IOException, URISyntaxException {
-		return applicationContext;
+	private ServletInfo getStaticServlet(final String urlPath, final String filePath) {
+		return Servlets.servlet(StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class)
+				.addInitParam(StaticFileServlet.STATIC_PATH_PARAM, filePath).addMapping(urlPath);
 	}
 
-	public WebappDefinition getWebAppDefinition() throws IOException, URISyntaxException {
-		return getApplicationContext().getWebappDefinition();
+	private ServletInfo getDefaultFaviconServlet() {
+		return Servlets.servlet(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH,
+				StaticResourceServlet.class)
+				.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM, "/com/qwazr/webapps")
+				.addMapping(FAVICON_PATH);
 	}
 
-	private static class GlobalConfiguration implements TrackedInterface.FileChangeConsumer {
-
-		private final LockUtils.ReadWriteLock mapLock = new LockUtils.ReadWriteLock();
-
-		private final TrackedInterface etcTracker;
-		private final LinkedHashMap<File, WebappDefinition> webappFileMap;
-
-		private GlobalConfiguration(final TrackedInterface etcTracker) {
-			this.etcTracker = etcTracker;
-			webappFileMap = new LinkedHashMap<>();
-			etcTracker.register(this);
+	private ServletInfo getController(final String urlPath, final String filePath) {
+		try {
+			String ext = FilenameUtils.getExtension(filePath).toLowerCase();
+			if ("js".equals(ext))
+				return getJavascriptServlet(urlPath, filePath);
+			else
+				return getJavaController(urlPath, filePath);
+		} catch (ReflectiveOperationException e) {
+			throw new ServerException("Cannot build an instance of the controller: " + filePath, e);
 		}
+	}
 
-		private WebappDefinition getWebappDefinition() {
-			etcTracker.check();
-			return mapLock.read(() -> {
-				final WebappDefinition.Builder builder = new WebappDefinition.Builder();
-				builder.add(webappFileMap.values());
-				return builder.build();
-			});
-		}
+	private ServletInfo getJavascriptServlet(final String urlPath, final String filePath) {
+		return Servlets.servlet(JavascriptServlet.class.getName() + '@' + urlPath, JavascriptServlet.class)
+				.addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath).addMapping(urlPath)
+				.setMultipartConfig(multipartConfigElement);
+	}
 
-		private void loadWebappDefinition(final File jsonFile) {
-			try {
-				final WebappDefinition webappDefinition = JsonMapper.MAPPER.readValue(jsonFile, WebappDefinition.class);
+	private ServletInfo getJavaController(final String urlPath, final String className)
+			throws ReflectiveOperationException {
+		final Class<?> clazz =
+				ClassLoaderUtils.findClass(ClassLoaderManager.classLoader, className);
+		Objects.requireNonNull(clazz, "Class not found: " + className);
+		if (Servlet.class.isAssignableFrom(clazz))
+			return getJavaServlet(urlPath, (Class<? extends Servlet>) clazz);
+		else if (Application.class.isAssignableFrom(clazz))
+			return getJavaJaxRsServlet(urlPath, clazz);
+		throw new ServerException("This type of class is not supported: " + className + " / " + clazz.getName());
+	}
 
-				if (webappDefinition == null || webappDefinition.isEmpty()) {
-					unloadWebappDefinition(jsonFile);
-					return;
-				}
+	private ServletInfo getJavaServlet(final String urlPath, final Class<? extends Servlet> servletClass)
+			throws NoSuchMethodException {
+		return Servlets.servlet(servletClass.getName() + '@' + urlPath, servletClass,
+				new ServletFactory(servletClass))
+				.addMapping(urlPath).setMultipartConfig(multipartConfigElement);
+	}
 
-				if (logger.isInfoEnabled())
-					logger.info("Load WebApp configuration file: " + jsonFile.getAbsolutePath());
+	private ServletInfo getJavaJaxRsServlet(final String urlPath, final Class<?> clazz) throws NoSuchMethodException {
+		return Servlets.servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
+				new ServletFactory(ServletContainer.class))
+				.addInitParam("javax.ws.rs.Application", clazz.getName()).setAsyncSupported(true)
+				.addMapping(urlPath);
+	}
 
-				mapLock.write(() -> {
-					webappFileMap.put(jsonFile, webappDefinition);
-				});
+	class ServletFactory<T extends Servlet> extends ConstructorInstanceFactory<T> {
 
-			} catch (IOException e) {
-				if (logger.isErrorEnabled())
-					logger.error(e.getMessage(), e);
-			}
-		}
-
-		private void unloadWebappDefinition(final File jsonFile) {
-			mapLock.write(() -> {
-				final WebappDefinition webappDefinition = webappFileMap.remove(jsonFile);
-				if (webappDefinition == null)
-					return;
-				if (logger.isInfoEnabled())
-					logger.info("Unload WebApp configuration file: " + jsonFile.getAbsolutePath());
-			});
+		ServletFactory(final Class<T> clazz) throws NoSuchMethodException {
+			super(clazz.getDeclaredConstructor());
 		}
 
 		@Override
-		public void accept(final TrackedInterface.ChangeReason changeReason, final File jsonFile) {
-			String extension = FilenameUtils.getExtension(jsonFile.getName());
-			if (!"json".equals(extension))
-				return;
-			switch (changeReason) {
-				case UPDATED:
-					loadWebappDefinition(jsonFile);
-					break;
-				case DELETED:
-					unloadWebappDefinition(jsonFile);
-					break;
-			}
+		public InstanceHandle<T> createInstance() throws InstantiationException {
+			final InstanceHandle<T> instance = super.createInstance();
+			LibraryManager.inject(instance.getInstance());
+			return instance;
 		}
 	}
 
+	public WebappDefinition getWebAppDefinition() throws IOException, URISyntaxException {
+		return webappDefinition;
+	}
+
+	static class RestrictedAccessControlContext {
+
+		public static final AccessControlContext INSTANCE;
+
+		static {
+			Permissions pm = new Permissions();
+			// Required by Cassandra
+			pm.add(new RuntimePermission("modifyThread"));
+			pm.add(new MBeanServerPermission("createMBeanServer"));
+			pm.add(new MBeanPermission("com.codahale.metrics.JmxReporter$JmxCounter#-[*:*]", "registerMBean"));
+			pm.add(new MBeanPermission("com.codahale.metrics.JmxReporter$JmxCounter#-[*:*]", "unregisterMBean"));
+			pm.add(new MBeanPermission("com.codahale.metrics.JmxReporter$JmxGauge#-[*:*]", "registerMBean"));
+			pm.add(new MBeanPermission("com.codahale.metrics.JmxReporter$JmxGauge#-[*:*]", "unregisterMBean"));
+			pm.add(new MBeanPermission("com.codahale.metrics.JmxReporter$JmxTimer#-[*:*]", "registerMBean"));
+			pm.add(new MBeanPermission("com.codahale.metrics.JmxReporter$JmxTimer#-[*:*]", "unregisterMBean"));
+			pm.add(new SocketPermission("*.qwazr.net:9042", "connect,accept,resolve"));
+
+			// Required for templates
+			pm.add(new FilePermission("<<ALL FILES>>", "read"));
+
+			INSTANCE = new AccessControlContext(
+					new ProtectionDomain[]{new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm)});
+		}
+	}
 }

@@ -1,12 +1,13 @@
 {
   "controllers": {
-    "^/javascript$": "js/controller.js",
-    "^/java$": "com.qwazr.webapps.test.TestServlet"
+    "/javascript": "js/controller.js",
+    "/java": "com.qwazr.webapps.test.TestServlet",
+    "/jaxrs/*": "com.qwazr.webapps.test.TestJaxRs"
   },
   "listeners": [
     "com.qwazr.webapps.test.TestListener"
   ],
   "statics": {
-    "^/css/(.*)$": "css/$1"
+    "/css/*": "css"
   }
 }

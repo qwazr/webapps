@@ -27,14 +27,12 @@ public class WebappDefinition {
 
 	public final Map<String, String> controllers;
 	public final Map<String, String> statics;
-	public final Set<String> jaxrs;
 	public final Set<String> listeners;
 	public final String identity_manager;
 
 	public WebappDefinition() {
 		controllers = null;
 		statics = null;
-		jaxrs = null;
 		identity_manager = null;
 		listeners = null;
 	}
@@ -42,7 +40,6 @@ public class WebappDefinition {
 	private WebappDefinition(Builder builder) {
 		this.controllers = builder.controllers.isEmpty() ? null : new LinkedHashMap<>(builder.controllers);
 		this.statics = builder.statics.isEmpty() ? null : new LinkedHashMap<>(builder.statics);
-		this.jaxrs = builder.jaxrs.isEmpty() ? null : new LinkedHashSet<>(builder.jaxrs);
 		this.listeners = builder.listeners.isEmpty() ? null : new LinkedHashSet<>(builder.listeners);
 		this.identity_manager = builder.identity_manager;
 	}
@@ -57,14 +54,12 @@ public class WebappDefinition {
 
 		private final Map<String, String> controllers;
 		private final Map<String, String> statics;
-		private final Set<String> jaxrs;
 		private final Set<String> listeners;
 		private String identity_manager;
 
 		Builder() {
 			controllers = new LinkedHashMap<>();
 			statics = new LinkedHashMap<>();
-			jaxrs = new LinkedHashSet<>();
 			listeners = new LinkedHashSet<>();
 			identity_manager = null;
 		}
@@ -76,8 +71,6 @@ public class WebappDefinition {
 				controllers.putAll(webappDefinition.controllers);
 			if (webappDefinition.statics != null)
 				statics.putAll(webappDefinition.statics);
-			if (webappDefinition.jaxrs != null)
-				jaxrs.addAll(webappDefinition.jaxrs);
 			if (webappDefinition.listeners != null)
 				listeners.addAll(webappDefinition.listeners);
 			if (webappDefinition.identity_manager != null)
@@ -100,13 +93,6 @@ public class WebappDefinition {
 
 		public Builder addStatic(String route, String path) {
 			statics.put(route, path);
-			return this;
-		}
-
-		public Builder addJaxrs(Class<?>... classes) {
-			if (classes != null)
-				for (Class<?> clazz : classes)
-					jaxrs.add(clazz.getName());
 			return this;
 		}
 
