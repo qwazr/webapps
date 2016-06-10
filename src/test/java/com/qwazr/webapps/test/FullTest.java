@@ -15,7 +15,6 @@
  **/
 package com.qwazr.webapps.test;
 
-import com.qwazr.utils.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
@@ -70,16 +69,25 @@ public class FullTest {
 
 	@Test
 	public void test100javaServlet() throws IOException {
-		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/java"), 200);
+		final HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/java"), 200);
 		checkEntity(response, TEXT_HTML, TestServlet.TEST_STRING);
 	}
 
 	@Test
-	public void test150JaxRs() throws IOException {
-		final String pathParam = "sub-path";
-		HttpResponse response =
-				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs/service/test/" + pathParam), 200);
+	public void test150JaxRsApp() throws IOException {
+		final String pathParam = "sub-path-app";
+		final HttpResponse response =
+				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-app/service/test/" + pathParam), 200);
 		checkEntity(response, "application/json", TestJaxRs.TEST_STRING, pathParam);
+	}
+
+	@Test
+	public void test151JaxRsClass() throws IOException {
+		final String pathParam = "sub-path-class";
+		final HttpResponse response =
+				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class/service/test/" + pathParam),
+						200);
+		checkEntity(response, "text/plain", TestJaxRs.TEST_STRING, pathParam);
 	}
 
 	@Test

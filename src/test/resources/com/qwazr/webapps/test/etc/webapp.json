@@ -2,7 +2,8 @@
   "controllers": {
     "/javascript": "js/controller.js",
     "/java": "com.qwazr.webapps.test.TestServlet",
-    "/jaxrs/*": "com.qwazr.webapps.test.TestJaxRs"
+    "/jaxrs-app/*": "com.qwazr.webapps.test.TestJaxRs",
+    "/jaxrs-class/*": "com.qwazr.webapps.test.TestJaxRs$Service"
   },
   "listeners": [
     "com.qwazr.webapps.test.TestListener"

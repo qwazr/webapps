@@ -33,19 +33,30 @@ public class TestJaxRs extends Application {
 	public final static String TEST_STRING = "JAX_RS_TEST_STRING";
 
 	public Set<Class<?>> getClasses() {
-		return new HashSet<>(Arrays.asList(MyService.class, JacksonConfig.class, JacksonJsonProvider.class));
+		return new HashSet<>(Arrays.asList(ServiceJson.class, JacksonConfig.class, JacksonJsonProvider.class));
 	}
 
 	@Path("/service")
-	public static class MyService {
+	public static class ServiceJson {
 
 		@Path("/test/{path-param}")
 		@POST
 		@Produces("application/json")
-		public Map<String, String> getTest(@PathParam("path-param") String pathParam) {
+		public Map<String, String> getTestJson(@PathParam("path-param") String pathParam) {
 			final Map<String, String> map = new HashMap<>();
 			map.put(TEST_STRING, pathParam);
 			return map;
+		}
+	}
+
+	@Path("/service")
+	public static class Service {
+
+		@Path("/test/{path-param}")
+		@POST
+		@Produces("text/plain")
+		public String getTestJson(@PathParam("path-param") String pathParam) {
+			return TEST_STRING + " " + pathParam;
 		}
 	}
 

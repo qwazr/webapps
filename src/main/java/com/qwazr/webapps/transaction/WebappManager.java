@@ -20,7 +20,6 @@ import com.qwazr.library.LibraryManager;
 import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.server.InFileSessionPersistenceManager;
-import com.qwazr.utils.server.RestApplication;
 import com.qwazr.utils.server.ServerBuilder;
 import com.qwazr.utils.server.ServerException;
 import com.qwazr.webapps.WebappManagerServiceImpl;
@@ -39,15 +38,13 @@ import javax.management.MBeanPermission;
 import javax.management.MBeanServerPermission;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
-import javax.servlet.GenericServlet;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
-import javax.servlet.http.HttpServlet;
+import javax.ws.rs.Path;
 import javax.ws.rs.core.Application;
 import java.io.File;
 import java.io.FilePermission;
 import java.io.IOException;
-import java.lang.reflect.Constructor;
 import java.net.SocketPermission;
 import java.net.URISyntaxException;
 import java.security.AccessControlContext;
@@ -75,7 +72,6 @@ public class WebappManager {
 	private static final Logger accessLogger = LoggerFactory.getLogger(ACCESS_LOG_LOGGER_NAME);
 
 	final static String FAVICON_PATH = "/favicon.ico";
-
 
 	public synchronized static void load(final ServerBuilder serverBuilder, final TrackedInterface etcTracker,
 			final File tempDirectory) throws IOException {
@@ -124,8 +120,8 @@ public class WebappManager {
 
 		// Load the static handlers
 		if (webappDefinition.statics != null)
-			webappDefinition.statics.forEach(
-					(urlPath, filePath) -> serverBuilder.registerServlet(getStaticServlet(urlPath, filePath)));
+			webappDefinition.statics
+					.forEach((urlPath, filePath) -> serverBuilder.registerServlet(getStaticServlet(urlPath, filePath)));
 
 		// Prepare the Javascript interpreter
 		final ScriptEngineManager manager = new ScriptEngineManager();
@@ -140,8 +136,7 @@ public class WebappManager {
 		// Load the controllers
 		if (webappDefinition.controllers != null)
 			webappDefinition.controllers
-					.forEach((urlPath, filePath) -> serverBuilder
-							.registerServlet(getController(urlPath, filePath)));
+					.forEach((urlPath, filePath) -> serverBuilder.registerServlet(getController(urlPath, filePath)));
 
 		// Set the default favicon
 		serverBuilder.registerServlet(getDefaultFaviconServlet());
@@ -153,8 +148,7 @@ public class WebappManager {
 	}
 
 	private ServletInfo getDefaultFaviconServlet() {
-		return Servlets.servlet(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH,
-				StaticResourceServlet.class)
+		return Servlets.servlet(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH, StaticResourceServlet.class)
 				.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM, "/com/qwazr/webapps")
 				.addMapping(FAVICON_PATH);
 	}
@@ -179,27 +173,35 @@ public class WebappManager {
 
 	private ServletInfo getJavaController(final String urlPath, final String className)
 			throws ReflectiveOperationException {
-		final Class<?> clazz =
-				ClassLoaderUtils.findClass(ClassLoaderManager.classLoader, className);
+		final Class<?> clazz = ClassLoaderUtils.findClass(ClassLoaderManager.classLoader, className);
 		Objects.requireNonNull(clazz, "Class not found: " + className);
 		if (Servlet.class.isAssignableFrom(clazz))
 			return getJavaServlet(urlPath, (Class<? extends Servlet>) clazz);
 		else if (Application.class.isAssignableFrom(clazz))
-			return getJavaJaxRsServlet(urlPath, clazz);
+			return getJavaJaxRsAppServlet(urlPath, clazz);
+		else if (clazz.isAnnotationPresent(Path.class))
+			return getJavaJaxRsClassServlet(urlPath, clazz);
 		throw new ServerException("This type of class is not supported: " + className + " / " + clazz.getName());
 	}
 
 	private ServletInfo getJavaServlet(final String urlPath, final Class<? extends Servlet> servletClass)
 			throws NoSuchMethodException {
-		return Servlets.servlet(servletClass.getName() + '@' + urlPath, servletClass,
-				new ServletFactory(servletClass))
+		return Servlets.servlet(servletClass.getName() + '@' + urlPath, servletClass, new ServletFactory(servletClass))
 				.addMapping(urlPath).setMultipartConfig(multipartConfigElement);
 	}
 
-	private ServletInfo getJavaJaxRsServlet(final String urlPath, final Class<?> clazz) throws NoSuchMethodException {
+	private ServletInfo getJavaJaxRsAppServlet(final String urlPath, final Class<?> clazz)
+			throws NoSuchMethodException {
+		return Servlets.servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
+				new ServletFactory(ServletContainer.class)).addInitParam("javax.ws.rs.Application", clazz.getName())
+				.setAsyncSupported(true).addMapping(urlPath);
+	}
+
+	private ServletInfo getJavaJaxRsClassServlet(final String urlPath, final Class<?> clazz)
+			throws NoSuchMethodException {
 		return Servlets.servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
 				new ServletFactory(ServletContainer.class))
-				.addInitParam("javax.ws.rs.Application", clazz.getName()).setAsyncSupported(true)
+				.addInitParam("jersey.config.server.provider.classnames", clazz.getName()).setAsyncSupported(true)
 				.addMapping(urlPath);
 	}
 
@@ -242,7 +244,7 @@ public class WebappManager {
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
 			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[]{new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm)});
+					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
 		}
 	}
 }
