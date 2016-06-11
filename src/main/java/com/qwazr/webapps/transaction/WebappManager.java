@@ -15,10 +15,13 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
 import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.file.TrackedInterface;
+import com.qwazr.utils.json.JacksonConfig;
 import com.qwazr.utils.server.InFileSessionPersistenceManager;
 import com.qwazr.utils.server.ServerBuilder;
 import com.qwazr.utils.server.ServerException;
@@ -197,12 +200,15 @@ public class WebappManager {
 				.setAsyncSupported(true).addMapping(urlPath);
 	}
 
+	private String JACKSON_DEFAULT_PROVIDERS =
+			JacksonConfig.class.getName() + ' ' + JacksonXMLProvider.class.getName() + ' ' + JacksonJsonProvider.class
+					.getName();
+
 	private ServletInfo getJavaJaxRsClassServlet(final String urlPath, final Class<?> clazz)
 			throws NoSuchMethodException {
 		return Servlets.servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
-				new ServletFactory(ServletContainer.class))
-				.addInitParam("jersey.config.server.provider.classnames", clazz.getName()).setAsyncSupported(true)
-				.addMapping(urlPath);
+				new ServletFactory(ServletContainer.class)).addInitParam("jersey.config.server.provider.classnames",
+				clazz.getName() + ' ' + JACKSON_DEFAULT_PROVIDERS).setAsyncSupported(true).addMapping(urlPath);
 	}
 
 	class ServletFactory<T extends Servlet> extends ConstructorInstanceFactory<T> {

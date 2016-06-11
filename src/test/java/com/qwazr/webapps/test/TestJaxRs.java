@@ -16,14 +16,14 @@
 package com.qwazr.webapps.test;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.qwazr.utils.json.JacksonConfig;
 
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
+import javax.ws.rs.*;
 import javax.ws.rs.core.Application;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * Example of JAX-RS
@@ -33,30 +33,46 @@ public class TestJaxRs extends Application {
 	public final static String TEST_STRING = "JAX_RS_TEST_STRING";
 
 	public Set<Class<?>> getClasses() {
-		return new HashSet<>(Arrays.asList(ServiceJson.class, JacksonConfig.class, JacksonJsonProvider.class));
+		return new HashSet<>(
+				Arrays.asList(ServiceJson.class, ServiceXml.class, JacksonConfig.class, JacksonJsonProvider.class,
+						JacksonXMLProvider.class));
 	}
 
-	@Path("/service")
+	@Path("/json")
 	public static class ServiceJson {
 
 		@Path("/test/{path-param}")
-		@POST
+		@GET
 		@Produces("application/json")
-		public Map<String, String> getTestJson(@PathParam("path-param") String pathParam) {
-			final Map<String, String> map = new HashMap<>();
-			map.put(TEST_STRING, pathParam);
-			return map;
+		public Data getTestJson(@PathParam("path-param") String pathParam) {
+			return new Data(TEST_STRING, pathParam);
 		}
 	}
 
-	@Path("/service")
-	public static class Service {
+	@Path("/xml")
+	public static class ServiceXml {
 
 		@Path("/test/{path-param}")
 		@POST
-		@Produces("text/plain")
-		public String getTestJson(@PathParam("path-param") String pathParam) {
-			return TEST_STRING + " " + pathParam;
+		@Produces("application/xml")
+		public Data getTestJson(@PathParam("path-param") String pathParam) {
+			return new Data(TEST_STRING, pathParam);
+		}
+	}
+
+	public static class Data {
+
+		public final String param1;
+		public final String param2;
+
+		public Data() {
+			param1 = null;
+			param2 = null;
+		}
+
+		private Data(String param1, String param2) {
+			this.param1 = param1;
+			this.param2 = param2;
 		}
 	}
 

@@ -74,20 +74,37 @@ public class FullTest {
 	}
 
 	@Test
-	public void test150JaxRsApp() throws IOException {
-		final String pathParam = "sub-path-app";
+	public void test150JaxRsAppJson() throws IOException {
+		final String pathParam = "sub-path-app-json";
 		final HttpResponse response =
-				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-app/service/test/" + pathParam), 200);
+				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/json/test/" + pathParam), 200);
 		checkEntity(response, "application/json", TestJaxRs.TEST_STRING, pathParam);
 	}
 
 	@Test
-	public void test151JaxRsClass() throws IOException {
-		final String pathParam = "sub-path-class";
+	public void test151JaxRsAppXml() throws IOException {
+		final String pathParam = "sub-path-app-xml";
 		final HttpResponse response =
-				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class/service/test/" + pathParam),
+				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-app/xml/test/" + pathParam), 200);
+		checkEntity(response, "application/xml", TestJaxRs.TEST_STRING, pathParam);
+	}
+
+	@Test
+	public void test160JaxRsClassJson() throws IOException {
+		final String pathParam = "sub-path-class-json";
+		final HttpResponse response =
+				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/json/test/" + pathParam),
 						200);
-		checkEntity(response, "text/plain", TestJaxRs.TEST_STRING, pathParam);
+		checkEntity(response, "application/json", TestJaxRs.TEST_STRING, pathParam);
+	}
+
+	@Test
+	public void test161JaxRsClassXml() throws IOException {
+		final String pathParam = "sub-path-class-xml";
+		final HttpResponse response =
+				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/xml/test/" + pathParam),
+						200);
+		checkEntity(response, "application/xml", TestJaxRs.TEST_STRING, pathParam);
 	}
 
 	@Test
