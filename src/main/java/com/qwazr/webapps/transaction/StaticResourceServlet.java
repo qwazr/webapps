@@ -40,10 +40,9 @@ public class StaticResourceServlet extends HttpServlet {
 			throw new ServletException("The init-param " + STATIC_RESOURCE_PARAM + " is missing.");
 	}
 
-	private InputStream findResource(final HttpServletRequest request)
-			throws IOException {
-		final String path = request.getPathInfo();
-		final InputStream input = getClass().getResourceAsStream(resourcePrefix + path);
+	private InputStream findResource(final HttpServletRequest request) throws IOException {
+		final String path = request.getServletPath();
+		final InputStream input = StaticResourceServlet.class.getResourceAsStream(resourcePrefix + path);
 		if (input == null)
 			throw new FileNotFoundException("File not found: " + path);
 		return input;
@@ -60,7 +59,7 @@ public class StaticResourceServlet extends HttpServlet {
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
 		try (final InputStream input = findResource(request)) {
-			final String type = WebappManager.INSTANCE.mimeTypeMap.getContentType(request.getPathInfo());
+			final String type = WebappManager.INSTANCE.mimeTypeMap.getContentType(request.getServletPath());
 			StaticFileServlet.head(null, type, null, response);
 			IOUtils.copy(input, response.getOutputStream());
 		}
