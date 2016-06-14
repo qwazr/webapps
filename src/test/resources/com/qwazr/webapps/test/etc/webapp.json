@@ -6,6 +6,9 @@
     "/jaxrs-class-json/*": "com.qwazr.webapps.test.TestJaxRs$ServiceJson",
     "/jaxrs-class-xml/*": "com.qwazr.webapps.test.TestJaxRs$ServiceXml"
   },
+  "filters": {
+    "/*": "com.qwazr.webapps.test.TestFilter"
+  },
   "listeners": [
     "com.qwazr.webapps.test.TestListener"
   ],

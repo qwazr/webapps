@@ -20,6 +20,7 @@ import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
 import com.qwazr.utils.ClassLoaderUtils;
+import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.json.JacksonConfig;
 import com.qwazr.utils.server.InFileSessionPersistenceManager;
@@ -28,7 +29,6 @@ import com.qwazr.utils.server.ServerException;
 import com.qwazr.webapps.WebappManagerServiceImpl;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.InstanceHandle;
-import io.undertow.servlet.api.ListenerInfo;
 import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.util.ConstructorInstanceFactory;
 import org.apache.commons.io.FilenameUtils;
@@ -133,7 +133,7 @@ public class WebappManager {
 		// Load the listeners
 		if (webappDefinition.listeners != null)
 			for (String listenerClass : webappDefinition.listeners)
-				serverBuilder.registerListener(new ListenerInfo(ClassLoaderManager.findClass(listenerClass)));
+				serverBuilder.registerListener(Servlets.listener(ClassLoaderManager.findClass(listenerClass)));
 		serverBuilder.setServletAccessLogger(accessLogger);
 
 		// Load the controllers
@@ -141,8 +141,17 @@ public class WebappManager {
 			webappDefinition.controllers
 					.forEach((urlPath, filePath) -> serverBuilder.registerServlet(getController(urlPath, filePath)));
 
+		// Load the closable filter
+		serverBuilder.registerFilter("/*", Servlets.filter(CloseableFilter.class));
+
+		// Load the filters
+		if (webappDefinition.filters != null)
+			FunctionUtils.forEach(webappDefinition.filters, (urlPath, filterClass) -> serverBuilder
+					.registerFilter(urlPath, Servlets.filter(ClassLoaderManager.findClass(filterClass))));
+
 		// Set the default favicon
 		serverBuilder.registerServlet(getDefaultFaviconServlet());
+
 	}
 
 	private ServletInfo getStaticServlet(final String urlPath, final String filePath) {

@@ -128,4 +128,13 @@ public class FullTest {
 		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/css/test.css"), 200);
 		checkEntity(response, TEXT_CSS, ".qwazr {");
 	}
+
+	@Test
+	public void test800Filters()
+			throws URISyntaxException, IOException, InstantiationException, ServletException, IllegalAccessException {
+		Assert.assertEquals(1, TestFilter.initializedFilters.size());
+		Assert.assertEquals(TestFilter.class, TestFilter.initializedFilters.iterator().next().getClass());
+		Assert.assertEquals(1, TestFilter.calledFilters.size());
+		Assert.assertEquals(TestFilter.class, TestFilter.calledFilters.iterator().next().getClass());
+	}
 }

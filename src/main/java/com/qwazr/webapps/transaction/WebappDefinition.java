@@ -26,12 +26,14 @@ import java.util.*;
 public class WebappDefinition {
 
 	public final Map<String, String> controllers;
+	public final Map<String, String> filters;
 	public final Map<String, String> statics;
 	public final Set<String> listeners;
 	public final String identity_manager;
 
 	public WebappDefinition() {
 		controllers = null;
+		filters = null;
 		statics = null;
 		identity_manager = null;
 		listeners = null;
@@ -39,6 +41,7 @@ public class WebappDefinition {
 
 	private WebappDefinition(Builder builder) {
 		this.controllers = builder.controllers.isEmpty() ? null : new LinkedHashMap<>(builder.controllers);
+		this.filters = builder.controllers.isEmpty() ? null : new LinkedHashMap<>(builder.filters);
 		this.statics = builder.statics.isEmpty() ? null : new LinkedHashMap<>(builder.statics);
 		this.listeners = builder.listeners.isEmpty() ? null : new LinkedHashSet<>(builder.listeners);
 		this.identity_manager = builder.identity_manager;
@@ -53,12 +56,14 @@ public class WebappDefinition {
 	public static class Builder {
 
 		private final Map<String, String> controllers;
+		private final Map<String, String> filters;
 		private final Map<String, String> statics;
 		private final Set<String> listeners;
 		private String identity_manager;
 
 		Builder() {
 			controllers = new LinkedHashMap<>();
+			filters = new LinkedHashMap<>();
 			statics = new LinkedHashMap<>();
 			listeners = new LinkedHashSet<>();
 			identity_manager = null;
@@ -69,6 +74,8 @@ public class WebappDefinition {
 				return this;
 			if (webappDefinition.controllers != null)
 				controllers.putAll(webappDefinition.controllers);
+			if (webappDefinition.filters != null)
+				filters.putAll(webappDefinition.filters);
 			if (webappDefinition.statics != null)
 				statics.putAll(webappDefinition.statics);
 			if (webappDefinition.listeners != null)
@@ -88,6 +95,11 @@ public class WebappDefinition {
 
 		public Builder addController(String route, String className) {
 			controllers.put(route, className);
+			return this;
+		}
+
+		public Builder addFilter(String route, String className) {
+			filters.put(route, className);
 			return this;
 		}
 

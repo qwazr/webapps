@@ -15,8 +15,8 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import com.qwazr.library.LibraryManager;
 import com.qwazr.scripts.ScriptConsole;
-import com.qwazr.utils.IOUtils;
 import com.qwazr.utils.ScriptUtils;
 
 import javax.script.Bindings;
@@ -43,17 +43,16 @@ public class JavascriptServlet extends HttpServlet {
 		WebappHttpResponse response = new WebappHttpResponse(rep);
 		response.setHeader("Cache-Control", "max-age=0, no-cache, no-store");
 		Bindings bindings = WebappManager.INSTANCE.scriptEngine.createBindings();
-		try (final IOUtils.CloseableList closeables = new IOUtils.CloseableList()) {
-			bindings.put("console", new ScriptConsole());
-			bindings.put("request", request);
-			bindings.put("response", response);
-			bindings.put("closeables", closeables);
-			bindings.put("session", request.getSession());
-			bindings.putAll(request.getAttributes());
-			try (final FileReader fileReader = new FileReader(controllerFile)) {
-				ScriptUtils.evalScript(WebappManager.INSTANCE.scriptEngine,
-						WebappManager.RestrictedAccessControlContext.INSTANCE, fileReader, bindings);
-			}
+		bindings.put("console", new ScriptConsole());
+		bindings.put("request", request);
+		bindings.put("response", response);
+		bindings.put("library", LibraryManager.getInstance());
+		bindings.put("closeable", req.getAttribute(CloseableFilter.ATTRIBUTE_NAME));
+		bindings.put("session", request.getSession());
+		bindings.putAll(request.getAttributes());
+		try (final FileReader fileReader = new FileReader(controllerFile)) {
+			ScriptUtils.evalScript(WebappManager.INSTANCE.scriptEngine,
+					WebappManager.RestrictedAccessControlContext.INSTANCE, fileReader, bindings);
 		} catch (ScriptException | PrivilegedActionException e) {
 			throw new ServletException(e);
 		}
@@ -102,6 +101,5 @@ public class JavascriptServlet extends HttpServlet {
 	public void doDelete(HttpServletRequest req, HttpServletResponse rep) throws IOException, ServletException {
 		handle(req, rep);
 	}
-
 
 }
