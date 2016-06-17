@@ -108,6 +108,18 @@ public class FullTest {
 	}
 
 	@Test
+	public void test170JaxRsClassBoth() throws IOException {
+		final String pathParam = "sub-path-class-both";
+		HttpResponse response =
+				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/xml/test/" + pathParam),
+						200);
+		checkEntity(response, "application/xml", TestJaxRs.TEST_STRING, pathParam);
+		response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/json/test/" + pathParam),
+				200);
+		checkEntity(response, "application/json", TestJaxRs.TEST_STRING, pathParam);
+	}
+
+	@Test
 	public void test200javascriptServlet() throws IOException {
 		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/javascript"), 200);
 		checkEntity(response, TEXT_HTML, TestServlet.TEST_STRING);

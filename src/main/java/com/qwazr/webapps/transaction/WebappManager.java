@@ -183,17 +183,19 @@ public class WebappManager {
 				.setMultipartConfig(multipartConfigElement);
 	}
 
-	private ServletInfo getJavaController(final String urlPath, final String className)
+	private ServletInfo getJavaController(final String urlPath, final String classDef)
 			throws ReflectiveOperationException {
-		final Class<?> clazz = ClassLoaderUtils.findClass(ClassLoaderManager.classLoader, className);
-		Objects.requireNonNull(clazz, "Class not found: " + className);
+		if (classDef.contains(" "))
+			return getJavaJaxRsClassServlet(urlPath, classDef);
+		final Class<?> clazz = ClassLoaderUtils.findClass(ClassLoaderManager.classLoader, classDef);
+		Objects.requireNonNull(clazz, "Class not found: " + classDef);
 		if (Servlet.class.isAssignableFrom(clazz))
 			return getJavaServlet(urlPath, (Class<? extends Servlet>) clazz);
 		else if (Application.class.isAssignableFrom(clazz))
 			return getJavaJaxRsAppServlet(urlPath, clazz);
 		else if (clazz.isAnnotationPresent(Path.class))
-			return getJavaJaxRsClassServlet(urlPath, clazz);
-		throw new ServerException("This type of class is not supported: " + className + " / " + clazz.getName());
+			return getJavaJaxRsClassServlet(urlPath, classDef);
+		throw new ServerException("This type of class is not supported: " + classDef + " / " + clazz.getName());
 	}
 
 	private ServletInfo getJavaServlet(final String urlPath, final Class<? extends Servlet> servletClass)
@@ -213,11 +215,12 @@ public class WebappManager {
 			JacksonConfig.class.getName() + ' ' + JacksonXMLProvider.class.getName() + ' ' + JacksonJsonProvider.class
 					.getName();
 
-	private ServletInfo getJavaJaxRsClassServlet(final String urlPath, final Class<?> clazz)
+	private ServletInfo getJavaJaxRsClassServlet(final String urlPath, final String classList)
 			throws NoSuchMethodException {
 		return Servlets.servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
-				new ServletFactory(ServletContainer.class)).addInitParam("jersey.config.server.provider.classnames",
-				clazz.getName() + ' ' + JACKSON_DEFAULT_PROVIDERS).setAsyncSupported(true).addMapping(urlPath);
+				new ServletFactory(ServletContainer.class))
+				.addInitParam("jersey.config.server.provider.classnames", classList + ' ' + JACKSON_DEFAULT_PROVIDERS)
+				.setAsyncSupported(true).addMapping(urlPath);
 	}
 
 	class ServletFactory<T extends Servlet> extends ConstructorInstanceFactory<T> {

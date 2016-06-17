@@ -4,7 +4,8 @@
     "/java": "com.qwazr.webapps.test.TestServlet",
     "/jaxrs-app/*": "com.qwazr.webapps.test.TestJaxRs",
     "/jaxrs-class-json/*": "com.qwazr.webapps.test.TestJaxRs$ServiceJson",
-    "/jaxrs-class-xml/*": "com.qwazr.webapps.test.TestJaxRs$ServiceXml"
+    "/jaxrs-class-xml/*": "com.qwazr.webapps.test.TestJaxRs$ServiceXml",
+    "/jaxrs-class-both/*": "com.qwazr.webapps.test.TestJaxRs$ServiceJson com.qwazr.webapps.test.TestJaxRs$ServiceXml"
   },
   "filters": {
     "/*": "com.qwazr.webapps.test.TestFilter"
