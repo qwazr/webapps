@@ -39,14 +39,26 @@ public class StaticFileServlet extends HttpServlet {
 		final String path = config.getInitParameter(STATIC_PATH_PARAM);
 		if (path == null || path.isEmpty())
 			throw new ServletException("The init-param " + STATIC_PATH_PARAM + " is missing.");
-		rootFile = path == null || path.isEmpty() ? WebappManager.INSTANCE.dataDir :
-				new File(WebappManager.INSTANCE.dataDir, path);
+		if (path == null || path.isEmpty())
+			rootFile = WebappManager.INSTANCE.dataDir;
+		else if (path.startsWith("/"))
+			rootFile = new File(path);
+		else
+			rootFile = new File(WebappManager.INSTANCE.dataDir, path);
 	}
 
-	private File findFile(final HttpServletRequest request)
-			throws IOException {
+	private File handleFile(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
 		final String path = request.getPathInfo();
-		final File staticFile = new File(rootFile, path.substring(1));
+		if (path == null) {
+			response.sendRedirect(request.getContextPath() + request.getServletPath() + "/index.html");
+			return null;
+		}
+		final File staticFile = new File(rootFile, path);
+		if (staticFile.isDirectory()) {
+			response.sendRedirect(
+					request.getContextPath() + request.getServletPath() + request.getPathInfo() + "index.html");
+			return null;
+		}
 		if (!staticFile.exists())
 			throw new FileNotFoundException("File not found: " + path);
 		if (!staticFile.isFile())
@@ -69,7 +81,9 @@ public class StaticFileServlet extends HttpServlet {
 	@Override
 	protected void doHead(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-		final File staticFile = findFile(request);
+		final File staticFile = handleFile(request, response);
+		if (staticFile == null)
+			return;
 		final String type = WebappManager.INSTANCE.mimeTypeMap.getContentType(staticFile);
 		head(staticFile.length(), type, staticFile.lastModified(), response);
 	}
@@ -77,7 +91,9 @@ public class StaticFileServlet extends HttpServlet {
 	@Override
 	protected void doGet(HttpServletRequest request, HttpServletResponse response)
 			throws ServletException, IOException {
-		final File staticFile = findFile(request);
+		final File staticFile = handleFile(request, response);
+		if (staticFile == null)
+			return;
 		final String type = WebappManager.INSTANCE.mimeTypeMap.getContentType(staticFile);
 		head(staticFile.length(), type, staticFile.lastModified(), response);
 		try (final FileInputStream fis = new FileInputStream(staticFile)) {
