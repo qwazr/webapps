@@ -40,9 +40,7 @@ import java.util.List;
 
 public class DocumentationServlet extends HttpServlet {
 
-	protected String remotePrefix = "documentation/";
-
-	protected String[] indexFileNames = { "README.md", "README.adoc" };
+	protected String[] indexFileNames = {"README.md", "README.adoc"};
 
 	private File documentationPath = new File("src");
 
@@ -53,16 +51,13 @@ public class DocumentationServlet extends HttpServlet {
 	private AsciiDoctorTool asciiDoctorTool = null;
 
 	private final MimetypesFileTypeMap mimeTypeMap = new MimetypesFileTypeMap(
-					getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
+			getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
 	private String templatePath = "src/main/resources/templates/documentation.ftl";
 
 	@Override
 	public void init(ServletConfig config) {
-		String p = config.getInitParameter("remotePrefix");
-		if (!StringUtils.isEmpty(p))
-			remotePrefix = p;
-		p = config.getInitParameter("indexFileNames");
+		String p = config.getInitParameter("indexFileNames");
 		if (!StringUtils.isEmpty(p))
 			indexFileNames = StringUtils.split(p, " ");
 		p = config.getInitParameter("documentationPath");
@@ -80,18 +75,24 @@ public class DocumentationServlet extends HttpServlet {
 	}
 
 	@Override
-	public void doGet(HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+	public void doGet(final HttpServletRequest request, final HttpServletResponse response)
+			throws IOException, ServletException {
 
-		String path = request.getPathInfo().substring(remotePrefix.length());
+		final String remotePrefix = request.getContextPath() + request.getServletPath();
+		final String path = request.getPathInfo();
+		File file = path == null ? documentationPath : new File(documentationPath, path);
 
-		File file = new File(documentationPath, path);
 		if (!file.exists()) {
 			response.sendError(404, "File not found: " + file);
 			return;
 		}
 		if (file.isDirectory()) {
+			if (path == null) {
+				response.sendRedirect(remotePrefix + '/');
+				return;
+			}
 			if (!path.endsWith("/")) {
-				response.sendRedirect(request.getPathInfo() + '/');
+				response.sendRedirect(remotePrefix + path + '/');
 				return;
 			}
 			for (String indexFileName : indexFileNames) {
@@ -103,7 +104,7 @@ public class DocumentationServlet extends HttpServlet {
 			}
 		}
 
-		Pair<String, String[]> paths = getRemoteLink(path);
+		Pair<String, String[]> paths = getRemoteLink(remotePrefix, path);
 		request.setAttribute("original_link", paths.getLeft());
 		request.setAttribute("breadcrumb_parts", paths.getRight());
 
@@ -148,12 +149,12 @@ public class DocumentationServlet extends HttpServlet {
 		}
 	}
 
-	protected Pair<String, String[]> getRemoteLink(String path) {
+	protected Pair<String, String[]> getRemoteLink(String remotePath, String path) {
 		if (StringUtils.isEmpty(path))
 			return null;
 		String[] parts = StringUtils.split(path, '/');
 		if (parts.length > 0) {
-			path = remotePrefix + parts[0];
+			path = remotePath + parts[0];
 			int i = 0;
 			for (String part : parts)
 				if (i++ > 0)
