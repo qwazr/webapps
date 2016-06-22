@@ -15,6 +15,7 @@
  **/
 package com.qwazr.webapps.test;
 
+import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.fluent.Request;
@@ -31,8 +32,10 @@ import java.net.URISyntaxException;
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class FullTest {
 
-	private final static String TEXT_HTML = "text/html";
-	private final static String TEXT_CSS = "text/css";
+	private final static String MIME_TEXT_HTML = "text/html";
+	private final static String MIME_TEXT_CSS = "text/css";
+	private final static String MIME_IMAGE_X_PNG = "image/x-png";
+	private final static String MIME_FAVICON = "image/vnd.microsoft.icon";
 
 	@Test
 	public void test000StartServer()
@@ -70,7 +73,7 @@ public class FullTest {
 	@Test
 	public void test100javaServlet() throws IOException {
 		final HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/java"), 200);
-		checkEntity(response, TEXT_HTML, TestServlet.TEST_STRING);
+		checkEntity(response, MIME_TEXT_HTML, TestServlet.TEST_STRING);
 	}
 
 	@Test
@@ -122,7 +125,7 @@ public class FullTest {
 	@Test
 	public void test200javascriptServlet() throws IOException {
 		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/javascript"), 200);
-		checkEntity(response, TEXT_HTML, TestServlet.TEST_STRING);
+		checkEntity(response, MIME_TEXT_HTML, TestServlet.TEST_STRING);
 	}
 
 	private final static String PARAM_TEST_STRING = "testParam=testValue";
@@ -131,14 +134,43 @@ public class FullTest {
 	public void test210javascriptServletWithParam() throws IOException {
 		HttpResponse response =
 				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/javascript?" + PARAM_TEST_STRING), 200);
-		checkEntity(response, TEXT_HTML, TestServlet.TEST_STRING);
-		checkEntity(response, TEXT_HTML, PARAM_TEST_STRING);
+		checkEntity(response, MIME_TEXT_HTML, TestServlet.TEST_STRING);
+		checkEntity(response, MIME_TEXT_HTML, PARAM_TEST_STRING);
+	}
+
+	private final void checkContentType(HttpResponse response, String contentTypePrefix) {
+		Assert.assertNotNull(response);
+		Header contentType = response.getFirstHeader("Content-Type");
+		Assert.assertNotNull(contentType);
+		Assert.assertTrue(contentType.getValue().startsWith(contentTypePrefix));
 	}
 
 	@Test
-	public void test300static() throws IOException {
-		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/css/test.css"), 200);
-		checkEntity(response, TEXT_CSS, ".qwazr {");
+	public void test300staticFile() throws IOException {
+		final String badUrl = TestServer.BASE_SERVLET_URL + "/css/dummy.css";
+		checkResponse(Request.Head(badUrl), 404);
+		checkResponse(Request.Get(badUrl), 404);
+		final String goodUrl = TestServer.BASE_SERVLET_URL + "/css/test.css";
+		checkContentType(checkResponse(Request.Head(goodUrl), 200), MIME_TEXT_CSS);
+		checkEntity(checkResponse(Request.Get(goodUrl), 200), MIME_TEXT_CSS, ".qwazr {");
+	}
+
+	@Test
+	public void test301staticResource() throws IOException {
+		final String badUrl = TestServer.BASE_SERVLET_URL + "/img/dummy.png";
+		checkResponse(Request.Head(badUrl), 404);
+		checkResponse(Request.Get(badUrl), 404);
+		final String goodUrl = TestServer.BASE_SERVLET_URL + "/img/logo.png";
+		checkContentType(checkResponse(Request.Head(goodUrl), 200), MIME_IMAGE_X_PNG);
+		checkEntity(checkResponse(Request.Get(goodUrl), 200), MIME_IMAGE_X_PNG, null);
+	}
+
+	@Test
+	public void test302favicon() throws IOException {
+		final String url = TestServer.BASE_SERVLET_URL + "/favicon.ico";
+		checkResponse(Request.Head(url), 200);
+		HttpResponse response = checkResponse(Request.Get(url), 200);
+		checkEntity(response, MIME_FAVICON, null);
 	}
 
 	@Test

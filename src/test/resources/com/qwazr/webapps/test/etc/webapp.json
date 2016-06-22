@@ -14,6 +14,7 @@
     "com.qwazr.webapps.test.TestListener"
   ],
   "statics": {
-    "/css/*": "css"
+    "/css/*": "css",
+    "/img/*": "com.qwazr.webapps.test.img"
   }
 }

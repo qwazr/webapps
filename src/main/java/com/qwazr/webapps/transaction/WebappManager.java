@@ -21,6 +21,7 @@ import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
 import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.FunctionUtils;
+import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.json.JacksonConfig;
 import com.qwazr.utils.server.InFileSessionPersistenceManager;
@@ -154,14 +155,19 @@ public class WebappManager {
 
 	}
 
-	private ServletInfo getStaticServlet(final String urlPath, final String filePath) {
-		return Servlets.servlet(StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class)
-				.addInitParam(StaticFileServlet.STATIC_PATH_PARAM, filePath).addMapping(urlPath);
+	private ServletInfo getStaticServlet(final String urlPath, final String path) {
+		if (path.contains(".") && !path.contains("/"))
+			return Servlets.servlet(StaticResourceServlet.class.getName() + '@' + urlPath, StaticResourceServlet.class)
+					.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
+							'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
+		else
+			return Servlets.servlet(StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class)
+					.addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path).addMapping(urlPath);
 	}
 
 	private ServletInfo getDefaultFaviconServlet() {
 		return Servlets.servlet(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH, StaticResourceServlet.class)
-				.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM, "/com/qwazr/webapps")
+				.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM, "/com/qwazr/webapps/favicon.ico")
 				.addMapping(FAVICON_PATH);
 	}
 
@@ -262,7 +268,7 @@ public class WebappManager {
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
 			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
+					new ProtectionDomain[]{new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm)});
 		}
 	}
 }

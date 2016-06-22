@@ -15,6 +15,8 @@
  **/
 package com.qwazr.webapps.transaction;
 
+import com.qwazr.utils.server.ServerException;
+import com.sun.jersey.api.client.ClientResponse;
 import org.apache.commons.io.IOUtils;
 
 import javax.servlet.ServletConfig;
@@ -22,6 +24,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -59,10 +62,10 @@ public class StaticFileServlet extends HttpServlet {
 					request.getContextPath() + request.getServletPath() + request.getPathInfo() + "index.html");
 			return null;
 		}
-		if (!staticFile.exists())
-			throw new FileNotFoundException("File not found: " + path);
-		if (!staticFile.isFile())
-			throw new FileNotFoundException("File not found: " + path);
+		if (!staticFile.exists() || !staticFile.isFile()) {
+			response.sendError(404, "File not found: " + path);
+			return null;
+		}
 		return staticFile;
 	}
 
