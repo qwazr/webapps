@@ -39,13 +39,12 @@ public class FullTest {
 
 	@Test
 	public void test000StartServer()
-			throws URISyntaxException, IOException, InstantiationException, ServletException, IllegalAccessException {
+			throws Exception {
 		TestServer.startServer();
 	}
 
 	@Test
-	public void test50Listener()
-			throws URISyntaxException, IOException, InstantiationException, ServletException, IllegalAccessException {
+	public void test50Listener() {
 		Assert.assertEquals(1, TestListener.initializedListeners.size());
 		TestListener listener = TestListener.initializedListeners.iterator().next();
 		Assert.assertEquals(TestListener.class, listener.getClass());

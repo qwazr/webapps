@@ -28,7 +28,7 @@ import java.io.IOException;
 public class WebappServer {
 
 	public static GenericServer start()
-			throws IOException, ServletException, IllegalAccessException, InstantiationException {
+			throws Exception {
 		final ServerBuilder builder = new ServerBuilder();
 		final File currentTempDir = new File(builder.getServerConfiguration().dataDirectory, "tmp");
 		currentTempDir.mkdir();
@@ -41,7 +41,7 @@ public class WebappServer {
 	}
 
 	public static void main(String[] args)
-			throws IOException, ServletException, InstantiationException, IllegalAccessException {
+			throws Exception {
 		start();
 	}
 
