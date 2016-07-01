@@ -24,6 +24,7 @@ import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.json.JacksonConfig;
+import com.qwazr.utils.server.GenericServer;
 import com.qwazr.utils.server.InFileSessionPersistenceManager;
 import com.qwazr.utils.server.ServerBuilder;
 import com.qwazr.utils.server.ServerException;
@@ -150,6 +151,11 @@ public class WebappManager {
 			FunctionUtils.forEach(webappDefinition.filters, (urlPath, filterClass) -> serverBuilder
 					.registerFilter(urlPath, Servlets.filter(ClassLoaderManager.findClass(filterClass))));
 
+		// Load the identityManager provider if any
+		if (webappDefinition.identity_manager != null)
+			serverBuilder.setIdentityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderManager
+					.findClass(webappDefinition.identity_manager).newInstance());
+
 		// Set the default favicon
 		serverBuilder.registerServlet(getDefaultFaviconServlet());
 
@@ -268,7 +274,7 @@ public class WebappManager {
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
 			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[]{new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm)});
+					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
 		}
 	}
 }

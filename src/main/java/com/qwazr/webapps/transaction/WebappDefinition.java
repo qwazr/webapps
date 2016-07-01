@@ -35,8 +35,8 @@ public class WebappDefinition {
 		controllers = null;
 		filters = null;
 		statics = null;
-		identity_manager = null;
 		listeners = null;
+		identity_manager = null;
 	}
 
 	private WebappDefinition(Builder builder) {
@@ -50,7 +50,7 @@ public class WebappDefinition {
 	@JsonIgnore
 	public boolean isEmpty() {
 		return (controllers == null || controllers.isEmpty()) && (statics == null || statics.isEmpty()) &&
-				(listeners == null || listeners.isEmpty());
+				(listeners == null || listeners.isEmpty() && (identity_manager == null || identity_manager.isEmpty()));
 	}
 
 	public static class Builder {
