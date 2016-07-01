@@ -39,6 +39,7 @@ public class TestServer {
 		System.setProperty("LISTEN_ADDR", "localhost");
 		FileUtils.copyDirectoryToDirectory(new File("src/test/js"), dataDir);
 		FileUtils.copyDirectoryToDirectory(new File("src/test/css"), dataDir);
+		System.setProperty("WEBAPP_REALM", "testRealm");
 		System.setProperty("QWAZR_ETC_DIR",
 				new File("src/test/resources/com/qwazr/webapps/test/etc").getAbsolutePath());
 		WebappServer.start();

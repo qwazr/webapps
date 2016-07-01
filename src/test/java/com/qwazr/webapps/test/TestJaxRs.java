@@ -18,9 +18,20 @@ package com.qwazr.webapps.test;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.qwazr.utils.json.JacksonConfig;
+import org.glassfish.jersey.server.ResourceConfig;
+import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 
+import javax.annotation.security.DenyAll;
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
+import javax.servlet.annotation.ServletSecurity;
+import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Application;
+import javax.ws.rs.core.Context;
+import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.SecurityContext;
+import java.security.Principal;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,10 +43,14 @@ public class TestJaxRs extends Application {
 
 	public final static String TEST_STRING = "JAX_RS_TEST_STRING";
 
+	public TestJaxRs() {
+	}
+
 	public Set<Class<?>> getClasses() {
 		return new HashSet<>(
-				Arrays.asList(ServiceJson.class, ServiceXml.class, JacksonConfig.class, JacksonJsonProvider.class,
-						JacksonXMLProvider.class));
+				Arrays.asList(ServiceJson.class, ServiceXml.class, ServiceAuth.class,
+						JacksonConfig.class, JacksonJsonProvider.class, JacksonXMLProvider.class,
+						RolesAllowedDynamicFeature.class));
 	}
 
 	@Path("/json")
@@ -43,7 +58,7 @@ public class TestJaxRs extends Application {
 
 		@Path("/test/{path-param}")
 		@GET
-		@Produces("application/json")
+		@Produces(MediaType.APPLICATION_JSON)
 		public Data getTestJson(@PathParam("path-param") String pathParam) {
 			return new Data(TEST_STRING, pathParam);
 		}
@@ -54,9 +69,33 @@ public class TestJaxRs extends Application {
 
 		@Path("/test/{path-param}")
 		@POST
-		@Produces("application/xml")
+		@Produces(MediaType.APPLICATION_XML)
 		public Data getTestJson(@PathParam("path-param") String pathParam) {
 			return new Data(TEST_STRING, pathParam);
+		}
+	}
+
+	@Path("/auth")
+	@PermitAll
+	public static class ServiceAuth {
+
+		@Context
+		private HttpServletResponse response;
+
+		@Context
+		private SecurityContext securityContext;
+
+		public final static String xAuthUser = "X-AUTH-USER";
+
+		@Path("/test")
+		@RolesAllowed("authenticated-user")
+		@Produces(MediaType.TEXT_PLAIN)
+		@HEAD
+		public void testAuth() {
+			final Principal principal = securityContext.getUserPrincipal();
+			if (principal == null)
+				return;
+			response.setHeader(xAuthUser, principal.getName());
 		}
 	}
 

@@ -19,6 +19,7 @@ import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
+import com.qwazr.utils.AnnotationsUtils;
 import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.StringUtils;
@@ -32,6 +33,7 @@ import com.qwazr.webapps.WebappManagerServiceImpl;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ServletInfo;
+import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.util.ConstructorInstanceFactory;
 import org.apache.commons.io.FilenameUtils;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -39,6 +41,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.activation.MimetypesFileTypeMap;
+import javax.annotation.security.PermitAll;
+import javax.annotation.security.RolesAllowed;
 import javax.management.MBeanPermission;
 import javax.management.MBeanServerPermission;
 import javax.script.ScriptEngine;
@@ -50,6 +54,7 @@ import javax.ws.rs.core.Application;
 import java.io.File;
 import java.io.FilePermission;
 import java.io.IOException;
+import java.lang.annotation.Annotation;
 import java.net.SocketPermission;
 import java.net.URISyntaxException;
 import java.security.AccessControlContext;
@@ -57,7 +62,10 @@ import java.security.CodeSource;
 import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.Collection;
+import java.util.HashSet;
 import java.util.Objects;
+import java.util.Set;
 
 public class WebappManager {
 
@@ -138,10 +146,15 @@ public class WebappManager {
 				serverBuilder.registerListener(Servlets.listener(ClassLoaderManager.findClass(listenerClass)));
 		serverBuilder.setServletAccessLogger(accessLogger);
 
+		final Set<String> pathToProtect = new HashSet<>();
+
 		// Load the controllers
 		if (webappDefinition.controllers != null)
 			webappDefinition.controllers
-					.forEach((urlPath, filePath) -> serverBuilder.registerServlet(getController(urlPath, filePath)));
+					.forEach((urlPath, filePath) -> serverBuilder
+							.registerServlet(getController(urlPath, filePath, pathToProtect)));
+		pathToProtect.forEach(urlPath -> serverBuilder.addSecurityConstraint(urlPath));
+
 
 		// Load the closable filter
 		serverBuilder.registerFilter("/*", Servlets.filter(CloseableFilter.class));
@@ -177,13 +190,14 @@ public class WebappManager {
 				.addMapping(FAVICON_PATH);
 	}
 
-	private ServletInfo getController(final String urlPath, final String filePath) {
+	private ServletInfo getController(final String urlPath, final String filePath,
+			final Collection<String> urlPathToProtect) {
 		try {
 			String ext = FilenameUtils.getExtension(filePath).toLowerCase();
 			if ("js".equals(ext))
 				return getJavascriptServlet(urlPath, filePath);
 			else
-				return getJavaController(urlPath, filePath);
+				return getJavaController(urlPath, filePath, urlPathToProtect);
 		} catch (ReflectiveOperationException e) {
 			throw new ServerException("Cannot build an instance of the controller: " + filePath, e);
 		}
@@ -195,18 +209,19 @@ public class WebappManager {
 				.setMultipartConfig(multipartConfigElement);
 	}
 
-	private ServletInfo getJavaController(final String urlPath, final String classDef)
+	private ServletInfo getJavaController(final String urlPath, final String classDef,
+			final Collection<String> urlPathToProtect)
 			throws ReflectiveOperationException {
 		if (classDef.contains(" "))
-			return getJavaJaxRsClassServlet(urlPath, classDef);
+			return getJavaJaxRsClassServlet(urlPath, classDef, urlPathToProtect);
 		final Class<?> clazz = ClassLoaderUtils.findClass(ClassLoaderManager.classLoader, classDef);
 		Objects.requireNonNull(clazz, "Class not found: " + classDef);
 		if (Servlet.class.isAssignableFrom(clazz))
 			return getJavaServlet(urlPath, (Class<? extends Servlet>) clazz);
 		else if (Application.class.isAssignableFrom(clazz))
-			return getJavaJaxRsAppServlet(urlPath, clazz);
+			return getJavaJaxRsAppServlet(urlPath, clazz, urlPathToProtect);
 		else if (clazz.isAnnotationPresent(Path.class))
-			return getJavaJaxRsClassServlet(urlPath, classDef);
+			return getJavaJaxRsClassServlet(urlPath, classDef, urlPathToProtect);
 		throw new ServerException("This type of class is not supported: " + classDef + " / " + clazz.getName());
 	}
 
@@ -216,8 +231,19 @@ public class WebappManager {
 				.addMapping(urlPath).setMultipartConfig(multipartConfigElement);
 	}
 
-	private ServletInfo getJavaJaxRsAppServlet(final String urlPath, final Class<?> clazz)
-			throws NoSuchMethodException {
+	final static Class[] SECURITY_ANNOTATION_CLASSES = new Class[]{RolesAllowed.class, PermitAll.class};
+
+	private boolean isSecurity(final Class<?> clazz) {
+		for (Class<? extends Annotation> annotationClass : SECURITY_ANNOTATION_CLASSES)
+			if (AnnotationsUtils.getFirstAnnotation(clazz, annotationClass) != null)
+				return true;
+		return false;
+	}
+
+	private ServletInfo getJavaJaxRsAppServlet(final String urlPath, final Class<?> clazz,
+			final Collection<String> urlPathToProtect) throws NoSuchMethodException {
+		if (isSecurity(clazz))
+			urlPathToProtect.add(urlPath);
 		return Servlets.servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
 				new ServletFactory(ServletContainer.class)).addInitParam("javax.ws.rs.Application", clazz.getName())
 				.setAsyncSupported(true).addMapping(urlPath);
@@ -227,8 +253,15 @@ public class WebappManager {
 			JacksonConfig.class.getName() + ' ' + JacksonXMLProvider.class.getName() + ' ' + JacksonJsonProvider.class
 					.getName();
 
-	private ServletInfo getJavaJaxRsClassServlet(final String urlPath, final String classList)
-			throws NoSuchMethodException {
+	private ServletInfo getJavaJaxRsClassServlet(final String urlPath, final String classList,
+			final Collection<String> urlPathToProtect) throws NoSuchMethodException, ClassNotFoundException {
+		String[] classes = StringUtils.split(classList, ' ');
+		for (String clas : classes) {
+			if (isSecurity(ClassLoaderManager.findClass(clas))) {
+				urlPathToProtect.add(urlPath);
+				break;
+			}
+		}
 		return Servlets.servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
 				new ServletFactory(ServletContainer.class))
 				.addInitParam("jersey.config.server.provider.classnames", classList + ' ' + JACKSON_DEFAULT_PROVIDERS)
@@ -274,7 +307,7 @@ public class WebappManager {
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
 			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
+					new ProtectionDomain[]{new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm)});
 		}
 	}
 }

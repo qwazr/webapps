@@ -18,8 +18,11 @@ package com.qwazr.webapps.test;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.util.EntityUtils;
+import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -51,7 +54,10 @@ public class FullTest {
 	}
 
 	private HttpResponse checkResponse(Request request, int expectedStatusCode) throws IOException {
-		final HttpResponse response = request.execute().returnResponse();
+		return checkResponse(request.execute().returnResponse(), expectedStatusCode);
+	}
+
+	private HttpResponse checkResponse(HttpResponse response, int expectedStatusCode) throws IOException {
 		Assert.assertNotNull(response);
 		Assert.assertEquals(expectedStatusCode, response.getStatusLine().getStatusCode());
 		return response;
@@ -119,6 +125,18 @@ public class FullTest {
 		response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/json/test/" + pathParam),
 				200);
 		checkEntity(response, "application/json", TestJaxRs.TEST_STRING, pathParam);
+	}
+
+	@Test
+	public void test180JaxRsAuth() throws IOException {
+		checkResponse(Request.Head(TestServer.BASE_SERVLET_URL + "/jaxrs-app/auth/test"), 403);
+
+		final Executor executor = Executor.newInstance().auth(new UsernamePasswordCredentials("user", "pass"));
+		final HttpResponse response =
+				executor.execute(Request.Head(TestServer.BASE_SERVLET_URL + "/jaxrs-app/auth/test")).returnResponse();
+		checkResponse(response, 204);
+		final Header userHeader = response.getFirstHeader(TestJaxRs.ServiceAuth.xAuthUser);
+		Assert.assertNotNull(userHeader);
 	}
 
 	@Test
