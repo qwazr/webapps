@@ -49,8 +49,7 @@ public class TestJaxRs extends Application {
 	public Set<Class<?>> getClasses() {
 		return new HashSet<>(
 				Arrays.asList(ServiceJson.class, ServiceXml.class, ServiceAuth.class,
-						JacksonConfig.class, JacksonJsonProvider.class, JacksonXMLProvider.class,
-						RolesAllowedDynamicFeature.class));
+						JacksonConfig.class, JacksonJsonProvider.class, JacksonXMLProvider.class));
 	}
 
 	@Path("/json")
