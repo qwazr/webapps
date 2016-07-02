@@ -18,11 +18,11 @@ package com.qwazr.webapps.test;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.fluent.Executor;
 import org.apache.http.client.fluent.Request;
 import org.apache.http.util.EntityUtils;
-import org.glassfish.jersey.server.ResourceConfig;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -41,8 +41,7 @@ public class FullTest {
 	private final static String MIME_FAVICON = "image/vnd.microsoft.icon";
 
 	@Test
-	public void test000StartServer()
-			throws Exception {
+	public void test000StartServer() throws Exception {
 		TestServer.startServer();
 	}
 
@@ -127,16 +126,39 @@ public class FullTest {
 		checkEntity(response, "application/json", TestJaxRs.TEST_STRING, pathParam);
 	}
 
-	@Test
-	public void test180JaxRsAuth() throws IOException {
-		checkResponse(Request.Head(TestServer.BASE_SERVLET_URL + "/jaxrs-app/auth/test"), 403);
+	private HttpResponse auth(Request request, String user, String pass) throws IOException {
+		final Executor executor =
+				Executor.newInstance().auth(AuthScope.ANY, new UsernamePasswordCredentials(user, pass));
+		return executor.execute(request).returnResponse();
+	}
 
-		final Executor executor = Executor.newInstance().auth(new UsernamePasswordCredentials("user", "pass"));
+	private HttpResponse validAuth(Request request) throws IOException {
+		return auth(request, TestIdentityProvider.TEST_USER, TestIdentityProvider.TEST_PASSWORD);
+	}
+
+	private HttpResponse wrongAuth(Request request) throws IOException {
+		return auth(request, "dummy", "dummy");
+	}
+
+	private void testAuth(final String appPath) throws IOException {
+		checkResponse(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test"), 401);
+		checkResponse(wrongAuth(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 401);
+		checkResponse(validAuth(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/wrong-role")), 403);
 		final HttpResponse response =
-				executor.execute(Request.Head(TestServer.BASE_SERVLET_URL + "/jaxrs-app/auth/test")).returnResponse();
-		checkResponse(response, 204);
+				checkResponse(validAuth(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 204);
 		final Header userHeader = response.getFirstHeader(TestJaxRs.ServiceAuth.xAuthUser);
 		Assert.assertNotNull(userHeader);
+	}
+
+	@Test
+	public void test180JaxRsAuth() throws IOException {
+		testAuth("/jaxrs-auth");
+		Assert.assertEquals(3, TestIdentityProvider.authCount.get());
+		Assert.assertEquals(2, TestIdentityProvider.authSuccessCount.get());
+		testAuth("/jaxrs-app-auth");
+		Assert.assertEquals(6, TestIdentityProvider.authCount.get());
+		Assert.assertEquals(4, TestIdentityProvider.authSuccessCount.get());
+
 	}
 
 	@Test

@@ -19,10 +19,22 @@ import com.qwazr.utils.server.GenericServer;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
+import io.undertow.security.idm.PasswordCredential;
 
 import java.io.IOException;
+import java.security.Principal;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class TestIdentityProvider implements GenericServer.IdentityManagerProvider {
+
+	public final static AtomicInteger authSuccessCount = new AtomicInteger();
+	public final static AtomicInteger authCount = new AtomicInteger();
+	public final static String TEST_USER = "user_" + System.currentTimeMillis();
+	public final static String TEST_PASSWORD = "passwd" + System.currentTimeMillis();
+	public final static String VALID_ROLE = "authenticated-user";
 
 	@Override
 	public IdentityManager getIdentityManager(String realm) throws IOException {
@@ -33,19 +45,34 @@ public class TestIdentityProvider implements GenericServer.IdentityManagerProvid
 
 		@Override
 		public Account verify(Account account) {
-			System.out.println(account);
-			return null;
+			return account;
 		}
 
 		@Override
-		public Account verify(String s, Credential credential) {
-			System.out.println(s);
-			return null;
+		public Account verify(String id, Credential credential) {
+			authCount.incrementAndGet();
+			if (!TEST_USER.equals(id))
+				return null;
+			final PasswordCredential passwordCredential = (PasswordCredential) credential;
+			final String passwd = new String(passwordCredential.getPassword());
+			if (!TEST_PASSWORD.equals(passwd))
+				return null;
+			authSuccessCount.incrementAndGet();
+			return new Account() {
+				@Override
+				public Principal getPrincipal() {
+					return () -> id;
+				}
+
+				@Override
+				public Set<String> getRoles() {
+					return new HashSet(Arrays.asList(VALID_ROLE));
+				}
+			};
 		}
 
 		@Override
 		public Account verify(Credential credential) {
-			System.out.println(credential);
 			return null;
 		}
 	}

@@ -18,13 +18,10 @@ package com.qwazr.webapps.test;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.qwazr.utils.json.JacksonConfig;
-import org.glassfish.jersey.server.ResourceConfig;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 
-import javax.annotation.security.DenyAll;
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
-import javax.servlet.annotation.ServletSecurity;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Application;
@@ -43,13 +40,9 @@ public class TestJaxRs extends Application {
 
 	public final static String TEST_STRING = "JAX_RS_TEST_STRING";
 
-	public TestJaxRs() {
-	}
-
 	public Set<Class<?>> getClasses() {
-		return new HashSet<>(
-				Arrays.asList(ServiceJson.class, ServiceXml.class, ServiceAuth.class,
-						JacksonConfig.class, JacksonJsonProvider.class, JacksonXMLProvider.class));
+		return new HashSet<>(Arrays.asList(ServiceJson.class, ServiceXml.class, ServiceAuth.class, JacksonConfig.class,
+				JacksonJsonProvider.class, JacksonXMLProvider.class));
 	}
 
 	@Path("/json")
@@ -87,8 +80,8 @@ public class TestJaxRs extends Application {
 		public final static String xAuthUser = "X-AUTH-USER";
 
 		@Path("/test")
-		@RolesAllowed("authenticated-user")
 		@Produces(MediaType.TEXT_PLAIN)
+		@RolesAllowed(TestIdentityProvider.VALID_ROLE)
 		@HEAD
 		public void testAuth() {
 			final Principal principal = securityContext.getUserPrincipal();
@@ -96,6 +89,27 @@ public class TestJaxRs extends Application {
 				return;
 			response.setHeader(xAuthUser, principal.getName());
 		}
+
+		@Path("/wrong-role")
+		@Produces(MediaType.TEXT_PLAIN)
+		@RolesAllowed("dummy")
+		@HEAD
+		public void testWrongRole() {
+			final Principal principal = securityContext.getUserPrincipal();
+			if (principal == null)
+				return;
+			response.setHeader(xAuthUser, principal.getName());
+		}
+	}
+
+	@PermitAll
+	public static class AppAuth extends Application {
+
+		public Set<Class<?>> getClasses() {
+			return new HashSet<>(Arrays.asList(ServiceAuth.class, JacksonConfig.class, JacksonJsonProvider.class,
+					JacksonXMLProvider.class, RolesAllowedDynamicFeature.class));
+		}
+
 	}
 
 	public static class Data {

@@ -25,22 +25,19 @@ import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.json.JacksonConfig;
-import com.qwazr.utils.server.GenericServer;
-import com.qwazr.utils.server.InFileSessionPersistenceManager;
-import com.qwazr.utils.server.ServerBuilder;
-import com.qwazr.utils.server.ServerException;
+import com.qwazr.utils.server.*;
 import com.qwazr.webapps.WebappManagerServiceImpl;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.InstanceHandle;
-import io.undertow.servlet.api.ServletInfo;
-import io.undertow.servlet.api.ServletSecurityInfo;
 import io.undertow.servlet.util.ConstructorInstanceFactory;
 import org.apache.commons.io.FilenameUtils;
+import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.activation.MimetypesFileTypeMap;
+import javax.annotation.security.DenyAll;
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
 import javax.management.MBeanPermission;
@@ -54,7 +51,6 @@ import javax.ws.rs.core.Application;
 import java.io.File;
 import java.io.FilePermission;
 import java.io.IOException;
-import java.lang.annotation.Annotation;
 import java.net.SocketPermission;
 import java.net.URISyntaxException;
 import java.security.AccessControlContext;
@@ -62,10 +58,7 @@ import java.security.CodeSource;
 import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
-import java.util.Collection;
-import java.util.HashSet;
 import java.util.Objects;
-import java.util.Set;
 
 public class WebappManager {
 
@@ -133,8 +126,8 @@ public class WebappManager {
 
 		// Load the static handlers
 		if (webappDefinition.statics != null)
-			webappDefinition.statics
-					.forEach((urlPath, filePath) -> serverBuilder.registerServlet(getStaticServlet(urlPath, filePath)));
+			webappDefinition.statics.forEach(
+					(urlPath, filePath) -> serverBuilder.registerServlet(getStaticServlet(urlPath, filePath)));
 
 		// Prepare the Javascript interpreter
 		final ScriptEngineManager manager = new ScriptEngineManager();
@@ -146,126 +139,132 @@ public class WebappManager {
 				serverBuilder.registerListener(Servlets.listener(ClassLoaderManager.findClass(listenerClass)));
 		serverBuilder.setServletAccessLogger(accessLogger);
 
-		final Set<String> pathToProtect = new HashSet<>();
-
 		// Load the controllers
 		if (webappDefinition.controllers != null)
-			webappDefinition.controllers
-					.forEach((urlPath, filePath) -> serverBuilder
-							.registerServlet(getController(urlPath, filePath, pathToProtect)));
-		pathToProtect.forEach(urlPath -> serverBuilder.addSecurityConstraint(urlPath));
-
+			webappDefinition.controllers.forEach(
+					(urlPath, filePath) -> serverBuilder.registerServlet(getController(urlPath, filePath)));
 
 		// Load the closable filter
 		serverBuilder.registerFilter("/*", Servlets.filter(CloseableFilter.class));
 
 		// Load the filters
 		if (webappDefinition.filters != null)
-			FunctionUtils.forEach(webappDefinition.filters, (urlPath, filterClass) -> serverBuilder
-					.registerFilter(urlPath, Servlets.filter(ClassLoaderManager.findClass(filterClass))));
+			FunctionUtils.forEach(webappDefinition.filters,
+					(urlPath, filterClass) -> serverBuilder.registerFilter(urlPath,
+							Servlets.filter(ClassLoaderManager.findClass(filterClass))));
 
 		// Load the identityManager provider if any
 		if (webappDefinition.identity_manager != null)
-			serverBuilder.setIdentityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderManager
-					.findClass(webappDefinition.identity_manager).newInstance());
+			serverBuilder.setIdentityManagerProvider(
+					(GenericServer.IdentityManagerProvider) ClassLoaderManager.findClass(
+							webappDefinition.identity_manager).newInstance());
 
 		// Set the default favicon
 		serverBuilder.registerServlet(getDefaultFaviconServlet());
 
 	}
 
-	private ServletInfo getStaticServlet(final String urlPath, final String path) {
+	private SecurableServletInfo getStaticServlet(final String urlPath, final String path) {
 		if (path.contains(".") && !path.contains("/"))
-			return Servlets.servlet(StaticResourceServlet.class.getName() + '@' + urlPath, StaticResourceServlet.class)
+			return (SecurableServletInfo) SecurableServletInfo.servlet(
+					StaticResourceServlet.class.getName() + '@' + urlPath, StaticResourceServlet.class)
 					.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
-							'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
+							'/' + StringUtils.replaceChars(path, '.', '/'))
+					.addMapping(urlPath);
 		else
-			return Servlets.servlet(StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class)
-					.addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path).addMapping(urlPath);
+			return (SecurableServletInfo) SecurableServletInfo.servlet(
+					StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class)
+					.addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path)
+					.addMapping(urlPath);
 	}
 
-	private ServletInfo getDefaultFaviconServlet() {
-		return Servlets.servlet(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH, StaticResourceServlet.class)
+	private SecurableServletInfo getDefaultFaviconServlet() {
+		return (SecurableServletInfo) SecurableServletInfo.servlet(
+				StaticResourceServlet.class.getName() + '@' + FAVICON_PATH, StaticResourceServlet.class)
 				.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM, "/com/qwazr/webapps/favicon.ico")
 				.addMapping(FAVICON_PATH);
 	}
 
-	private ServletInfo getController(final String urlPath, final String filePath,
-			final Collection<String> urlPathToProtect) {
+	private SecurableServletInfo getController(final String urlPath, final String filePath) {
 		try {
 			String ext = FilenameUtils.getExtension(filePath).toLowerCase();
 			if ("js".equals(ext))
 				return getJavascriptServlet(urlPath, filePath);
 			else
-				return getJavaController(urlPath, filePath, urlPathToProtect);
+				return getJavaController(urlPath, filePath);
 		} catch (ReflectiveOperationException e) {
 			throw new ServerException("Cannot build an instance of the controller: " + filePath, e);
 		}
 	}
 
-	private ServletInfo getJavascriptServlet(final String urlPath, final String filePath) {
-		return Servlets.servlet(JavascriptServlet.class.getName() + '@' + urlPath, JavascriptServlet.class)
-				.addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath).addMapping(urlPath)
+	private SecurableServletInfo getJavascriptServlet(final String urlPath, final String filePath) {
+		return (SecurableServletInfo) SecurableServletInfo.servlet(JavascriptServlet.class.getName() + '@' + urlPath,
+				JavascriptServlet.class)
+				.addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath)
+				.addMapping(urlPath)
 				.setMultipartConfig(multipartConfigElement);
 	}
 
-	private ServletInfo getJavaController(final String urlPath, final String classDef,
-			final Collection<String> urlPathToProtect)
+	private SecurableServletInfo getJavaController(final String urlPath, final String classDef)
 			throws ReflectiveOperationException {
-		if (classDef.contains(" "))
-			return getJavaJaxRsClassServlet(urlPath, classDef, urlPathToProtect);
+		if (classDef.contains(" ") || classDef.contains(" ,"))
+			return getJavaJaxRsClassServlet(urlPath, classDef);
 		final Class<?> clazz = ClassLoaderUtils.findClass(ClassLoaderManager.classLoader, classDef);
 		Objects.requireNonNull(clazz, "Class not found: " + classDef);
 		if (Servlet.class.isAssignableFrom(clazz))
 			return getJavaServlet(urlPath, (Class<? extends Servlet>) clazz);
 		else if (Application.class.isAssignableFrom(clazz))
-			return getJavaJaxRsAppServlet(urlPath, clazz, urlPathToProtect);
+			return getJavaJaxRsAppServlet(urlPath, clazz);
 		else if (clazz.isAnnotationPresent(Path.class))
-			return getJavaJaxRsClassServlet(urlPath, classDef, urlPathToProtect);
+			return getJavaJaxRsClassServlet(urlPath, classDef);
 		throw new ServerException("This type of class is not supported: " + classDef + " / " + clazz.getName());
 	}
 
-	private ServletInfo getJavaServlet(final String urlPath, final Class<? extends Servlet> servletClass)
+	private boolean isSecurable(Class<?> clazz) {
+		return AnnotationsUtils.getFirstAnnotation(clazz, RolesAllowed.class) != null
+				|| AnnotationsUtils.getFirstAnnotation(clazz, PermitAll.class) != null
+				|| AnnotationsUtils.getFirstAnnotation(clazz, DenyAll.class) != null;
+	}
+
+	private SecurableServletInfo getJavaServlet(final String urlPath, final Class<? extends Servlet> servletClass)
 			throws NoSuchMethodException {
-		return Servlets.servlet(servletClass.getName() + '@' + urlPath, servletClass, new ServletFactory(servletClass))
-				.addMapping(urlPath).setMultipartConfig(multipartConfigElement);
+		return (SecurableServletInfo) SecurableServletInfo.servlet(servletClass.getName() + '@' + urlPath, servletClass,
+				new ServletFactory(servletClass))
+				.setSecure(isSecurable(servletClass))
+				.addMapping(urlPath)
+				.setMultipartConfig(multipartConfigElement);
 	}
 
-	final static Class[] SECURITY_ANNOTATION_CLASSES = new Class[]{RolesAllowed.class, PermitAll.class};
-
-	private boolean isSecurity(final Class<?> clazz) {
-		for (Class<? extends Annotation> annotationClass : SECURITY_ANNOTATION_CLASSES)
-			if (AnnotationsUtils.getFirstAnnotation(clazz, annotationClass) != null)
-				return true;
-		return false;
+	private SecurableServletInfo getJavaJaxRsAppServlet(final String urlPath, final Class<?> appClass)
+			throws NoSuchMethodException {
+		return (SecurableServletInfo) SecurableServletInfo.servlet(ServletContainer.class.getName() + '@' + urlPath,
+				ServletContainer.class, new ServletFactory(ServletContainer.class))
+				.setSecure(isSecurable(appClass))
+				.addInitParam("javax.ws.rs.Application", appClass.getName())
+				.setAsyncSupported(true)
+				.addMapping(urlPath);
 	}
 
-	private ServletInfo getJavaJaxRsAppServlet(final String urlPath, final Class<?> clazz,
-			final Collection<String> urlPathToProtect) throws NoSuchMethodException {
-		if (isSecurity(clazz))
-			urlPathToProtect.add(urlPath);
-		return Servlets.servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
-				new ServletFactory(ServletContainer.class)).addInitParam("javax.ws.rs.Application", clazz.getName())
-				.setAsyncSupported(true).addMapping(urlPath);
-	}
+	private String DEFAULT_PROVIDERS = JacksonConfig.class.getName() + ',' + JacksonXMLProvider.class.getName() + ','
+			+ JacksonJsonProvider.class.getName() + ',' + RolesAllowedDynamicFeature.class.getName();
 
-	private String JACKSON_DEFAULT_PROVIDERS =
-			JacksonConfig.class.getName() + ' ' + JacksonXMLProvider.class.getName() + ' ' + JacksonJsonProvider.class
-					.getName();
-
-	private ServletInfo getJavaJaxRsClassServlet(final String urlPath, final String classList,
-			final Collection<String> urlPathToProtect) throws NoSuchMethodException, ClassNotFoundException {
-		String[] classes = StringUtils.split(classList, ' ');
-		for (String clas : classes) {
-			if (isSecurity(ClassLoaderManager.findClass(clas))) {
-				urlPathToProtect.add(urlPath);
+	private SecurableServletInfo getJavaJaxRsClassServlet(final String urlPath, final String classList)
+			throws NoSuchMethodException, ClassNotFoundException {
+		final String[] classes = StringUtils.split(classList, " ,");
+		final SecurableServletInfo servletInfo =
+				(SecurableServletInfo) SecurableServletInfo.servlet(ServletContainer.class.getName() + '@' + urlPath,
+						ServletContainer.class, new ServletFactory(ServletContainer.class))
+						.addInitParam("jersey.config.server.provider.classnames",
+								StringUtils.join(classes, ',') + ',' + DEFAULT_PROVIDERS)
+						.setAsyncSupported(true)
+						.addMapping(urlPath);
+		for (String clazz : classes) {
+			if (isSecurable(ClassLoaderManager.findClass(clazz))) {
+				servletInfo.setSecure(true);
 				break;
 			}
 		}
-		return Servlets.servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
-				new ServletFactory(ServletContainer.class))
-				.addInitParam("jersey.config.server.provider.classnames", classList + ' ' + JACKSON_DEFAULT_PROVIDERS)
-				.setAsyncSupported(true).addMapping(urlPath);
+		return servletInfo;
 	}
 
 	class ServletFactory<T extends Servlet> extends ConstructorInstanceFactory<T> {
@@ -307,7 +306,7 @@ public class WebappManager {
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
 			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[]{new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm)});
+					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
 		}
 	}
 }
