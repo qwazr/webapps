@@ -2,7 +2,7 @@
   "controllers": {
     "/javascript": "js/controller.js",
     "/java": "com.qwazr.webapps.test.TestServlet",
-    "/jaxrs-app/*": "com.qwazr.webapps.test.TestJaxRs",
+    "/jaxrs-app/*": "com.qwazr.webapps.test.TestJaxRs$SimpleApp",
     "/jaxrs-app-auth/*": "com.qwazr.webapps.test.TestJaxRs$AppAuth",
     "/jaxrs-auth/*": "com.qwazr.webapps.test.TestJaxRs$ServiceAuth",
     "/jaxrs-class-json/*": "com.qwazr.webapps.test.TestJaxRs$ServiceJson",

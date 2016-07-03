@@ -18,7 +18,7 @@ package com.qwazr.webapps.test;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.qwazr.utils.json.JacksonConfig;
-import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
+import com.qwazr.webapps.BaseRestApplication;
 
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
@@ -36,13 +36,17 @@ import java.util.Set;
 /**
  * Example of JAX-RS
  */
-public class TestJaxRs extends Application {
+public class TestJaxRs {
 
 	public final static String TEST_STRING = "JAX_RS_TEST_STRING";
 
-	public Set<Class<?>> getClasses() {
-		return new HashSet<>(Arrays.asList(ServiceJson.class, ServiceXml.class, ServiceAuth.class, JacksonConfig.class,
-				JacksonJsonProvider.class, JacksonXMLProvider.class));
+	public static class SimpleApp extends Application {
+
+		public Set<Class<?>> getClasses() {
+			return new HashSet<>(
+					Arrays.asList(ServiceJson.class, ServiceXml.class, ServiceAuth.class, JacksonConfig.class,
+							JacksonJsonProvider.class, JacksonXMLProvider.class));
+		}
 	}
 
 	@Path("/json")
@@ -103,13 +107,13 @@ public class TestJaxRs extends Application {
 	}
 
 	@PermitAll
-	public static class AppAuth extends Application {
+	public static class AppAuth extends BaseRestApplication {
 
 		public Set<Class<?>> getClasses() {
-			return new HashSet<>(Arrays.asList(ServiceAuth.class, JacksonConfig.class, JacksonJsonProvider.class,
-					JacksonXMLProvider.class, RolesAllowedDynamicFeature.class));
+			final Set<Class<?>> classes = super.getClasses();
+			classes.add(ServiceAuth.class);
+			return classes;
 		}
-
 	}
 
 	public static class Data {
