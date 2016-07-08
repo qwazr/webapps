@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-package com.qwazr.webapps.transaction;
+package com.qwazr.webapps;
 
-import com.qwazr.webapps.transaction.body.HttpBodyInterface;
+import com.qwazr.webapps.body.HttpBodyInterface;
 
 import javax.servlet.*;
 import javax.servlet.http.*;

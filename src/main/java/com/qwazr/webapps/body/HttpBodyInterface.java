@@ -13,15 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-package com.qwazr.webapps.transaction.body;
+package com.qwazr.webapps.body;
 
-import com.qwazr.webapps.exception.WebappException;
-import com.qwazr.webapps.exception.WebappException.Title;
 import org.apache.http.entity.ContentType;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
-import javax.ws.rs.core.Response.Status;
 import java.io.IOException;
 
 public interface HttpBodyInterface {

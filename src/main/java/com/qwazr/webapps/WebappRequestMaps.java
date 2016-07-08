@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-package com.qwazr.webapps.transaction;
+package com.qwazr.webapps;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.*;

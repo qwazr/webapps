@@ -17,8 +17,6 @@ package com.qwazr.webapps;
 
 import com.qwazr.utils.server.ServiceInterface;
 import com.qwazr.utils.server.ServiceName;
-import com.qwazr.webapps.transaction.WebappDefinition;
-import com.qwazr.webapps.transaction.WebappManager;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;

@@ -16,8 +16,6 @@
 package com.qwazr.webapps;
 
 import com.qwazr.utils.server.ServerException;
-import com.qwazr.webapps.transaction.WebappDefinition;
-import com.qwazr.webapps.transaction.WebappManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

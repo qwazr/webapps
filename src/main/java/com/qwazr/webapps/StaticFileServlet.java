@@ -13,10 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-package com.qwazr.webapps.transaction;
+package com.qwazr.webapps;
 
-import com.qwazr.utils.server.ServerException;
-import com.sun.jersey.api.client.ClientResponse;
 import org.apache.commons.io.IOUtils;
 
 import javax.servlet.ServletConfig;
@@ -24,10 +22,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.core.Response;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 
 public class StaticFileServlet extends HttpServlet {

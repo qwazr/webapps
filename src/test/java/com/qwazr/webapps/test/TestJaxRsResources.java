@@ -15,41 +15,29 @@
  **/
 package com.qwazr.webapps.test;
 
-import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
-import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
-import com.qwazr.utils.json.JacksonConfig;
-import com.qwazr.webapps.BaseRestApplication;
+import io.swagger.annotations.Api;
+import io.swagger.annotations.Info;
+import io.swagger.annotations.SwaggerDefinition;
 
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.*;
-import javax.ws.rs.core.Application;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 import java.security.Principal;
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
 
 /**
  * Example of JAX-RS
  */
-public class TestJaxRs {
+public class TestJaxRsResources {
 
 	public final static String TEST_STRING = "JAX_RS_TEST_STRING";
 
-	public static class SimpleApp extends Application {
-
-		public Set<Class<?>> getClasses() {
-			return new HashSet<>(
-					Arrays.asList(ServiceJson.class, ServiceXml.class, ServiceAuth.class, JacksonConfig.class,
-							JacksonJsonProvider.class, JacksonXMLProvider.class));
-		}
-	}
-
+	@Api
 	@Path("/json")
+	@SwaggerDefinition(info = @Info(title = "ServiceJson", version = "v1.2.3"))
 	public static class ServiceJson {
 
 		@Path("/test/{path-param}")
@@ -60,7 +48,9 @@ public class TestJaxRs {
 		}
 	}
 
+	@Api
 	@Path("/xml")
+	@SwaggerDefinition(info = @Info(title = "ServiceXml", version = "v1.2.3"))
 	public static class ServiceXml {
 
 		@Path("/test/{path-param}")
@@ -71,6 +61,7 @@ public class TestJaxRs {
 		}
 	}
 
+	@Api
 	@Path("/auth")
 	@PermitAll
 	public static class ServiceAuth {
@@ -103,16 +94,6 @@ public class TestJaxRs {
 			if (principal == null)
 				return;
 			response.setHeader(xAuthUser, principal.getName());
-		}
-	}
-
-	@PermitAll
-	public static class AppAuth extends BaseRestApplication {
-
-		public Set<Class<?>> getClasses() {
-			final Set<Class<?>> classes = super.getClasses();
-			classes.add(ServiceAuth.class);
-			return classes;
 		}
 	}
 

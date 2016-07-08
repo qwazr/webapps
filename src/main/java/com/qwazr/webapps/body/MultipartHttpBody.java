@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2016 Emmanuel Keller / QWAZR
+ * Copyright 2014-2016 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,23 +13,20 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-package com.qwazr.webapps;
+package com.qwazr.webapps.body;
 
-import io.swagger.jaxrs.config.BeanConfig;
-import org.glassfish.jersey.servlet.ServletContainer;
-
-import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.Part;
+import java.io.IOException;
+import java.util.Collection;
 
-public class RestServletContainer extends ServletContainer {
+public class MultipartHttpBody implements HttpBodyInterface {
 
-	@Override
-	public void init(ServletConfig config) throws ServletException {
-		super.init(config);
-		BeanConfig beanConfig = new BeanConfig();
-		beanConfig.setBasePath(config.getInitParameter("swagger.api.basepath"));
-		beanConfig.setResourcePackage(config.getInitParameter("swagger.resources"));
-		beanConfig.setScan(true);
+	private final Collection<Part> parts;
+
+	MultipartHttpBody(HttpServletRequest request) throws IOException, ServletException {
+		parts = request.getParts();
 	}
 
 }

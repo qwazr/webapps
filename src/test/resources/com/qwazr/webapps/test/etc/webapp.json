@@ -2,12 +2,12 @@
   "controllers": {
     "/javascript": "js/controller.js",
     "/java": "com.qwazr.webapps.test.TestServlet",
-    "/jaxrs-app/*": "com.qwazr.webapps.test.TestJaxRs$SimpleApp",
-    "/jaxrs-app-auth/*": "com.qwazr.webapps.test.TestJaxRs$AppAuth",
-    "/jaxrs-auth/*": "com.qwazr.webapps.test.TestJaxRs$ServiceAuth",
-    "/jaxrs-class-json/*": "com.qwazr.webapps.test.TestJaxRs$ServiceJson",
-    "/jaxrs-class-xml/*": "com.qwazr.webapps.test.TestJaxRs$ServiceXml",
-    "/jaxrs-class-both/*": "com.qwazr.webapps.test.TestJaxRs$ServiceJson com.qwazr.webapps.test.TestJaxRs$ServiceXml"
+    "/jaxrs-app/*": "com.qwazr.webapps.test.TestJaxRsSimpleApp",
+    "/jaxrs-app-auth/*": "com.qwazr.webapps.test.TestJaxRsAppAuth",
+    "/jaxrs-auth/*": "com.qwazr.webapps.test.TestJaxRsResources$ServiceAuth",
+    "/jaxrs-class-json/*": "com.qwazr.webapps.test.TestJaxRsResources$ServiceJson",
+    "/jaxrs-class-xml/*": "com.qwazr.webapps.test.TestJaxRsResources$ServiceXml",
+    "/jaxrs-class-both/*": "com.qwazr.webapps.test.TestJaxRsResources$ServiceJson com.qwazr.webapps.test.TestJaxRsResources$ServiceXml"
   },
   "filters": {
     "/*": "com.qwazr.webapps.test.TestFilter"

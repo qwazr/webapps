@@ -15,6 +15,8 @@
  **/
 package com.qwazr.webapps.test;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.qwazr.utils.json.JsonMapper;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
@@ -85,7 +87,8 @@ public class FullTest {
 		final String pathParam = "sub-path-app-json";
 		final HttpResponse response =
 				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/json/test/" + pathParam), 200);
-		checkEntity(response, "application/json", TestJaxRs.TEST_STRING, pathParam);
+		checkEntity(response, "application/json", TestJaxRsResources.TEST_STRING, pathParam);
+		checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/swagger.json"), 404);
 	}
 
 	@Test
@@ -93,7 +96,8 @@ public class FullTest {
 		final String pathParam = "sub-path-app-xml";
 		final HttpResponse response =
 				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-app/xml/test/" + pathParam), 200);
-		checkEntity(response, "application/xml", TestJaxRs.TEST_STRING, pathParam);
+		checkEntity(response, "application/xml", TestJaxRsResources.TEST_STRING, pathParam);
+		checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/swagger.json"), 404);
 	}
 
 	@Test
@@ -102,7 +106,10 @@ public class FullTest {
 		final HttpResponse response =
 				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/json/test/" + pathParam),
 						200);
-		checkEntity(response, "application/json", TestJaxRs.TEST_STRING, pathParam);
+		checkEntity(response, "application/json", TestJaxRsResources.TEST_STRING, pathParam);
+		checkSwagger(
+				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/swagger.json"),
+						200));
 	}
 
 	@Test
@@ -111,7 +118,10 @@ public class FullTest {
 		final HttpResponse response =
 				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/xml/test/" + pathParam),
 						200);
-		checkEntity(response, "application/xml", TestJaxRs.TEST_STRING, pathParam);
+		checkEntity(response, "application/xml", TestJaxRsResources.TEST_STRING, pathParam);
+		checkSwagger(
+				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/swagger.json"),
+						200));
 	}
 
 	@Test
@@ -120,10 +130,13 @@ public class FullTest {
 		HttpResponse response =
 				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/xml/test/" + pathParam),
 						200);
-		checkEntity(response, "application/xml", TestJaxRs.TEST_STRING, pathParam);
-		response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/json/test/" + pathParam),
-				200);
-		checkEntity(response, "application/json", TestJaxRs.TEST_STRING, pathParam);
+		checkEntity(response, "application/xml", TestJaxRsResources.TEST_STRING, pathParam);
+		response =
+				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/json/test/" + pathParam),
+						200);
+		checkEntity(response, "application/json", TestJaxRsResources.TEST_STRING, pathParam);
+		checkSwagger(
+				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/swagger.json"), 200));
 	}
 
 	private HttpResponse auth(Request request, String user, String pass) throws IOException {
@@ -140,24 +153,34 @@ public class FullTest {
 		return auth(request, "dummy", "dummy");
 	}
 
+	private void checkSwagger(final HttpResponse response) throws IOException {
+		JsonNode root = JsonMapper.MAPPER.readTree(response.getEntity().getContent());
+		Assert.assertNotNull(root);
+		Assert.assertTrue(root.has("swagger"));
+		Assert.assertEquals("2.0", root.get("swagger").asText());
+	}
+
+
 	private void testAuth(final String appPath) throws IOException {
 		checkResponse(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test"), 401);
 		checkResponse(wrongAuth(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 401);
 		checkResponse(validAuth(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/wrong-role")), 403);
 		final HttpResponse response =
 				checkResponse(validAuth(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 204);
-		final Header userHeader = response.getFirstHeader(TestJaxRs.ServiceAuth.xAuthUser);
+		final Header userHeader = response.getFirstHeader(TestJaxRsResources.ServiceAuth.xAuthUser);
 		Assert.assertNotNull(userHeader);
+		checkSwagger(
+				checkResponse(validAuth(Request.Get(TestServer.BASE_SERVLET_URL + appPath + "/swagger.json")), 200));
 	}
 
 	@Test
 	public void test180JaxRsAuth() throws IOException {
 		testAuth("/jaxrs-auth");
-		Assert.assertEquals(3, TestIdentityProvider.authCount.get());
-		Assert.assertEquals(2, TestIdentityProvider.authSuccessCount.get());
+		Assert.assertEquals(4, TestIdentityProvider.authCount.get());
+		Assert.assertEquals(3, TestIdentityProvider.authSuccessCount.get());
 		testAuth("/jaxrs-app-auth");
-		Assert.assertEquals(6, TestIdentityProvider.authCount.get());
-		Assert.assertEquals(4, TestIdentityProvider.authSuccessCount.get());
+		Assert.assertEquals(8, TestIdentityProvider.authCount.get());
+		Assert.assertEquals(6, TestIdentityProvider.authSuccessCount.get());
 
 	}
 

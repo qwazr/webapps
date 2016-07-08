@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  **/
-package com.qwazr.webapps.transaction;
+package com.qwazr.webapps;
 
 import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
@@ -23,11 +23,10 @@ import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.server.*;
-import com.qwazr.webapps.BaseRestApplication;
-import com.qwazr.webapps.RestServletContainer;
-import com.qwazr.webapps.WebappManagerServiceImpl;
+import io.swagger.jersey.config.JerseyJaxrsConfig;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.InstanceHandle;
+import io.undertow.servlet.api.ServletInfo;
 import io.undertow.servlet.util.ConstructorInstanceFactory;
 import org.apache.commons.io.FilenameUtils;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -161,7 +160,6 @@ public class WebappManager {
 
 		// Set the default favicon
 		serverBuilder.registerServlet(getDefaultFaviconServlet());
-
 	}
 
 	private SecurableServletInfo getStaticServlet(final String urlPath, final String path) {
@@ -219,7 +217,7 @@ public class WebappManager {
 			registerJavaServlet(urlPath, (Class<? extends Servlet>) clazz, serverBuilder);
 			return;
 		} else if (Application.class.isAssignableFrom(clazz)) {
-			registerJavaJaxRsAppServlet(urlPath, clazz, serverBuilder);
+			registerJavaJaxRsAppServlet(urlPath, (Class<? extends Application>) clazz, serverBuilder);
 			return;
 		} else if (clazz.isAnnotationPresent(Path.class)) {
 			registerJavaJaxRsClassServlet(urlPath, classDef, serverBuilder);
@@ -245,28 +243,43 @@ public class WebappManager {
 						.setLoadOnStartup(1));
 	}
 
-	private SecurableServletInfo swagger(String urlPath, final SecurableServletInfo servletInfo, Class<?>... classes) {
-		urlPath = StringUtils.removeEnd(urlPath, "*");
-		urlPath = StringUtils.removeEnd(urlPath, "/");
-		final Set<String> packages = new LinkedHashSet<>();
-		for (Class<?> clazz : classes)
-			packages.add(clazz.getPackage().getName());
-		servletInfo.addInitParam("swagger.api.basepath", urlPath);
-		servletInfo.addInitParam("swagger.resources", StringUtils.join(packages, ','));
-		return servletInfo;
+	private ServletInfo addSwaggerContext(final String basePath, final String contextId,
+			final ServletInfo servletInfo) {
+		return servletInfo.addInitParam("swagger.scanner.id", contextId)
+				.addInitParam("swagger.config.id", contextId).addInitParam("swagger.context.id", contextId)
+				.addInitParam("swagger.api.basepath", basePath);
 	}
 
-	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<?> appClass,
+	private void registerWithSwagger(String urlPath, final SecurableServletInfo servletInfo,
+			final ServerBuilder serverBuilder)
+			throws NoSuchMethodException {
+
+		urlPath = StringUtils.removeEnd(urlPath, "*");
+		urlPath = StringUtils.removeEnd(urlPath, "/");
+		final String contextId = ServletContainer.class.getName() + '@' + urlPath;
+
+		addSwaggerContext(urlPath, contextId, servletInfo);
+		serverBuilder.registerServlet(servletInfo);
+
+		SecurableServletInfo swaggerServletInfo = (SecurableServletInfo) SecurableServletInfo
+				.servlet(JerseyJaxrsConfig.class.getName(), JerseyJaxrsConfig.class,
+						new ServletFactory(JerseyJaxrsConfig.class))
+				.setSecure(isSecurable(JerseyJaxrsConfig.class))
+				.setLoadOnStartup(2);
+		addSwaggerContext(urlPath, contextId, swaggerServletInfo);
+		serverBuilder.registerServlet(swaggerServletInfo);
+	}
+
+	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,
 			final ServerBuilder serverBuilder) throws NoSuchMethodException {
 		final SecurableServletInfo servletInfo = (SecurableServletInfo) SecurableServletInfo.servlet(
-				RestServletContainer.class.getName() + '@' + urlPath, RestServletContainer.class,
+				ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
 				new ServletFactory(ServletContainer.class))
 				.setSecure(isSecurable(appClass))
 				.addInitParam("javax.ws.rs.Application", appClass.getName())
 				.setAsyncSupported(true)
-				.addMapping(urlPath);
-		swagger(urlPath, servletInfo, appClass);
-		serverBuilder.registerServlet(servletInfo);
+				.addMapping(urlPath).setLoadOnStartup(1);
+		registerWithSwagger(urlPath, servletInfo, serverBuilder);
 	}
 
 	private void registerJavaJaxRsClassServlet(final String urlPath, final String classList,
@@ -274,11 +287,11 @@ public class WebappManager {
 		final String[] classes = StringUtils.split(classList, " ,");
 		final String resources = BaseRestApplication.joinResources(classes);
 		final SecurableServletInfo servletInfo = (SecurableServletInfo) SecurableServletInfo.servlet(
-				RestServletContainer.class.getName() + '@' + urlPath, RestServletContainer.class,
-				new ServletFactory(RestServletContainer.class))
+				ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
+				new ServletFactory(ServletContainer.class))
 				.addInitParam("jersey.config.server.provider.classnames", resources)
 				.setAsyncSupported(true)
-				.addMapping(urlPath);
+				.addMapping(urlPath).setLoadOnStartup(1);
 		final Set<Class<?>> classSet = new LinkedHashSet<>();
 		for (String clazz : classes) {
 			Class<?> cl = ClassLoaderManager.findClass(clazz);
@@ -286,8 +299,7 @@ public class WebappManager {
 			if (isSecurable(cl))
 				servletInfo.setSecure(true);
 		}
-		swagger(urlPath, servletInfo, classSet.toArray(new Class<?>[classSet.size()]));
-		serverBuilder.registerServlet(servletInfo);
+		registerWithSwagger(urlPath, servletInfo, serverBuilder);
 	}
 
 	class ServletFactory<T extends Servlet> extends ConstructorInstanceFactory<T> {
@@ -329,7 +341,7 @@ public class WebappManager {
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
 			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
+					new ProtectionDomain[]{new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm)});
 		}
 	}
 }
