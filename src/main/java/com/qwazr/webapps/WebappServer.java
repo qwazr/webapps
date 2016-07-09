@@ -24,21 +24,19 @@ import java.io.File;
 
 public class WebappServer {
 
-	public static GenericServer start()
-			throws Exception {
+	public static GenericServer start() throws Exception {
 		final ServerBuilder builder = new ServerBuilder();
 		final File currentTempDir = new File(builder.getServerConfiguration().dataDirectory, "tmp");
 		currentTempDir.mkdir();
-		final TrackedInterface
-				etcTracker = TrackedInterface.build(builder.getServerConfiguration().etcDirectories, null);
-		ClusterManager.load(builder, null);
+		final TrackedInterface etcTracker =
+				TrackedInterface.build(builder.getServerConfiguration().etcDirectories, null);
+		ClusterManager.load(builder, null, null);
 		WebappManager.load(builder, etcTracker, currentTempDir);
 		etcTracker.check();
 		return builder.build().start(true);
 	}
 
-	public static void main(String[] args)
-			throws Exception {
+	public static void main(String[] args) throws Exception {
 		start();
 	}
 
