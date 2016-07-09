@@ -23,7 +23,7 @@ import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.server.*;
-import io.swagger.jersey.config.JerseyJaxrsConfig;
+import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ServletInfo;
@@ -243,55 +243,41 @@ public class WebappManager {
 						.setLoadOnStartup(1));
 	}
 
-	private ServletInfo addSwaggerContext(final String basePath, final String contextId,
-			final ServletInfo servletInfo) {
-		return servletInfo.addInitParam("swagger.scanner.id", contextId)
-				.addInitParam("swagger.config.id", contextId).addInitParam("swagger.context.id", contextId)
-				.addInitParam("swagger.api.basepath", basePath);
-	}
-
-	private void registerWithSwagger(String urlPath, final SecurableServletInfo servletInfo,
-			final ServerBuilder serverBuilder)
-			throws NoSuchMethodException {
-
+	private ServletInfo addSwaggerContext(String urlPath, final ServletInfo servletInfo) {
+		final String contextId = ServletContainer.class.getName() + '@' + urlPath;
 		urlPath = StringUtils.removeEnd(urlPath, "*");
 		urlPath = StringUtils.removeEnd(urlPath, "/");
-		final String contextId = ServletContainer.class.getName() + '@' + urlPath;
-
-		addSwaggerContext(urlPath, contextId, servletInfo);
-		serverBuilder.registerServlet(servletInfo);
-
-		SecurableServletInfo swaggerServletInfo = (SecurableServletInfo) SecurableServletInfo
-				.servlet(JerseyJaxrsConfig.class.getName(), JerseyJaxrsConfig.class,
-						new ServletFactory(JerseyJaxrsConfig.class))
-				.setSecure(isSecurable(JerseyJaxrsConfig.class))
-				.setLoadOnStartup(2);
-		addSwaggerContext(urlPath, contextId, swaggerServletInfo);
-		serverBuilder.registerServlet(swaggerServletInfo);
+		return servletInfo.addInitParam(SwaggerContextService.SCANNER_ID_KEY, contextId)
+				.addInitParam(SwaggerContextService.CONFIG_ID_KEY, contextId)
+				.addInitParam(SwaggerContextService.CONTEXT_ID_KEY, contextId)
+				.addInitParam("swagger.api.basepath", urlPath);
 	}
 
 	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,
 			final ServerBuilder serverBuilder) throws NoSuchMethodException {
-		final SecurableServletInfo servletInfo = (SecurableServletInfo) SecurableServletInfo.servlet(
-				ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
-				new ServletFactory(ServletContainer.class))
-				.setSecure(isSecurable(appClass))
-				.addInitParam("javax.ws.rs.Application", appClass.getName())
-				.setAsyncSupported(true)
-				.addMapping(urlPath).setLoadOnStartup(1);
-		registerWithSwagger(urlPath, servletInfo, serverBuilder);
+		final SecurableServletInfo servletInfo =
+				(SecurableServletInfo) SecurableServletInfo.servlet(ServletContainer.class.getName() + '@' + urlPath,
+						ServletContainer.class, new ServletFactory(ServletContainer.class))
+						.setSecure(isSecurable(appClass))
+						.addInitParam("javax.ws.rs.Application", appClass.getName())
+						.setAsyncSupported(true)
+						.addMapping(urlPath)
+						.setLoadOnStartup(1);
+		addSwaggerContext(urlPath, servletInfo);
+		serverBuilder.registerServlet(servletInfo);
 	}
 
 	private void registerJavaJaxRsClassServlet(final String urlPath, final String classList,
 			final ServerBuilder serverBuilder) throws NoSuchMethodException, ClassNotFoundException {
 		final String[] classes = StringUtils.split(classList, " ,");
 		final String resources = BaseRestApplication.joinResources(classes);
-		final SecurableServletInfo servletInfo = (SecurableServletInfo) SecurableServletInfo.servlet(
-				ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class,
-				new ServletFactory(ServletContainer.class))
-				.addInitParam("jersey.config.server.provider.classnames", resources)
-				.setAsyncSupported(true)
-				.addMapping(urlPath).setLoadOnStartup(1);
+		final SecurableServletInfo servletInfo =
+				(SecurableServletInfo) SecurableServletInfo.servlet(ServletContainer.class.getName() + '@' + urlPath,
+						ServletContainer.class, new ServletFactory(ServletContainer.class))
+						.addInitParam("jersey.config.server.provider.classnames", resources)
+						.setAsyncSupported(true)
+						.addMapping(urlPath)
+						.setLoadOnStartup(1);
 		final Set<Class<?>> classSet = new LinkedHashSet<>();
 		for (String clazz : classes) {
 			Class<?> cl = ClassLoaderManager.findClass(clazz);
@@ -299,7 +285,8 @@ public class WebappManager {
 			if (isSecurable(cl))
 				servletInfo.setSecure(true);
 		}
-		registerWithSwagger(urlPath, servletInfo, serverBuilder);
+		addSwaggerContext(urlPath, servletInfo);
+		serverBuilder.registerServlet(servletInfo);
 	}
 
 	class ServletFactory<T extends Servlet> extends ConstructorInstanceFactory<T> {
@@ -341,7 +328,7 @@ public class WebappManager {
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
 			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[]{new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm)});
+					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
 		}
 	}
 }

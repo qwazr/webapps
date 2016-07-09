@@ -37,7 +37,7 @@ public class TestJaxRsResources {
 
 	@Api
 	@Path("/json")
-	@SwaggerDefinition(info = @Info(title = "ServiceJson", version = "v1.2.3"))
+	@SwaggerDefinition(basePath = "/jaxrs-class-json", info = @Info(title = "ServiceJson", version = "v1.2.3"))
 	public static class ServiceJson {
 
 		@Path("/test/{path-param}")
@@ -50,7 +50,35 @@ public class TestJaxRsResources {
 
 	@Api
 	@Path("/xml")
-	@SwaggerDefinition(info = @Info(title = "ServiceXml", version = "v1.2.3"))
+	public static class ServiceBothXml {
+
+		@Path("/test/{path-param}")
+		@POST
+		@Produces(MediaType.APPLICATION_XML)
+		public Data getTestJson(@PathParam("path-param") String pathParam) {
+			return new Data(TEST_STRING, pathParam);
+		}
+	}
+
+	@Api
+	@Path("/json")
+	public static class ServiceBothJson {
+
+		@Path("/test/{path-param}")
+		@GET
+		@Produces(MediaType.APPLICATION_JSON)
+		public Data getTestJson(@PathParam("path-param") String pathParam) {
+			return new Data(TEST_STRING, pathParam);
+		}
+	}
+
+	@SwaggerDefinition(basePath = "/jaxrs-class-both", info = @Info(title = "ServiceBoth", version = "v1.2.3"))
+	public interface ServiceBothConfig {
+	}
+
+	@Api
+	@Path("/xml")
+	@SwaggerDefinition(basePath = "/jaxrs-class-xml", info = @Info(title = "ServiceXml", version = "v1.2.3"))
 	public static class ServiceXml {
 
 		@Path("/test/{path-param}")
@@ -59,6 +87,10 @@ public class TestJaxRsResources {
 		public Data getTestJson(@PathParam("path-param") String pathParam) {
 			return new Data(TEST_STRING, pathParam);
 		}
+	}
+
+	@SwaggerDefinition(basePath = "/jaxrs-auth", info = @Info(title = "ServiceAuth", version = "v1.2.3"))
+	public interface ServiceAuthConfig {
 	}
 
 	@Api

@@ -19,7 +19,6 @@ import com.qwazr.webapps.BaseRestApplication;
 import io.swagger.annotations.Api;
 import io.swagger.annotations.Info;
 import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.jaxrs.config.BeanConfig;
 
 import javax.annotation.security.PermitAll;
 import javax.ws.rs.ApplicationPath;
@@ -32,10 +31,15 @@ import java.util.Set;
 @Api
 @ApplicationPath("/jaxrs-app-auth")
 public class TestJaxRsAppAuth extends BaseRestApplication {
-	
+
 	public Set<Class<?>> getClasses() {
 		final Set<Class<?>> classes = super.getClasses();
 		classes.add(TestJaxRsResources.ServiceAuth.class);
+		classes.add(AppConfig.class);
 		return classes;
+	}
+
+	@SwaggerDefinition(basePath = "/jaxrs-app-auth", info = @Info(title = "TestJaxRsAppAuth", version = "v1.2.3"))
+	public interface AppConfig {
 	}
 }
