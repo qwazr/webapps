@@ -16,14 +16,16 @@
 package com.qwazr.webapps.test;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.qwazr.utils.http.HttpRequest;
 import com.qwazr.utils.json.JsonMapper;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.fluent.Executor;
-import org.apache.http.client.fluent.Request;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.util.EntityUtils;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
@@ -54,60 +56,67 @@ public class FullTest {
 		Assert.assertEquals(TestListener.class, listener.getClass());
 	}
 
-	private HttpResponse checkResponse(Request request, int expectedStatusCode) throws IOException {
-		return checkResponse(request.execute().returnResponse(), expectedStatusCode);
+	private CloseableHttpResponse checkResponse(HttpRequest request, int expectedStatusCode) throws IOException {
+		return checkResponse(request.execute(), expectedStatusCode);
 	}
 
-	private HttpResponse checkResponse(HttpResponse response, int expectedStatusCode) throws IOException {
+	private CloseableHttpResponse checkResponse(CloseableHttpResponse response, int expectedStatusCode)
+			throws IOException {
 		Assert.assertNotNull(response);
 		Assert.assertEquals(expectedStatusCode, response.getStatusLine().getStatusCode());
 		return response;
 	}
 
-	private HttpEntity checkEntity(HttpResponse response, String contentType, String... testStrings)
+	private String checkEntity(HttpResponse response, String contentType)
 			throws IOException {
 		final HttpEntity entity = response.getEntity();
 		Assert.assertNotNull(entity);
 		Assert.assertTrue(entity.getContentType().getValue().startsWith(contentType));
-		String content = EntityUtils.toString(entity);
-		if (testStrings != null)
-			for (String testString : testStrings)
-				Assert.assertTrue(content.contains(testString));
-		return entity;
+		return EntityUtils.toString(entity);
+	}
+
+	private void checkContains(String content, String... patterns) {
+		for (String pattern : patterns)
+			Assert.assertTrue(content.contains(pattern));
 	}
 
 	@Test
 	public void test100javaServlet() throws IOException {
-		final HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/java"), 200);
-		checkEntity(response, MIME_TEXT_HTML, TestServlet.TEST_STRING);
+		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/java"), 200);
+		final String content = checkEntity(response, MIME_TEXT_HTML);
+		checkContains(content, TestServlet.TEST_STRING);
 	}
 
 	@Test
 	public void test150JaxRsAppJson() throws IOException {
 		final String pathParam = "sub-path-app-json";
 		final HttpResponse response =
-				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/json/test/" + pathParam), 200);
-		checkEntity(response, "application/json", TestJaxRsResources.TEST_STRING, pathParam);
-		checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/swagger.json"), 404);
+				checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/json/test/" + pathParam), 200);
+		final String content = checkEntity(response, "application/json");
+		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+		checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/swagger.json"), 404);
 	}
 
 	@Test
 	public void test151JaxRsAppXml() throws IOException {
 		final String pathParam = "sub-path-app-xml";
 		final HttpResponse response =
-				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-app/xml/test/" + pathParam), 200);
-		checkEntity(response, "application/xml", TestJaxRsResources.TEST_STRING, pathParam);
-		checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/swagger.json"), 404);
+				checkResponse(HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-app/xml/test/" + pathParam), 200);
+		final String content = checkEntity(response, "application/xml");
+		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+		checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/swagger.json"), 404);
 	}
 
 	@Test
 	public void test160JaxRsClassJson() throws IOException {
 		final String pathParam = "sub-path-class-json";
 		final HttpResponse response =
-				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/json/test/" + pathParam),
+				checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/json/test/" + pathParam),
 						200);
-		checkEntity(response, "application/json", TestJaxRsResources.TEST_STRING, pathParam);
-		checkSwagger(checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/swagger.json"), 200),
+		final String content = checkEntity(response, "application/json");
+		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+		checkSwagger(
+				checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/swagger.json"), 200),
 				"ServiceJson", "/jaxrs-class-json");
 	}
 
@@ -115,10 +124,11 @@ public class FullTest {
 	public void test161JaxRsClassXml() throws IOException {
 		final String pathParam = "sub-path-class-xml";
 		final HttpResponse response =
-				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/xml/test/" + pathParam),
+				checkResponse(HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/xml/test/" + pathParam),
 						200);
-		checkEntity(response, "application/xml", TestJaxRsResources.TEST_STRING, pathParam);
-		checkSwagger(checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/swagger.json"), 200),
+		final String content = checkEntity(response, "application/xml");
+		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+		checkSwagger(checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/swagger.json"), 200),
 				"ServiceXml", "/jaxrs-class-xml");
 	}
 
@@ -126,27 +136,33 @@ public class FullTest {
 	public void test170JaxRsClassBoth() throws IOException {
 		final String pathParam = "sub-path-class-both";
 		HttpResponse response =
-				checkResponse(Request.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/xml/test/" + pathParam),
+				checkResponse(HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/xml/test/" + pathParam),
 						200);
-		checkEntity(response, "application/xml", TestJaxRsResources.TEST_STRING, pathParam);
-		response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/json/test/" + pathParam),
-				200);
-		checkEntity(response, "application/json", TestJaxRsResources.TEST_STRING, pathParam);
-		checkSwagger(checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/swagger.json"), 200),
+		String content = checkEntity(response, "application/xml");
+		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+		response =
+				checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/json/test/" + pathParam),
+						200);
+		content = checkEntity(response, "application/json");
+		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+		checkSwagger(
+				checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/swagger.json"), 200),
 				"ServiceBoth", "/jaxrs-class-both");
 	}
 
-	private HttpResponse auth(Request request, String user, String pass) throws IOException {
-		final Executor executor =
-				Executor.newInstance().auth(AuthScope.ANY, new UsernamePasswordCredentials(user, pass));
-		return executor.execute(request).returnResponse();
+	private CloseableHttpResponse auth(HttpRequest request, String user, String pass) throws IOException {
+		final HttpClientContext context = HttpClientContext.create();
+		final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+		credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, pass));
+		context.setAttribute(HttpClientContext.CREDS_PROVIDER, credentialsProvider);
+		return request.execute(context);
 	}
 
-	private HttpResponse validAuth(Request request) throws IOException {
+	private CloseableHttpResponse validAuth(HttpRequest request) throws IOException {
 		return auth(request, TestIdentityProvider.TEST_USER, TestIdentityProvider.TEST_PASSWORD);
 	}
 
-	private HttpResponse wrongAuth(Request request) throws IOException {
+	private CloseableHttpResponse wrongAuth(HttpRequest request) throws IOException {
 		return auth(request, "dummy", "dummy");
 	}
 
@@ -165,15 +181,15 @@ public class FullTest {
 	}
 
 	private void testAuth(final String appPath, final String appTitle) throws IOException {
-		checkResponse(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test"), 401);
-		checkResponse(wrongAuth(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 401);
-		checkResponse(validAuth(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/wrong-role")), 403);
+		checkResponse(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test"), 401);
+		checkResponse(wrongAuth(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 401);
+		checkResponse(validAuth(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/wrong-role")), 403);
 		final HttpResponse response =
-				checkResponse(validAuth(Request.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 204);
+				checkResponse(validAuth(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 204);
 		final Header userHeader = response.getFirstHeader(TestJaxRsResources.ServiceAuth.xAuthUser);
 		Assert.assertNotNull(userHeader);
 		checkSwagger(
-				checkResponse(validAuth(Request.Get(TestServer.BASE_SERVLET_URL + appPath + "/swagger.json")), 200),
+				checkResponse(validAuth(HttpRequest.Get(TestServer.BASE_SERVLET_URL + appPath + "/swagger.json")), 200),
 				appTitle, appPath);
 	}
 
@@ -190,18 +206,20 @@ public class FullTest {
 
 	@Test
 	public void test200javascriptServlet() throws IOException {
-		HttpResponse response = checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/javascript"), 200);
-		checkEntity(response, MIME_TEXT_HTML, TestServlet.TEST_STRING);
+		HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/javascript"), 200);
+		checkContains(checkEntity(response, MIME_TEXT_HTML), TestServlet.TEST_STRING);
 	}
 
 	private final static String PARAM_TEST_STRING = "testParam=testValue";
 
 	@Test
 	public void test210javascriptServletWithParam() throws IOException {
-		HttpResponse response =
-				checkResponse(Request.Get(TestServer.BASE_SERVLET_URL + "/javascript?" + PARAM_TEST_STRING), 200);
-		checkEntity(response, MIME_TEXT_HTML, TestServlet.TEST_STRING);
-		checkEntity(response, MIME_TEXT_HTML, PARAM_TEST_STRING);
+		try (final CloseableHttpResponse response =
+				     checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/javascript?" + PARAM_TEST_STRING),
+						     200)) {
+			final String content = checkEntity(response, MIME_TEXT_HTML);
+			checkContains(content, TestServlet.TEST_STRING, PARAM_TEST_STRING);
+		}
 	}
 
 	private final void checkContentType(HttpResponse response, String contentTypePrefix) {
@@ -214,29 +232,29 @@ public class FullTest {
 	@Test
 	public void test300staticFile() throws IOException {
 		final String badUrl = TestServer.BASE_SERVLET_URL + "/css/dummy.css";
-		checkResponse(Request.Head(badUrl), 404);
-		checkResponse(Request.Get(badUrl), 404);
+		checkResponse(HttpRequest.Head(badUrl), 404);
+		checkResponse(HttpRequest.Get(badUrl), 404);
 		final String goodUrl = TestServer.BASE_SERVLET_URL + "/css/test.css";
-		checkContentType(checkResponse(Request.Head(goodUrl), 200), MIME_TEXT_CSS);
-		checkEntity(checkResponse(Request.Get(goodUrl), 200), MIME_TEXT_CSS, ".qwazr {");
+		checkContentType(checkResponse(HttpRequest.Head(goodUrl), 200), MIME_TEXT_CSS);
+		checkContains(checkEntity(checkResponse(HttpRequest.Get(goodUrl), 200), MIME_TEXT_CSS), ".qwazr {");
 	}
 
 	@Test
 	public void test301staticResource() throws IOException {
 		final String badUrl = TestServer.BASE_SERVLET_URL + "/img/dummy.png";
-		checkResponse(Request.Head(badUrl), 404);
-		checkResponse(Request.Get(badUrl), 404);
+		checkResponse(HttpRequest.Head(badUrl), 404);
+		checkResponse(HttpRequest.Get(badUrl), 404);
 		final String goodUrl = TestServer.BASE_SERVLET_URL + "/img/logo.png";
-		checkContentType(checkResponse(Request.Head(goodUrl), 200), MIME_IMAGE_X_PNG);
-		checkEntity(checkResponse(Request.Get(goodUrl), 200), MIME_IMAGE_X_PNG, null);
+		checkContentType(checkResponse(HttpRequest.Head(goodUrl), 200), MIME_IMAGE_X_PNG);
+		checkEntity(checkResponse(HttpRequest.Get(goodUrl), 200), MIME_IMAGE_X_PNG);
 	}
 
 	@Test
 	public void test302favicon() throws IOException {
 		final String url = TestServer.BASE_SERVLET_URL + "/favicon.ico";
-		checkResponse(Request.Head(url), 200);
-		HttpResponse response = checkResponse(Request.Get(url), 200);
-		checkEntity(response, MIME_FAVICON, null);
+		checkResponse(HttpRequest.Head(url), 200);
+		HttpResponse response = checkResponse(HttpRequest.Get(url), 200);
+		checkEntity(response, MIME_FAVICON);
 	}
 
 	@Test
