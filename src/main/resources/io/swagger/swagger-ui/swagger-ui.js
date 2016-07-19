@@ -10437,7 +10437,7 @@ module.exports = new Schema({
 //
 // NOTE: JS-YAML does not support schema-specific tag resolution restrictions.
 // So, this schema is not such strict as defined in the YAML specification.
-// It allows numbers in binary notaion, use `Null` and `NULL` as `null`, etc.
+// It allows numbers in binary notaion, use `Null` and `NULL` as `null`, conf.
 
 
 'use strict';
@@ -17973,7 +17973,7 @@ function params(str){
 /**
  * Initialize a new `Response` with the given `xhr`.
  *
- *  - set flags (.ok, .error, etc)
+ *  - set flags (.ok, .error, conf)
  *  - parse header
  *
  * Examples:
@@ -18099,7 +18099,7 @@ Response.prototype.parseBody = function(str){
  * whereas 5xx will be __false__ and `.error` will be __true__. The
  * `.clientError` and `.serverError` are also available to be more
  * specific, and `.statusType` is the class of error ranging from 1..5
- * sometimes useful for mapping respond colors etc.
+ * sometimes useful for mapping respond colors conf.
  *
  * "sugar" properties are also defined for common cases. Currently providing:
  *
@@ -18505,7 +18505,7 @@ Request.prototype.callback = function(err, res){
  */
 
 Request.prototype.crossDomainError = function(){
-  var err = new Error('Request has been terminated\nPossible causes: the network is offline, Origin is not allowed by Access-Control-Allow-Origin, the page is being unloaded, etc.');
+  var err = new Error('Request has been terminated\nPossible causes: the network is offline, Origin is not allowed by Access-Control-Allow-Origin, the page is being unloaded, conf.');
   err.crossDomain = true;
 
   err.status = this.status;
