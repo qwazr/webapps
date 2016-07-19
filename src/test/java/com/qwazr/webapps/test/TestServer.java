@@ -19,9 +19,7 @@ import com.google.common.io.Files;
 import com.qwazr.webapps.WebappServer;
 import org.apache.commons.io.FileUtils;
 
-import javax.servlet.ServletException;
 import java.io.File;
-import java.io.IOException;
 
 public class TestServer {
 
@@ -41,7 +39,7 @@ public class TestServer {
 		FileUtils.copyDirectoryToDirectory(new File("src/test/css"), dataDir);
 		System.setProperty("WEBAPP_REALM", "testRealm");
 		System.setProperty("QWAZR_ETC_DIR",
-				new File("src/test/resources/com/qwazr/webapps/test/conf").getAbsolutePath());
+				new File("src/test/resources/com/qwazr/webapps/test/etc").getAbsolutePath());
 		WebappServer.start();
 		serverStarted = true;
 	}
