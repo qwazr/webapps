@@ -19,13 +19,14 @@ import com.qwazr.cluster.manager.ClusterManager;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.server.GenericServer;
 import com.qwazr.utils.server.ServerBuilder;
+import com.qwazr.utils.server.ServerConfiguration;
 
 import java.io.File;
 
 public class WebappServer {
 
 	public static GenericServer start() throws Exception {
-		final ServerBuilder builder = new ServerBuilder();
+		final ServerBuilder builder = new ServerBuilder(new ServerConfiguration());
 		final File currentTempDir = new File(builder.getServerConfiguration().dataDirectory, "tmp");
 		currentTempDir.mkdir();
 		final TrackedInterface etcTracker =
