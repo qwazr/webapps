@@ -26,7 +26,7 @@ import java.io.File;
 public class WebappServer {
 
 	public static GenericServer start() throws Exception {
-		final ServerBuilder builder = new ServerBuilder(new ServerConfiguration());
+		final ServerBuilder builder = new ServerBuilder(new ServerConfiguration(System.getProperties()));
 		final File currentTempDir = new File(builder.getServerConfiguration().dataDirectory, "tmp");
 		currentTempDir.mkdir();
 		final TrackedInterface etcTracker =
