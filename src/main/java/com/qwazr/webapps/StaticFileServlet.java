@@ -47,19 +47,25 @@ public class StaticFileServlet extends HttpServlet {
 	}
 
 	private File handleFile(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
-		final String path = request.getPathInfo();
-		if (path == null) {
-			response.sendRedirect(request.getContextPath() + request.getServletPath() + "/index.html");
-			return null;
+		final String contextPath = request.getContextPath();
+		final String servletPath = request.getServletPath();
+		final String pathInfo = request.getPathInfo();
+		final File staticFile;
+		final String fullPath;
+		if (pathInfo == null) {
+			staticFile = rootFile;
+			fullPath = contextPath + servletPath;
+		} else {
+			staticFile = new File(rootFile, pathInfo);
+			fullPath = contextPath + servletPath + pathInfo;
 		}
-		final File staticFile = new File(rootFile, path);
 		if (staticFile.isDirectory()) {
-			response.sendRedirect(
-					request.getContextPath() + request.getServletPath() + request.getPathInfo() + "index.html");
+			if (new File(staticFile, "index.html").exists())
+				response.sendRedirect(fullPath + "/index.html");
 			return null;
 		}
 		if (!staticFile.exists() || !staticFile.isFile()) {
-			response.sendError(404, "File not found: " + path);
+			response.sendError(404, "File not found: " + fullPath);
 			return null;
 		}
 		return staticFile;

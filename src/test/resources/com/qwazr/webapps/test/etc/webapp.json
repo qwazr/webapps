@@ -17,7 +17,9 @@
   ],
   "statics": {
     "/css/*": "css",
-    "/img/*": "com.qwazr.webapps.test.img"
+    "/img/*": "com.qwazr.webapps.test.img",
+    "/index": "html/index.html",
+    "/html/*": "html/"
   },
   "identity_manager": "com.qwazr.webapps.test.TestIdentityProvider"
 }

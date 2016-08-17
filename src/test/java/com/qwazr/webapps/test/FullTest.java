@@ -33,6 +33,7 @@ import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import javax.servlet.ServletException;
+import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
@@ -47,6 +48,7 @@ public class FullTest {
 	@Test
 	public void test000StartServer() throws Exception {
 		TestServer.startServer();
+		Assert.assertTrue(TestServer.serverStarted);
 	}
 
 	@Test
@@ -255,6 +257,30 @@ public class FullTest {
 		checkResponse(HttpRequest.Head(url), 200);
 		HttpResponse response = checkResponse(HttpRequest.Get(url), 200);
 		checkEntity(response, MIME_FAVICON);
+	}
+
+	@Test
+	public void test400staticHtml() throws IOException {
+		final String url = TestServer.BASE_SERVLET_URL + "/index";
+		checkResponse(HttpRequest.Get(url), 200);
+		final HttpResponse response = checkResponse(HttpRequest.Get(url), 200);
+		checkContains(checkEntity(response, MediaType.TEXT_HTML), "QWAZR - Hello World!");
+	}
+
+	@Test
+	public void test402staticIndexHtml() throws IOException {
+		final String url = TestServer.BASE_SERVLET_URL + "/html";
+		checkResponse(HttpRequest.Get(url), 200);
+		final HttpResponse response = checkResponse(HttpRequest.Get(url), 200);
+		checkContains(checkEntity(response, MediaType.TEXT_HTML), "QWAZR - Hello World!");
+	}
+
+	@Test
+	public void test404staticIndexHtml() throws IOException {
+		final String url = TestServer.BASE_SERVLET_URL + "/html/index.html";
+		checkResponse(HttpRequest.Get(url), 200);
+		final HttpResponse response = checkResponse(HttpRequest.Get(url), 200);
+		checkContains(checkEntity(response, MediaType.TEXT_HTML), "QWAZR - Hello World!");
 	}
 
 	@Test

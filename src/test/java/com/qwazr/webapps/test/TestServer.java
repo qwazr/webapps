@@ -20,6 +20,7 @@ import com.qwazr.webapps.WebappServer;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.nio.file.Paths;
 
 public class TestServer {
 
@@ -35,8 +36,9 @@ public class TestServer {
 		System.setProperty("QWAZR_DATA", dataDir.getAbsolutePath());
 		System.setProperty("PUBLIC_ADDR", "localhost");
 		System.setProperty("LISTEN_ADDR", "localhost");
-		FileUtils.copyDirectoryToDirectory(new File("src/test/js"), dataDir);
-		FileUtils.copyDirectoryToDirectory(new File("src/test/css"), dataDir);
+		FileUtils.copyDirectoryToDirectory(Paths.get("src", "test", "js").toFile(), dataDir);
+		FileUtils.copyDirectoryToDirectory(Paths.get("src", "test", "css").toFile(), dataDir);
+		FileUtils.copyDirectoryToDirectory(Paths.get("src", "test", "html").toFile(), dataDir);
 		System.setProperty("WEBAPP_REALM", "testRealm");
 		System.setProperty("QWAZR_ETC_DIR",
 				new File("src/test/resources/com/qwazr/webapps/test/etc").getAbsolutePath());
