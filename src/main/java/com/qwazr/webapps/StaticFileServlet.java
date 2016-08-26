@@ -33,7 +33,7 @@ public class StaticFileServlet extends HttpServlet {
 	private volatile File rootFile = null;
 
 	@Override
-	public void init(ServletConfig config) throws ServletException {
+	public void init(final ServletConfig config) throws ServletException {
 		super.init();
 		final String path = config.getInitParameter(STATIC_PATH_PARAM);
 		if (path == null || path.isEmpty())
@@ -84,7 +84,7 @@ public class StaticFileServlet extends HttpServlet {
 	}
 
 	@Override
-	protected void doHead(HttpServletRequest request, HttpServletResponse response)
+	protected void doHead(final HttpServletRequest request, final HttpServletResponse response)
 			throws ServletException, IOException {
 		final File staticFile = handleFile(request, response);
 		if (staticFile == null)
@@ -94,7 +94,7 @@ public class StaticFileServlet extends HttpServlet {
 	}
 
 	@Override
-	protected void doGet(HttpServletRequest request, HttpServletResponse response)
+	protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
 			throws ServletException, IOException {
 		final File staticFile = handleFile(request, response);
 		if (staticFile == null)

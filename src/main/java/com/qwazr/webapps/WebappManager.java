@@ -17,10 +17,7 @@ package com.qwazr.webapps;
 
 import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
-import com.qwazr.utils.AnnotationsUtils;
-import com.qwazr.utils.ClassLoaderUtils;
-import com.qwazr.utils.FunctionUtils;
-import com.qwazr.utils.StringUtils;
+import com.qwazr.utils.*;
 import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.server.*;
 import io.swagger.jaxrs.config.SwaggerContextService;
@@ -126,7 +123,8 @@ public class WebappManager {
 		// Load the static handlers
 		if (webappDefinition.statics != null)
 			webappDefinition.statics.forEach(
-					(urlPath, filePath) -> serverBuilder.registerServlet(getStaticServlet(urlPath, filePath)));
+					(urlPath, filePath) -> serverBuilder.registerServlet(getStaticServlet(urlPath,
+							SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath))));
 
 		// Prepare the Javascript interpreter
 		final ScriptEngineManager manager = new ScriptEngineManager();
@@ -187,7 +185,8 @@ public class WebappManager {
 		try {
 			String ext = FilenameUtils.getExtension(filePath).toLowerCase();
 			if ("js".equals(ext))
-				registerJavascriptServlet(urlPath, filePath, serverBuilder);
+				registerJavascriptServlet(urlPath, SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath),
+						serverBuilder);
 			else
 				registerJavaController(urlPath, filePath, serverBuilder);
 		} catch (ReflectiveOperationException e) {
@@ -328,7 +327,7 @@ public class WebappManager {
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
 			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
+					new ProtectionDomain[]{new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm)});
 		}
 	}
 }
