@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.file.Paths;
 
 public class StaticFileServlet extends HttpServlet {
 
@@ -40,7 +41,7 @@ public class StaticFileServlet extends HttpServlet {
 			throw new ServletException("The init-param " + STATIC_PATH_PARAM + " is missing.");
 		if (path == null || path.isEmpty())
 			rootFile = WebappManager.INSTANCE.dataDir;
-		else if (path.startsWith("/"))
+		else if (Paths.get(path).isAbsolute())
 			rootFile = new File(path);
 		else
 			rootFile = new File(WebappManager.INSTANCE.dataDir, path);
