@@ -15,6 +15,7 @@
  **/
 package com.qwazr.webapps;
 
+import com.qwazr.utils.server.ServerConfiguration;
 import org.apache.commons.io.IOUtils;
 
 import javax.servlet.ServletConfig;
@@ -39,12 +40,13 @@ public class StaticFileServlet extends HttpServlet {
 		final String path = config.getInitParameter(STATIC_PATH_PARAM);
 		if (path == null || path.isEmpty())
 			throw new ServletException("The init-param " + STATIC_PATH_PARAM + " is missing.");
-		if (path == null || path.isEmpty())
-			rootFile = WebappManager.INSTANCE.dataDir;
-		else if (Paths.get(path).isAbsolute())
+		if (Paths.get(path).isAbsolute())
 			rootFile = new File(path);
 		else
 			rootFile = new File(WebappManager.INSTANCE.dataDir, path);
+		if (!rootFile.exists())
+			throw new ServletException("Cannot initialize the static path: " + path + " - The path does not exists " +
+					rootFile.getAbsolutePath());
 	}
 
 	private File handleFile(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
