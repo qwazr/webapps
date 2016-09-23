@@ -53,7 +53,7 @@ public class DocumentationServlet extends HttpServlet {
 	private final MimetypesFileTypeMap mimeTypeMap = new MimetypesFileTypeMap(
 			getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
-	private String templatePath = "src/main/resources/templates/documentation.ftl";
+	private String templatePath = "org/qwazr/webapps/example/documentation.ftl";
 
 	@Override
 	public void init(ServletConfig config) {
