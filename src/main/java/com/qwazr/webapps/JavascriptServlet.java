@@ -43,7 +43,7 @@ public class JavascriptServlet extends HttpServlet {
 		WebappHttpResponse response = new WebappHttpResponse(rep);
 		response.setHeader("Cache-Control", "max-age=0, no-cache, no-store");
 		Bindings bindings = WebappManager.INSTANCE.scriptEngine.createBindings();
-		bindings.put("console", new ScriptConsole());
+		bindings.put("console", new ScriptConsole(null));
 		bindings.put("request", request);
 		bindings.put("response", response);
 		bindings.put("library", LibraryManager.getInstance());
