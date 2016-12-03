@@ -28,8 +28,7 @@ public class TestServer {
 
 	public static final String BASE_SERVLET_URL = "http://localhost:9090";
 
-	public static synchronized void startServer()
-			throws Exception {
+	public static synchronized void startServer() throws Exception {
 		if (serverStarted)
 			return;
 		final File dataDir = Files.createTempDir();
@@ -42,7 +41,7 @@ public class TestServer {
 		System.setProperty("WEBAPP_REALM", "testRealm");
 		System.setProperty("QWAZR_ETC_DIR",
 				new File("src/test/resources/com/qwazr/webapps/test/etc").getAbsolutePath());
-		WebappServer.start();
+		WebappServer.main();
 		serverStarted = true;
 	}
 

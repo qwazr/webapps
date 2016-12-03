@@ -22,23 +22,24 @@ import com.qwazr.utils.server.ServerBuilder;
 import com.qwazr.utils.server.ServerConfiguration;
 
 import java.io.File;
+import java.io.IOException;
 
-public class WebappServer {
+public class WebappServer extends GenericServer {
 
-	public static GenericServer start() throws Exception {
-		final ServerBuilder builder = new ServerBuilder(new ServerConfiguration(System.getProperties()));
+	private WebappServer(final ServerConfiguration serverConfiguration) throws IOException {
+		super(serverConfiguration);
+		final ServerBuilder builder = getBuilder();
 		final File currentTempDir = new File(builder.getServerConfiguration().dataDirectory, "tmp");
 		currentTempDir.mkdir();
 		final TrackedInterface etcTracker =
 				TrackedInterface.build(builder.getServerConfiguration().etcDirectories, null);
-		ClusterManager.load(builder, null, null);
+		ClusterManager.load(builder);
 		WebappManager.load(builder, etcTracker, currentTempDir);
 		etcTracker.check();
-		return builder.build().start(true);
 	}
 
-	public static void main(String[] args) throws Exception {
-		start();
+	public static void main(final String... args) throws Exception {
+		new WebappServer(new ServerConfiguration(args)).start(true);
 	}
 
 }
