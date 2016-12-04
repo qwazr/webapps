@@ -16,9 +16,7 @@
 package com.qwazr.webapps;
 
 import com.qwazr.utils.LockUtils;
-import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.json.JsonMapper;
-import org.apache.commons.io.FilenameUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -26,7 +24,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
 
-class GlobalConfiguration implements TrackedInterface.FileChangeConsumer {
+class GlobalConfiguration {
 
 	private static final Logger logger = LoggerFactory.getLogger(GlobalConfiguration.class);
 
@@ -46,7 +44,7 @@ class GlobalConfiguration implements TrackedInterface.FileChangeConsumer {
 		});
 	}
 
-	private void loadWebappDefinition(final File jsonFile) {
+	void loadWebappDefinition(final File jsonFile) {
 		try {
 			final WebappDefinition webappDefinition = JsonMapper.MAPPER.readValue(jsonFile, WebappDefinition.class);
 
@@ -78,18 +76,4 @@ class GlobalConfiguration implements TrackedInterface.FileChangeConsumer {
 		});
 	}
 
-	@Override
-	public void accept(final TrackedInterface.ChangeReason changeReason, final File jsonFile) {
-		String extension = FilenameUtils.getExtension(jsonFile.getName());
-		if (!"json".equals(extension))
-			return;
-		switch (changeReason) {
-		case UPDATED:
-			loadWebappDefinition(jsonFile);
-			break;
-		case DELETED:
-			unloadWebappDefinition(jsonFile);
-			break;
-		}
-	}
 }

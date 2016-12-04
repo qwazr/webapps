@@ -51,6 +51,7 @@ import java.security.CodeSource;
 import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
+import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -74,12 +75,12 @@ public class WebappManager {
 
 	final static String FAVICON_PATH = "/favicon.ico";
 
-	public synchronized static void load(final ServerBuilder builder, final ServerConfiguration configuration)
-			throws IOException {
+	public synchronized static void load(final ServerBuilder builder, final ServerConfiguration configuration,
+			final Collection<File> etcFiles) throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
 		try {
-			INSTANCE = new WebappManager(builder, configuration);
+			INSTANCE = new WebappManager(builder, configuration, etcFiles);
 		} catch (ReflectiveOperationException e) {
 			throw new ServerException(e);
 		}
@@ -98,14 +99,15 @@ public class WebappManager {
 	final GlobalConfiguration globalConfiguration;
 	final ScriptEngine scriptEngine;
 
-	private WebappManager(final ServerBuilder builder, final ServerConfiguration configuration)
-			throws IOException, ServerException, ReflectiveOperationException {
+	private WebappManager(final ServerBuilder builder, final ServerConfiguration configuration,
+			final Collection<File> etcFiles) throws IOException, ServerException, ReflectiveOperationException {
 		if (logger.isInfoEnabled())
 			logger.info("Loading Web application");
 
 		// Load the configuration
 		globalConfiguration = new GlobalConfiguration();
-		builder.registerEtcTracker(globalConfiguration);
+		if (etcFiles != null)
+			etcFiles.forEach(globalConfiguration::loadWebappDefinition);
 		webappDefinition = globalConfiguration.getWebappDefinition();
 
 		dataDir = configuration.dataDirectory;

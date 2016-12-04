@@ -20,7 +20,9 @@ import com.qwazr.utils.server.GenericServer;
 import com.qwazr.utils.server.ServerBuilder;
 import com.qwazr.utils.server.ServerConfiguration;
 
+import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
 import java.util.concurrent.ExecutorService;
 
 public class WebappServer extends GenericServer {
@@ -31,9 +33,9 @@ public class WebappServer extends GenericServer {
 
 	@Override
 	protected void build(final ExecutorService executorService, final ServerBuilder builder,
-			final ServerConfiguration configuration) throws IOException {
+			final ServerConfiguration configuration, final Collection<File> etcFiles) throws IOException {
 		ClusterManager.load(builder, configuration);
-		WebappManager.load(builder, configuration);
+		WebappManager.load(builder, configuration, etcFiles);
 	}
 
 	public static void main(final String... args) throws Exception {
