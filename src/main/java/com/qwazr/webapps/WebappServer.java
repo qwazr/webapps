@@ -16,26 +16,24 @@
 package com.qwazr.webapps;
 
 import com.qwazr.cluster.manager.ClusterManager;
-import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.server.GenericServer;
 import com.qwazr.utils.server.ServerBuilder;
 import com.qwazr.utils.server.ServerConfiguration;
 
-import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 
 public class WebappServer extends GenericServer {
 
 	private WebappServer(final ServerConfiguration serverConfiguration) throws IOException {
 		super(serverConfiguration);
-		final ServerBuilder builder = getBuilder();
-		final File currentTempDir = new File(builder.getServerConfiguration().dataDirectory, "tmp");
-		currentTempDir.mkdir();
-		final TrackedInterface etcTracker =
-				TrackedInterface.build(builder.getServerConfiguration().etcDirectories, null);
-		ClusterManager.load(builder);
-		WebappManager.load(builder, etcTracker, currentTempDir);
-		etcTracker.check();
+	}
+
+	@Override
+	protected void build(final ExecutorService executorService, final ServerBuilder builder,
+			final ServerConfiguration configuration) throws IOException {
+		ClusterManager.load(builder, configuration);
+		WebappManager.load(builder, configuration);
 	}
 
 	public static void main(final String... args) throws Exception {

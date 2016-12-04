@@ -18,7 +18,6 @@ package com.qwazr.webapps;
 import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
 import com.qwazr.utils.*;
-import com.qwazr.utils.file.TrackedInterface;
 import com.qwazr.utils.server.*;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
@@ -75,13 +74,12 @@ public class WebappManager {
 
 	final static String FAVICON_PATH = "/favicon.ico";
 
-	public synchronized static void load(final ServerBuilder serverBuilder, final TrackedInterface etcTracker,
-			final File tempDirectory) throws IOException {
+	public synchronized static void load(final ServerBuilder builder, final ServerConfiguration configuration)
+			throws IOException {
 		if (INSTANCE != null)
 			throw new IOException("Already loaded");
-
 		try {
-			INSTANCE = new WebappManager(etcTracker, serverBuilder, tempDirectory);
+			INSTANCE = new WebappManager(builder, configuration);
 		} catch (ReflectiveOperationException e) {
 			throw new ServerException(e);
 		}
@@ -100,31 +98,31 @@ public class WebappManager {
 	final GlobalConfiguration globalConfiguration;
 	final ScriptEngine scriptEngine;
 
-	private WebappManager(final TrackedInterface etcTracker, final ServerBuilder serverBuilder,
-			final File tempDirectory) throws IOException, ServerException, ReflectiveOperationException {
+	private WebappManager(final ServerBuilder builder, final ServerConfiguration configuration)
+			throws IOException, ServerException, ReflectiveOperationException {
 		if (logger.isInfoEnabled())
 			logger.info("Loading Web application");
 
 		// Load the configuration
-		globalConfiguration = new GlobalConfiguration(etcTracker);
+		globalConfiguration = new GlobalConfiguration();
+		builder.registerEtcTracker(globalConfiguration);
 		webappDefinition = globalConfiguration.getWebappDefinition();
 
-		dataDir = serverBuilder.getServerConfiguration().dataDirectory;
+		dataDir = configuration.dataDirectory;
 		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
 		// Register the webservice
-		serverBuilder.registerWebService(WebappManagerServiceImpl.class);
+		builder.registerWebService(WebappManagerServiceImpl.class);
 
-		File sessionPersistenceDir = new File(tempDirectory, SESSIONS_PERSISTENCE_DIR);
+		File sessionPersistenceDir = new File(configuration.tempDirectory, SESSIONS_PERSISTENCE_DIR);
 		if (!sessionPersistenceDir.exists())
 			sessionPersistenceDir.mkdir();
-		serverBuilder.setSessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
+		builder.setSessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
 
 		// Load the static handlers
 		if (webappDefinition.statics != null)
-			webappDefinition.statics.forEach(
-					(urlPath, filePath) -> serverBuilder.registerServlet(getStaticServlet(urlPath,
-							SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath))));
+			webappDefinition.statics.forEach((urlPath, filePath) -> builder.registerServlet(
+					getStaticServlet(urlPath, SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath))));
 
 		// Prepare the Javascript interpreter
 		final ScriptEngineManager manager = new ScriptEngineManager();
@@ -133,31 +131,28 @@ public class WebappManager {
 		// Load the listeners
 		if (webappDefinition.listeners != null)
 			for (String listenerClass : webappDefinition.listeners)
-				serverBuilder.registerListener(Servlets.listener(ClassLoaderManager.findClass(listenerClass)));
-		serverBuilder.setServletAccessLogger(accessLogger);
+				builder.registerListener(Servlets.listener(ClassLoaderManager.findClass(listenerClass)));
+		builder.setServletAccessLogger(accessLogger);
 
 		// Load the controllers
 		if (webappDefinition.controllers != null)
-			webappDefinition.controllers.forEach(
-					(urlPath, filePath) -> registerController(urlPath, filePath, serverBuilder));
+			webappDefinition.controllers.forEach((urlPath, filePath) -> registerController(urlPath, filePath, builder));
 
 		// Load the closable filter
-		serverBuilder.registerFilter("/*", Servlets.filter(CloseableFilter.class));
+		builder.registerFilter("/*", Servlets.filter(CloseableFilter.class));
 
 		// Load the filters
 		if (webappDefinition.filters != null)
-			FunctionUtils.forEach(webappDefinition.filters,
-					(urlPath, filterClass) -> serverBuilder.registerFilter(urlPath,
-							Servlets.filter(ClassLoaderManager.findClass(filterClass))));
+			FunctionUtils.forEach(webappDefinition.filters, (urlPath, filterClass) -> builder.registerFilter(urlPath,
+					Servlets.filter(ClassLoaderManager.findClass(filterClass))));
 
 		// Load the identityManager provider if any
 		if (webappDefinition.identity_manager != null)
-			serverBuilder.setIdentityManagerProvider(
-					(GenericServer.IdentityManagerProvider) ClassLoaderManager.findClass(
-							webappDefinition.identity_manager).newInstance());
+			builder.setIdentityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderManager.findClass(
+					webappDefinition.identity_manager).newInstance());
 
 		// Set the default favicon
-		serverBuilder.registerServlet(getDefaultFaviconServlet());
+		builder.registerServlet(getDefaultFaviconServlet());
 	}
 
 	private SecurableServletInfo getStaticServlet(final String urlPath, final String path) {
@@ -327,7 +322,7 @@ public class WebappManager {
 			pm.add(new FilePermission("<<ALL FILES>>", "read"));
 
 			INSTANCE = new AccessControlContext(
-					new ProtectionDomain[]{new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm)});
+					new ProtectionDomain[] { new ProtectionDomain(new CodeSource(null, (Certificate[]) null), pm) });
 		}
 	}
 }

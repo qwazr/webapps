@@ -32,17 +32,13 @@ class GlobalConfiguration implements TrackedInterface.FileChangeConsumer {
 
 	private final LockUtils.ReadWriteLock mapLock = new LockUtils.ReadWriteLock();
 
-	private final TrackedInterface etcTracker;
 	private final LinkedHashMap<File, WebappDefinition> webappFileMap;
 
-	GlobalConfiguration(final TrackedInterface etcTracker) {
-		this.etcTracker = etcTracker;
+	GlobalConfiguration() {
 		webappFileMap = new LinkedHashMap<>();
-		etcTracker.register(this);
 	}
 
 	WebappDefinition getWebappDefinition() {
-		etcTracker.check();
 		return mapLock.read(() -> {
 			final WebappDefinition.Builder builder = new WebappDefinition.Builder();
 			builder.add(webappFileMap.values());
@@ -88,12 +84,12 @@ class GlobalConfiguration implements TrackedInterface.FileChangeConsumer {
 		if (!"json".equals(extension))
 			return;
 		switch (changeReason) {
-			case UPDATED:
-				loadWebappDefinition(jsonFile);
-				break;
-			case DELETED:
-				unloadWebappDefinition(jsonFile);
-				break;
+		case UPDATED:
+			loadWebappDefinition(jsonFile);
+			break;
+		case DELETED:
+			unloadWebappDefinition(jsonFile);
+			break;
 		}
 	}
 }
