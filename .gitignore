@@ -7,4 +7,5 @@ release.properties
 .classpath
 .project
 .settings
-/target/
+.idea
+qwazr-webapps.iml
