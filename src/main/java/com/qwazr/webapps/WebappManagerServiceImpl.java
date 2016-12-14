@@ -15,7 +15,7 @@
  **/
 package com.qwazr.webapps;
 
-import com.qwazr.utils.server.ServerException;
+import com.qwazr.server.ServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

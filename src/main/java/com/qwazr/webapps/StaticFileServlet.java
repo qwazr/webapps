@@ -15,7 +15,6 @@
  **/
 package com.qwazr.webapps;
 
-import com.qwazr.utils.server.ServerConfiguration;
 import org.apache.commons.io.IOUtils;
 
 import javax.servlet.ServletConfig;
@@ -45,8 +44,8 @@ public class StaticFileServlet extends HttpServlet {
 		else
 			rootFile = new File(WebappManager.INSTANCE.dataDir, path);
 		if (!rootFile.exists())
-			throw new ServletException("Cannot initialize the static path: " + path + " - The path does not exists " +
-					rootFile.getAbsolutePath());
+			throw new ServletException("Cannot initialize the static path: " + path + " - The path does not exists "
+					+ rootFile.getAbsolutePath());
 	}
 
 	private File handleFile(final HttpServletRequest request, final HttpServletResponse response) throws IOException {

@@ -17,8 +17,9 @@ package com.qwazr.webapps;
 
 import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
+import com.qwazr.server.*;
+import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.*;
-import com.qwazr.utils.server.*;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.InstanceHandle;

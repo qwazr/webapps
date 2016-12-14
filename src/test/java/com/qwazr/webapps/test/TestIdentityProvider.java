@@ -15,7 +15,7 @@
  **/
 package com.qwazr.webapps.test;
 
-import com.qwazr.utils.server.GenericServer;
+import com.qwazr.server.GenericServer;
 import io.undertow.security.idm.Account;
 import io.undertow.security.idm.Credential;
 import io.undertow.security.idm.IdentityManager;
