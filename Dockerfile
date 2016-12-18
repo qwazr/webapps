@@ -1,8 +1,8 @@
-FROM alpine:3.4
+FROM openjdk:8-jdk-alpine
 
 MAINTAINER Emmanuel Keller
 
-ADD target/qwazr-webapps-1.1-SNAPSHOT-exec.jar /usr/share/qwazr/qwazr-webapps.jar
+ADD target/qwazr-webapps-1.1.0-SNAPSHOT-exec.jar /usr/share/qwazr/qwazr-webapps.jar
 
 VOLUME /var/lib/qwazr
 
