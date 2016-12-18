@@ -16,6 +16,7 @@
 package com.qwazr.webapps.example;
 
 import com.qwazr.library.LibraryManager;
+import com.qwazr.library.annotations.Library;
 import com.qwazr.tools.AsciiDoctorTool;
 import com.qwazr.tools.FreeMarkerTool;
 import com.qwazr.tools.MarkdownTool;
@@ -40,18 +41,21 @@ import java.util.List;
 
 public class DocumentationServlet extends HttpServlet {
 
-	protected String[] indexFileNames = {"README.md", "README.adoc"};
+	protected String[] indexFileNames = { "README.md", "README.adoc" };
 
 	private File documentationPath = new File("src");
 
+	@Library("freemarker")
 	private FreeMarkerTool freemarkerTool = null;
 
+	@Library("markdown")
 	private MarkdownTool markdownTool = null;
 
+	@Library("adoc")
 	private AsciiDoctorTool asciiDoctorTool = null;
 
-	private final MimetypesFileTypeMap mimeTypeMap = new MimetypesFileTypeMap(
-			getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
+	private final MimetypesFileTypeMap mimeTypeMap =
+			new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
 	private String templatePath = "org/qwazr/webapps/example/documentation.ftl";
 
@@ -63,12 +67,6 @@ public class DocumentationServlet extends HttpServlet {
 		p = config.getInitParameter("documentationPath");
 		if (!StringUtils.isEmpty(p))
 			documentationPath = new File(p);
-		p = config.getInitParameter("freemarkerTool");
-		freemarkerTool = LibraryManager.getInstance().getLibrary(StringUtils.isEmpty(p) ? "freemarker" : p);
-		p = config.getInitParameter("markdownTool");
-		markdownTool = LibraryManager.getInstance().getLibrary(StringUtils.isEmpty(p) ? "markdown" : p);
-		p = config.getInitParameter("asciiDoctorTool");
-		asciiDoctorTool = LibraryManager.getInstance().getLibrary(StringUtils.isEmpty(p) ? "adoc" : p);
 		p = config.getInitParameter("templatePath");
 		if (!StringUtils.isEmpty(p))
 			templatePath = p;

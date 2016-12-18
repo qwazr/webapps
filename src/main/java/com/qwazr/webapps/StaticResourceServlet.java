@@ -19,14 +19,13 @@ import org.apache.commons.io.IOUtils;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class StaticResourceServlet extends HttpServlet {
+public class StaticResourceServlet extends BaseHttpServlet {
 
 	final static String STATIC_RESOURCE_PARAM = "com.qwazr.webapps.static.resource";
 
@@ -34,7 +33,7 @@ public class StaticResourceServlet extends HttpServlet {
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
-		super.init();
+		super.init(config);
 		resourcePrefix = config.getInitParameter(STATIC_RESOURCE_PARAM);
 		if (resourcePrefix == null || resourcePrefix.isEmpty())
 			throw new ServletException("The init-param " + STATIC_RESOURCE_PARAM + " is missing.");
@@ -57,7 +56,7 @@ public class StaticResourceServlet extends HttpServlet {
 			throws ServletException, IOException {
 		final String resourcePath = getResourcePath(request);
 		try (final InputStream input = findResource(resourcePath)) {
-			final String type = WebappManager.INSTANCE.mimeTypeMap.getContentType(resourcePath);
+			final String type = webappManager.mimeTypeMap.getContentType(resourcePath);
 			StaticFileServlet.head(null, type, null, response);
 		} catch (FileNotFoundException e) {
 			response.sendError(404, e.getMessage());
@@ -69,7 +68,7 @@ public class StaticResourceServlet extends HttpServlet {
 			throws ServletException, IOException {
 		final String resourcePath = getResourcePath(request);
 		try (final InputStream input = findResource(resourcePath)) {
-			final String type = WebappManager.INSTANCE.mimeTypeMap.getContentType(resourcePath);
+			final String type = webappManager.mimeTypeMap.getContentType(resourcePath);
 			StaticFileServlet.head(null, type, null, response);
 			IOUtils.copy(input, response.getOutputStream());
 		} catch (FileNotFoundException e) {

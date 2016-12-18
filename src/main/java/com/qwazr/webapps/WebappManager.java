@@ -69,41 +69,31 @@ public class WebappManager {
 
 	private static final Logger logger = LoggerFactory.getLogger(WebappManager.class);
 
-	public static volatile WebappManager INSTANCE = null;
-
 	private static final String ACCESS_LOG_LOGGER_NAME = "com.qwazr.webapps.accessLogger";
 	private static final Logger accessLogger = LoggerFactory.getLogger(ACCESS_LOG_LOGGER_NAME);
 
 	final static String FAVICON_PATH = "/favicon.ico";
 
-	public synchronized static void load(final ServerBuilder builder, final ServerConfiguration configuration,
-			final Collection<File> etcFiles) throws IOException {
-		if (INSTANCE != null)
-			throw new IOException("Already loaded");
-		try {
-			INSTANCE = new WebappManager(builder, configuration, etcFiles);
-		} catch (ReflectiveOperationException e) {
-			throw new ServerException(e);
-		}
-	}
-
-	public static WebappManager getInstance() {
-		if (INSTANCE == null)
-			throw new RuntimeException("The webapps service is not enabled");
-		return INSTANCE;
-	}
-
 	final File dataDir;
 	final MimetypesFileTypeMap mimeTypeMap;
 	final WebappDefinition webappDefinition;
 
+	final LibraryManager libraryManager;
+	final ClassLoaderManager classLoaderManager;
+
 	final GlobalConfiguration globalConfiguration;
 	final ScriptEngine scriptEngine;
 
-	private WebappManager(final ServerBuilder builder, final ServerConfiguration configuration,
-			final Collection<File> etcFiles) throws IOException, ServerException, ReflectiveOperationException {
+	public WebappManager(final LibraryManager libraryManager, final GenericServer.Builder builder)
+			throws IOException, ServerException, ReflectiveOperationException {
 		if (logger.isInfoEnabled())
 			logger.info("Loading Web application");
+
+		this.libraryManager = libraryManager;
+		this.classLoaderManager = libraryManager.getClassLoaderManager();
+
+		final ServerConfiguration configuration = builder.getConfiguration();
+		final Collection<File> etcFiles = configuration.getEtcFiles();
 
 		// Load the configuration
 		globalConfiguration = new GlobalConfiguration();
@@ -115,16 +105,16 @@ public class WebappManager {
 		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
 		// Register the webservice
-		builder.registerWebService(WebappManagerServiceImpl.class);
+		builder.webService(WebappManagerServiceImpl.class);
 
 		File sessionPersistenceDir = new File(configuration.tempDirectory, SESSIONS_PERSISTENCE_DIR);
 		if (!sessionPersistenceDir.exists())
 			sessionPersistenceDir.mkdir();
-		builder.setSessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
+		builder.sessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
 
 		// Load the static handlers
 		if (webappDefinition.statics != null)
-			webappDefinition.statics.forEach((urlPath, filePath) -> builder.registerServlet(
+			webappDefinition.statics.forEach((urlPath, filePath) -> builder.servlet(
 					getStaticServlet(urlPath, SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath))));
 
 		// Prepare the Javascript interpreter
@@ -134,28 +124,30 @@ public class WebappManager {
 		// Load the listeners
 		if (webappDefinition.listeners != null)
 			for (String listenerClass : webappDefinition.listeners)
-				builder.registerListener(Servlets.listener(ClassLoaderManager.findClass(listenerClass)));
-		builder.setServletAccessLogger(accessLogger);
+				builder.listener(Servlets.listener(classLoaderManager.findClass(listenerClass)));
+		builder.servletAccessLogger(accessLogger);
 
 		// Load the controllers
 		if (webappDefinition.controllers != null)
 			webappDefinition.controllers.forEach((urlPath, filePath) -> registerController(urlPath, filePath, builder));
 
 		// Load the closable filter
-		builder.registerFilter("/*", Servlets.filter(CloseableFilter.class));
+		builder.filter("/*", Servlets.filter(CloseableFilter.class));
 
 		// Load the filters
 		if (webappDefinition.filters != null)
-			FunctionUtils.forEach(webappDefinition.filters, (urlPath, filterClass) -> builder.registerFilter(urlPath,
-					Servlets.filter(ClassLoaderManager.findClass(filterClass))));
+			FunctionUtils.forEach(webappDefinition.filters, (urlPath, filterClass) -> builder.filter(urlPath,
+					Servlets.filter(classLoaderManager.findClass(filterClass))));
 
 		// Load the identityManager provider if any
 		if (webappDefinition.identity_manager != null)
-			builder.setIdentityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderManager.findClass(
+			builder.identityManagerProvider((GenericServer.IdentityManagerProvider) classLoaderManager.findClass(
 					webappDefinition.identity_manager).newInstance());
 
 		// Set the default favicon
-		builder.registerServlet(getDefaultFaviconServlet());
+		builder.servlet(getDefaultFaviconServlet());
+
+		builder.contextAttribute(this);
 	}
 
 	private SecurableServletInfo getStaticServlet(final String urlPath, final String path) {
@@ -179,22 +171,22 @@ public class WebappManager {
 				.addMapping(FAVICON_PATH);
 	}
 
-	private void registerController(final String urlPath, final String filePath, final ServerBuilder serverBuilder) {
+	private void registerController(final String urlPath, final String filePath, final GenericServer.Builder builder) {
 		try {
 			String ext = FilenameUtils.getExtension(filePath).toLowerCase();
 			if ("js".equals(ext))
 				registerJavascriptServlet(urlPath, SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath),
-						serverBuilder);
+						builder);
 			else
-				registerJavaController(urlPath, filePath, serverBuilder);
+				registerJavaController(urlPath, filePath, builder);
 		} catch (ReflectiveOperationException e) {
 			throw new ServerException("Cannot build an instance of the controller: " + filePath, e);
 		}
 	}
 
 	private void registerJavascriptServlet(final String urlPath, final String filePath,
-			final ServerBuilder serverBuilder) {
-		serverBuilder.registerServlet(
+			final GenericServer.Builder builder) {
+		builder.servlet(
 				(SecurableServletInfo) SecurableServletInfo.servlet(JavascriptServlet.class.getName() + '@' + urlPath,
 						JavascriptServlet.class)
 						.addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath)
@@ -202,22 +194,22 @@ public class WebappManager {
 						.setMultipartConfig(multipartConfigElement));
 	}
 
-	private void registerJavaController(final String urlPath, final String classDef, final ServerBuilder serverBuilder)
-			throws ReflectiveOperationException {
+	private void registerJavaController(final String urlPath, final String classDef,
+			final GenericServer.Builder builder) throws ReflectiveOperationException {
 		if (classDef.contains(" ") || classDef.contains(" ,")) {
-			registerJavaJaxRsClassServlet(urlPath, classDef, serverBuilder);
+			registerJavaJaxRsClassServlet(urlPath, classDef, builder);
 			return;
 		}
-		final Class<?> clazz = ClassLoaderUtils.findClass(ClassLoaderManager.classLoader, classDef);
+		final Class<?> clazz = classLoaderManager.findClass(classDef);
 		Objects.requireNonNull(clazz, "Class not found: " + classDef);
 		if (Servlet.class.isAssignableFrom(clazz)) {
-			registerJavaServlet(urlPath, (Class<? extends Servlet>) clazz, serverBuilder);
+			registerJavaServlet(urlPath, (Class<? extends Servlet>) clazz, builder);
 			return;
 		} else if (Application.class.isAssignableFrom(clazz)) {
-			registerJavaJaxRsAppServlet(urlPath, (Class<? extends Application>) clazz, serverBuilder);
+			registerJavaJaxRsAppServlet(urlPath, (Class<? extends Application>) clazz, builder);
 			return;
 		} else if (clazz.isAnnotationPresent(Path.class)) {
-			registerJavaJaxRsClassServlet(urlPath, classDef, serverBuilder);
+			registerJavaJaxRsClassServlet(urlPath, classDef, builder);
 			return;
 		}
 		throw new ServerException("This type of class is not supported: " + classDef + " / " + clazz.getName());
@@ -230,14 +222,13 @@ public class WebappManager {
 	}
 
 	private void registerJavaServlet(final String urlPath, final Class<? extends Servlet> servletClass,
-			final ServerBuilder serverBuilder) throws NoSuchMethodException {
-		serverBuilder.registerServlet(
-				(SecurableServletInfo) SecurableServletInfo.servlet(servletClass.getName() + '@' + urlPath,
-						servletClass, new ServletFactory(servletClass))
-						.setSecure(isSecurable(servletClass))
-						.addMapping(urlPath)
-						.setMultipartConfig(multipartConfigElement)
-						.setLoadOnStartup(1));
+			final GenericServer.Builder builder) throws NoSuchMethodException {
+		builder.servlet((SecurableServletInfo) SecurableServletInfo.servlet(servletClass.getName() + '@' + urlPath,
+				servletClass, new ServletFactory(servletClass))
+				.setSecure(isSecurable(servletClass))
+				.addMapping(urlPath)
+				.setMultipartConfig(multipartConfigElement)
+				.setLoadOnStartup(1));
 	}
 
 	private ServletInfo addSwaggerContext(String urlPath, final ServletInfo servletInfo) {
@@ -251,7 +242,7 @@ public class WebappManager {
 	}
 
 	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,
-			final ServerBuilder serverBuilder) throws NoSuchMethodException {
+			final GenericServer.Builder builder) throws NoSuchMethodException {
 		final SecurableServletInfo servletInfo =
 				(SecurableServletInfo) SecurableServletInfo.servlet(ServletContainer.class.getName() + '@' + urlPath,
 						ServletContainer.class, new ServletFactory(ServletContainer.class))
@@ -261,11 +252,11 @@ public class WebappManager {
 						.addMapping(urlPath)
 						.setLoadOnStartup(1);
 		addSwaggerContext(urlPath, servletInfo);
-		serverBuilder.registerServlet(servletInfo);
+		builder.servlet(servletInfo);
 	}
 
 	private void registerJavaJaxRsClassServlet(final String urlPath, final String classList,
-			final ServerBuilder serverBuilder) throws NoSuchMethodException, ClassNotFoundException {
+			final GenericServer.Builder builder) throws NoSuchMethodException, ClassNotFoundException {
 		final String[] classes = StringUtils.split(classList, " ,");
 		final String resources = BaseRestApplication.joinResources(classes);
 		final SecurableServletInfo servletInfo =
@@ -277,13 +268,13 @@ public class WebappManager {
 						.setLoadOnStartup(1);
 		final Set<Class<?>> classSet = new LinkedHashSet<>();
 		for (String clazz : classes) {
-			Class<?> cl = ClassLoaderManager.findClass(clazz);
+			Class<?> cl = classLoaderManager.findClass(clazz);
 			classSet.add(cl);
 			if (isSecurable(cl))
 				servletInfo.setSecure(true);
 		}
 		addSwaggerContext(urlPath, servletInfo);
-		serverBuilder.registerServlet(servletInfo);
+		builder.servlet(servletInfo);
 	}
 
 	class ServletFactory<T extends Servlet> extends ConstructorInstanceFactory<T> {
@@ -295,7 +286,7 @@ public class WebappManager {
 		@Override
 		public InstanceHandle<T> createInstance() throws InstantiationException {
 			final InstanceHandle<T> instance = super.createInstance();
-			LibraryManager.inject(instance.getInstance());
+			libraryManager.inject(instance.getInstance());
 			return instance;
 		}
 	}

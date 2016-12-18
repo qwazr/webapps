@@ -15,7 +15,6 @@
  **/
 package com.qwazr.webapps;
 
-import com.qwazr.library.LibraryManager;
 import com.qwazr.scripts.ScriptConsole;
 import com.qwazr.utils.ScriptUtils;
 
@@ -23,7 +22,6 @@ import javax.script.Bindings;
 import javax.script.ScriptException;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -31,7 +29,7 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.security.PrivilegedActionException;
 
-public class JavascriptServlet extends HttpServlet {
+public class JavascriptServlet extends BaseHttpServlet {
 
 	public final static String JAVASCRIPT_PATH_PARAM = "com.qwazr.webapps.javascript.path";
 
@@ -42,17 +40,17 @@ public class JavascriptServlet extends HttpServlet {
 		WebappHttpRequest request = new WebappHttpRequestImpl(req);
 		WebappHttpResponse response = new WebappHttpResponse(rep);
 		response.setHeader("Cache-Control", "max-age=0, no-cache, no-store");
-		Bindings bindings = WebappManager.INSTANCE.scriptEngine.createBindings();
+		Bindings bindings = webappManager.scriptEngine.createBindings();
 		bindings.put("console", new ScriptConsole(null));
 		bindings.put("request", request);
 		bindings.put("response", response);
-		bindings.put("library", LibraryManager.getInstance());
+		bindings.put("library", webappManager.libraryManager);
 		bindings.put("closeable", req.getAttribute(CloseableFilter.ATTRIBUTE_NAME));
 		bindings.put("session", request.getSession());
 		bindings.putAll(request.getAttributes());
 		try (final FileReader fileReader = new FileReader(controllerFile)) {
-			ScriptUtils.evalScript(WebappManager.INSTANCE.scriptEngine,
-					WebappManager.RestrictedAccessControlContext.INSTANCE, fileReader, bindings);
+			ScriptUtils.evalScript(webappManager.scriptEngine, WebappManager.RestrictedAccessControlContext.INSTANCE,
+					fileReader, bindings);
 		} catch (ScriptException | PrivilegedActionException e) {
 			throw new ServletException(e);
 		}
@@ -60,11 +58,11 @@ public class JavascriptServlet extends HttpServlet {
 
 	@Override
 	public void init(ServletConfig config) throws ServletException {
-		super.init();
+		super.init(config);
 		final String path = config.getInitParameter(JAVASCRIPT_PATH_PARAM);
 		if (path == null || path.isEmpty())
 			throw new ServletException("The init-param " + JAVASCRIPT_PATH_PARAM + " is missing.");
-		controllerFile = new File(WebappManager.INSTANCE.dataDir, path);
+		controllerFile = new File(webappManager.dataDir, path);
 	}
 
 	@Override

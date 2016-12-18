@@ -15,21 +15,38 @@
  **/
 package com.qwazr.webapps;
 
+import com.qwazr.server.AbstractServiceImpl;
 import com.qwazr.server.ServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-public class WebappManagerServiceImpl implements WebappManagerServiceInterface {
+public class WebappManagerServiceImpl extends AbstractServiceImpl implements WebappManagerServiceInterface {
 
 	private static final Logger logger = LoggerFactory.getLogger(WebappManagerServiceImpl.class);
+
+	private volatile WebappManager webappManager;
+
+	WebappManagerServiceImpl(WebappManager webappManager) {
+		this.webappManager = webappManager;
+	}
+
+	public WebappManagerServiceImpl() {
+		this(null);
+	}
+
+	@PostConstruct
+	public void init() {
+		webappManager = getContextAttribute(WebappManager.class);
+	}
 
 	@Override
 	public WebappDefinition get() {
 		try {
-			WebappDefinition result = WebappManager.INSTANCE.getWebAppDefinition();
+			WebappDefinition result = webappManager.getWebAppDefinition();
 			return result == null ? new WebappDefinition() : result;
 		} catch (IOException | URISyntaxException e) {
 			throw ServerException.getJsonException(logger, e);

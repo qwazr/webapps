@@ -19,7 +19,6 @@ import org.apache.commons.io.IOUtils;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
-import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -27,7 +26,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 
-public class StaticFileServlet extends HttpServlet {
+public class StaticFileServlet extends BaseHttpServlet {
 
 	public final static String STATIC_PATH_PARAM = "com.qwazr.webapps.static.path";
 
@@ -35,14 +34,14 @@ public class StaticFileServlet extends HttpServlet {
 
 	@Override
 	public void init(final ServletConfig config) throws ServletException {
-		super.init();
+		super.init(config);
 		final String path = config.getInitParameter(STATIC_PATH_PARAM);
 		if (path == null || path.isEmpty())
 			throw new ServletException("The init-param " + STATIC_PATH_PARAM + " is missing.");
 		if (Paths.get(path).isAbsolute())
 			rootFile = new File(path);
 		else
-			rootFile = new File(WebappManager.INSTANCE.dataDir, path);
+			rootFile = new File(webappManager.dataDir, path);
 		if (!rootFile.exists())
 			throw new ServletException("Cannot initialize the static path: " + path + " - The path does not exists "
 					+ rootFile.getAbsolutePath());
@@ -91,7 +90,7 @@ public class StaticFileServlet extends HttpServlet {
 		final File staticFile = handleFile(request, response);
 		if (staticFile == null)
 			return;
-		final String type = WebappManager.INSTANCE.mimeTypeMap.getContentType(staticFile);
+		final String type = webappManager.mimeTypeMap.getContentType(staticFile);
 		head(staticFile.length(), type, staticFile.lastModified(), response);
 	}
 
@@ -101,7 +100,7 @@ public class StaticFileServlet extends HttpServlet {
 		final File staticFile = handleFile(request, response);
 		if (staticFile == null)
 			return;
-		final String type = WebappManager.INSTANCE.mimeTypeMap.getContentType(staticFile);
+		final String type = webappManager.mimeTypeMap.getContentType(staticFile);
 		head(staticFile.length(), type, staticFile.lastModified(), response);
 		try (final FileInputStream fis = new FileInputStream(staticFile)) {
 			IOUtils.copy(fis, response.getOutputStream());

@@ -15,33 +15,59 @@
  */
 package com.qwazr.webapps;
 
+import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.cluster.manager.ClusterManager;
+import com.qwazr.library.LibraryManager;
+import com.qwazr.server.BaseServer;
 import com.qwazr.server.GenericServer;
-import com.qwazr.server.ServerBuilder;
 import com.qwazr.server.WelcomeShutdownService;
 import com.qwazr.server.configuration.ServerConfiguration;
 
-import java.io.File;
+import javax.management.MBeanException;
+import javax.management.OperationsException;
+import javax.servlet.ServletException;
 import java.io.IOException;
-import java.util.Collection;
-import java.util.concurrent.ExecutorService;
+import java.net.URISyntaxException;
 
-public class WebappServer extends GenericServer {
+public class WebappServer implements BaseServer {
 
-	private WebappServer(final ServerConfiguration serverConfiguration) throws IOException {
-		super(serverConfiguration);
+	private final GenericServer server;
+
+	private WebappServer(final ServerConfiguration configuration)
+			throws IOException, URISyntaxException, ReflectiveOperationException {
+		final GenericServer.Builder builder = GenericServer.of(configuration);
+		final ClusterManager clusterManager = new ClusterManager(builder);
+		final ClassLoaderManager classLoaderManager = new ClassLoaderManager(builder, Thread.currentThread());
+		final LibraryManager libraryManager = new LibraryManager(classLoaderManager, null, builder);
+		final WebappManager webappManager = new WebappManager(libraryManager, builder);
+		builder.webService(WelcomeShutdownService.class);
+		server = builder.build();
 	}
 
 	@Override
-	protected void build(final ExecutorService executorService, final ServerBuilder builder,
-			final ServerConfiguration configuration, final Collection<File> etcFiles) throws IOException {
-		ClusterManager.load(builder, configuration);
-		WebappManager.load(builder, configuration, etcFiles);
-		builder.registerWebService(WelcomeShutdownService.class);
+	public GenericServer getServer() {
+		return server;
 	}
 
-	public static void main(final String... args) throws Exception {
-		new WebappServer(new ServerConfiguration(args)).start(true);
+	private static volatile WebappServer INSTANCE;
+
+	public static synchronized WebappServer getInstance() {
+		return INSTANCE;
+	}
+
+	public static synchronized void main(final String... args)
+			throws IOException, ReflectiveOperationException, OperationsException, ServletException, MBeanException,
+			URISyntaxException, InterruptedException {
+		if (INSTANCE != null)
+			shutdown();
+		INSTANCE = new WebappServer(new ServerConfiguration(args));
+		INSTANCE.start();
+	}
+
+	public static synchronized void shutdown() {
+		if (INSTANCE != null)
+			INSTANCE.stop();
+		INSTANCE = null;
 	}
 
 }
