@@ -24,17 +24,17 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-public class WebappManagerServiceImpl extends AbstractServiceImpl implements WebappManagerServiceInterface {
+public class WebappServiceImpl extends AbstractServiceImpl implements WebappServiceInterface {
 
-	private static final Logger logger = LoggerFactory.getLogger(WebappManagerServiceImpl.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(WebappServiceImpl.class);
 
 	private volatile WebappManager webappManager;
 
-	WebappManagerServiceImpl(WebappManager webappManager) {
+	WebappServiceImpl(WebappManager webappManager) {
 		this.webappManager = webappManager;
 	}
 
-	public WebappManagerServiceImpl() {
+	public WebappServiceImpl() {
 		this(null);
 	}
 
@@ -46,10 +46,10 @@ public class WebappManagerServiceImpl extends AbstractServiceImpl implements Web
 	@Override
 	public WebappDefinition get() {
 		try {
-			WebappDefinition result = webappManager.getWebAppDefinition();
+			final WebappDefinition result = webappManager.getWebAppDefinition();
 			return result == null ? new WebappDefinition() : result;
 		} catch (IOException | URISyntaxException e) {
-			throw ServerException.getJsonException(logger, e);
+			throw ServerException.getJsonException(LOGGER, e);
 		}
 	}
 }

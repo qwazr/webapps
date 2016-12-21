@@ -48,7 +48,7 @@ public class FullTest {
 	@Test
 	public void test000StartServer() throws Exception {
 		TestServer.startServer();
-		Assert.assertTrue(TestServer.serverStarted);
+		Assert.assertNotNull(TestServer.service);
 	}
 
 	@Test
@@ -69,8 +69,7 @@ public class FullTest {
 		return response;
 	}
 
-	private String checkEntity(HttpResponse response, String contentType)
-			throws IOException {
+	private String checkEntity(HttpResponse response, String contentType) throws IOException {
 		final HttpEntity entity = response.getEntity();
 		Assert.assertNotNull(entity);
 		Assert.assertTrue(entity.getContentType().getValue().startsWith(contentType));
@@ -216,9 +215,8 @@ public class FullTest {
 
 	@Test
 	public void test210javascriptServletWithParam() throws IOException {
-		try (final CloseableHttpResponse response =
-				     checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/javascript?" + PARAM_TEST_STRING),
-						     200)) {
+		try (final CloseableHttpResponse response = checkResponse(
+				HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/javascript?" + PARAM_TEST_STRING), 200)) {
 			final String content = checkEntity(response, MIME_TEXT_HTML);
 			checkContains(content, TestServlet.TEST_STRING, PARAM_TEST_STRING);
 		}

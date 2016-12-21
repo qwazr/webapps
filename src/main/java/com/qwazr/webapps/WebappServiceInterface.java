@@ -26,7 +26,7 @@ import javax.ws.rs.Produces;
 @RolesAllowed(WebappManager.SERVICE_NAME_WEBAPPS)
 @Path("/webapps")
 @ServiceName(WebappManager.SERVICE_NAME_WEBAPPS)
-public interface WebappManagerServiceInterface extends ServiceInterface {
+public interface WebappServiceInterface extends ServiceInterface {
 
 	@GET
 	@Path("/")

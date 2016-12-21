@@ -72,6 +72,8 @@ public class WebappManager {
 	private static final String ACCESS_LOG_LOGGER_NAME = "com.qwazr.webapps.accessLogger";
 	private static final Logger accessLogger = LoggerFactory.getLogger(ACCESS_LOG_LOGGER_NAME);
 
+	private final WebappServiceInterface service;
+
 	final static String FAVICON_PATH = "/favicon.ico";
 
 	final File dataDir;
@@ -105,7 +107,7 @@ public class WebappManager {
 		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
 		// Register the webservice
-		builder.webService(WebappManagerServiceImpl.class);
+		builder.webService(WebappServiceImpl.class);
 
 		File sessionPersistenceDir = new File(configuration.tempDirectory, SESSIONS_PERSISTENCE_DIR);
 		if (!sessionPersistenceDir.exists())
@@ -148,6 +150,12 @@ public class WebappManager {
 		builder.servlet(getDefaultFaviconServlet());
 
 		builder.contextAttribute(this);
+
+		service = new WebappServiceImpl(this);
+	}
+
+	public WebappServiceInterface getService() {
+		return service;
 	}
 
 	private SecurableServletInfo getStaticServlet(final String urlPath, final String path) {

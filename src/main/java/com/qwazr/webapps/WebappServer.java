@@ -32,6 +32,7 @@ import java.net.URISyntaxException;
 public class WebappServer implements BaseServer {
 
 	private final GenericServer server;
+	private final WebappManager webappManager;
 
 	private WebappServer(final ServerConfiguration configuration)
 			throws IOException, URISyntaxException, ReflectiveOperationException {
@@ -39,7 +40,7 @@ public class WebappServer implements BaseServer {
 		final ClusterManager clusterManager = new ClusterManager(builder);
 		final ClassLoaderManager classLoaderManager = new ClassLoaderManager(builder, Thread.currentThread());
 		final LibraryManager libraryManager = new LibraryManager(classLoaderManager, null, builder);
-		final WebappManager webappManager = new WebappManager(libraryManager, builder);
+		webappManager = new WebappManager(libraryManager, builder);
 		builder.webService(WelcomeShutdownService.class);
 		server = builder.build();
 	}
@@ -70,4 +71,7 @@ public class WebappServer implements BaseServer {
 		INSTANCE = null;
 	}
 
+	public WebappServiceInterface getService() {
+		return webappManager == null ? null : webappManager.getService();
+	}
 }

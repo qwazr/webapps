@@ -17,6 +17,7 @@ package com.qwazr.webapps.test;
 
 import com.google.common.io.Files;
 import com.qwazr.webapps.WebappServer;
+import com.qwazr.webapps.WebappServiceInterface;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -24,12 +25,12 @@ import java.nio.file.Paths;
 
 public class TestServer {
 
-	public static boolean serverStarted = false;
+	public static WebappServiceInterface service;
 
 	public static final String BASE_SERVLET_URL = "http://localhost:9090";
 
 	public static synchronized void startServer() throws Exception {
-		if (serverStarted)
+		if (service != null)
 			return;
 		final File dataDir = Files.createTempDir();
 		System.setProperty("QWAZR_DATA", dataDir.getAbsolutePath());
@@ -42,7 +43,7 @@ public class TestServer {
 		System.setProperty("QWAZR_ETC_DIR",
 				new File("src/test/resources/com/qwazr/webapps/test/etc").getAbsolutePath());
 		WebappServer.main();
-		serverStarted = true;
+		service = WebappServer.getInstance().getService();
 	}
 
 }
