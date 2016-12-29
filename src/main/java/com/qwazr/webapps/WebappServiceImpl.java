@@ -24,7 +24,7 @@ import javax.annotation.PostConstruct;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-public class WebappServiceImpl extends AbstractServiceImpl implements WebappServiceInterface {
+class WebappServiceImpl extends AbstractServiceImpl implements WebappServiceInterface {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(WebappServiceImpl.class);
 

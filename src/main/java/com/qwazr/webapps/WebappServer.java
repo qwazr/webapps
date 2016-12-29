@@ -16,7 +16,7 @@
 package com.qwazr.webapps;
 
 import com.qwazr.classloader.ClassLoaderManager;
-import com.qwazr.cluster.manager.ClusterManager;
+import com.qwazr.cluster.ClusterManager;
 import com.qwazr.library.LibraryManager;
 import com.qwazr.server.BaseServer;
 import com.qwazr.server.GenericServer;
@@ -37,7 +37,7 @@ public class WebappServer implements BaseServer {
 	private WebappServer(final ServerConfiguration configuration)
 			throws IOException, URISyntaxException, ReflectiveOperationException {
 		final GenericServer.Builder builder = GenericServer.of(configuration, null);
-		final ClusterManager clusterManager = new ClusterManager(builder);
+		new ClusterManager(builder);
 		final ClassLoaderManager classLoaderManager = new ClassLoaderManager(builder, Thread.currentThread());
 		final LibraryManager libraryManager = new LibraryManager(classLoaderManager, null, builder);
 		webappManager = new WebappManager(libraryManager, builder);
