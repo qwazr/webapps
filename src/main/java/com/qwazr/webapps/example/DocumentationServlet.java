@@ -15,7 +15,6 @@
  **/
 package com.qwazr.webapps.example;
 
-import com.qwazr.library.LibraryManager;
 import com.qwazr.library.annotations.Library;
 import com.qwazr.tools.AsciiDoctorTool;
 import com.qwazr.tools.FreeMarkerTool;
@@ -57,7 +56,7 @@ public class DocumentationServlet extends HttpServlet {
 	private final MimetypesFileTypeMap mimeTypeMap =
 			new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
-	private String templatePath = "org/qwazr/webapps/example/documentation.ftl";
+	protected String templatePath = "com/qwazr/webapps/example/documentation.ftl";
 
 	@Override
 	public void init(ServletConfig config) {
