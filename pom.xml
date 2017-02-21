@@ -24,6 +24,7 @@
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-library</artifactId>
+            <version>${project.version}</version>
             <exclusions>
                 <exclusion>
                     <artifactId>asm</artifactId>
@@ -34,6 +35,7 @@
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-scripts</artifactId>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>io.swagger</groupId>
