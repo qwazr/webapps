@@ -19,6 +19,7 @@ import org.apache.commons.io.IOUtils;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -61,8 +62,10 @@ public class StaticFileServlet extends BaseHttpServlet {
 			fullPath = contextPath + servletPath + pathInfo;
 		}
 		if (staticFile.isDirectory()) {
-			if (new File(staticFile, "index.html").exists())
-				response.sendRedirect(fullPath + "/index.html");
+			if (new File(staticFile, "index.html").exists()) {
+				final boolean slashEnd = fullPath.endsWith("/");
+				response.sendRedirect(fullPath + (slashEnd ? "index.html" : "/index.html"));
+			}
 			return null;
 		}
 		if (!staticFile.exists() || !staticFile.isFile()) {
@@ -103,7 +106,9 @@ public class StaticFileServlet extends BaseHttpServlet {
 		final String type = webappManager.mimeTypeMap.getContentType(staticFile);
 		head(staticFile.length(), type, staticFile.lastModified(), response);
 		try (final FileInputStream fis = new FileInputStream(staticFile)) {
-			IOUtils.copy(fis, response.getOutputStream());
+			final ServletOutputStream out = response.getOutputStream();
+			IOUtils.copy(fis, out);
+			out.flush();
 		}
 	}
 }
