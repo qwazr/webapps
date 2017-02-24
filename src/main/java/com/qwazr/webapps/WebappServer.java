@@ -34,7 +34,7 @@ public class WebappServer implements BaseServer {
 	private final GenericServer server;
 	private final WebappManager webappManager;
 
-	private WebappServer(final ServerConfiguration configuration)
+	public WebappServer(final ServerConfiguration configuration)
 			throws IOException, URISyntaxException, ReflectiveOperationException {
 		final GenericServer.Builder builder = GenericServer.of(configuration, null);
 		new ClusterManager(builder);
