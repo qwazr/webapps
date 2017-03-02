@@ -28,6 +28,8 @@ import javax.management.OperationsException;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class WebappServer implements BaseServer {
 
@@ -36,8 +38,9 @@ public class WebappServer implements BaseServer {
 
 	private WebappServer(final ServerConfiguration configuration)
 			throws IOException, URISyntaxException, ReflectiveOperationException {
-		final GenericServer.Builder builder = GenericServer.of(configuration, null);
-		new ClusterManager(builder);
+		final ExecutorService executorService = Executors.newCachedThreadPool();
+		final GenericServer.Builder builder = GenericServer.of(configuration, executorService);
+		new ClusterManager(builder, executorService);
 		final ClassLoaderManager classLoaderManager = new ClassLoaderManager(builder, Thread.currentThread());
 		final LibraryManager libraryManager = new LibraryManager(classLoaderManager, null, builder);
 		webappManager = new WebappManager(libraryManager, builder);
