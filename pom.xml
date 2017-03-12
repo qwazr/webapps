@@ -1,4 +1,5 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>qwazr-webapps</artifactId>
@@ -23,7 +24,7 @@
     <dependencies>
         <dependency>
             <groupId>com.qwazr</groupId>
-            <artifactId>qwazr-library</artifactId>
+            <artifactId>qwazr-scripts</artifactId>
             <version>${project.version}</version>
             <exclusions>
                 <exclusion>
@@ -34,8 +35,26 @@
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
-            <artifactId>qwazr-scripts</artifactId>
+            <artifactId>qwazr-library-freemarker</artifactId>
             <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.qwazr</groupId>
+            <artifactId>qwazr-library-asciidoctor</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.qwazr</groupId>
+            <artifactId>qwazr-library-markdown</artifactId>
+            <version>${project.version}</version>
+            <scope>compile</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.jamesmurty.utils</groupId>
+            <artifactId>java-xmlbuilder</artifactId>
+            <version>1.1</version>
         </dependency>
         <dependency>
             <groupId>io.swagger</groupId>
@@ -86,7 +105,8 @@
                             <shadedArtifactAttached>true</shadedArtifactAttached>
                             <shadedClassifierName>exec</shadedClassifierName>
                             <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                <transformer
+                                        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                     <manifestEntries>
                                         <Main-Class>com.qwazr.webapps.WebappServer</Main-Class>
                                         <Implementation-Version>${project.version}-${buildNumber}

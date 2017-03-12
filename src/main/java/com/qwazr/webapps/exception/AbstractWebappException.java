@@ -1,5 +1,5 @@
 /**
- * Copyright 2014-2016 Emmanuel Keller / QWAZR
+ * Copyright 201-2016 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,10 +15,8 @@
  **/
 package com.qwazr.webapps.exception;
 
-import com.datastax.driver.core.exceptions.QueryValidationException;
 import com.qwazr.utils.ExceptionUtils;
 import com.qwazr.webapps.exception.WebappException.Title;
-import freemarker.template.TemplateException;
 
 import javax.script.ScriptException;
 import javax.servlet.http.HttpServletResponse;
@@ -46,11 +44,8 @@ public abstract class AbstractWebappException extends RuntimeException {
 			return new WebappException(Status.NOT_FOUND, Title.NOT_FOUND_ERROR, e);
 		else if (e instanceof ScriptException)
 			return new WebappException(Status.INTERNAL_SERVER_ERROR, Title.SCRIPT_ERROR, e);
-		if (e instanceof QueryValidationException)
-			return new WebappException(Status.INTERNAL_SERVER_ERROR, Title.QUERY_ERROR, e);
-		else if (e instanceof TemplateException)
-			return new WebappException(Status.INTERNAL_SERVER_ERROR, Title.VIEW_ERROR, e);
-		return new WebappException(Status.INTERNAL_SERVER_ERROR, Title.ERROR, e);
+		else
+			return new WebappException(Status.INTERNAL_SERVER_ERROR, Title.ERROR, e);
 	}
 
 	public static AbstractWebappException newInstance(Error e) {

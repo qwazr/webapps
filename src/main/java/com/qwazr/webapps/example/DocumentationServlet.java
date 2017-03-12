@@ -16,9 +16,9 @@
 package com.qwazr.webapps.example;
 
 import com.qwazr.library.annotations.Library;
-import com.qwazr.tools.AsciiDoctorTool;
-import com.qwazr.tools.FreeMarkerTool;
-import com.qwazr.tools.MarkdownTool;
+import com.qwazr.library.asciidoctor.AsciiDoctorTool;
+import com.qwazr.library.freemarker.FreeMarkerTool;
+import com.qwazr.library.markdown.MarkdownTool;
 import com.qwazr.utils.StringUtils;
 import freemarker.template.TemplateException;
 import org.apache.commons.io.FilenameUtils;
