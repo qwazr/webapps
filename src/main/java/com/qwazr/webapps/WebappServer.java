@@ -39,14 +39,15 @@ public class WebappServer implements BaseServer {
 	private WebappServer(final ServerConfiguration configuration)
 			throws IOException, URISyntaxException, ReflectiveOperationException {
 		final ExecutorService executorService = Executors.newCachedThreadPool();
+		final ClassLoaderManager classLoaderManager =
+				new ClassLoaderManager(configuration.dataDirectory, Thread.currentThread());
 		final GenericServer.Builder builder =
-				GenericServer.of(configuration, executorService).webService(WelcomeShutdownService.class);
+				GenericServer.of(configuration, executorService, classLoaderManager.getClassLoader())
+						.webService(WelcomeShutdownService.class);
 		new ClusterManager(executorService, configuration).registerHttpClientMonitoringThread(builder)
 				.registerProtocolListener(builder)
 				.registerWebService(builder);
-		final ClassLoaderManager classLoaderManager =
-				new ClassLoaderManager(configuration.dataDirectory, Thread.currentThread()).registerContextAttribute(
-						builder);
+		classLoaderManager.registerContextAttribute(builder);
 		final LibraryManager libraryManager = new LibraryManager(classLoaderManager, null, configuration.dataDirectory,
 				configuration.getEtcFiles()).registerIdentityManager(builder).registerWebService(builder);
 		webappManager = new WebappManager(libraryManager, builder);

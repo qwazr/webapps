@@ -17,9 +17,14 @@ package com.qwazr.webapps;
 
 import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
-import com.qwazr.server.*;
+import com.qwazr.server.GenericServer;
+import com.qwazr.server.InFileSessionPersistenceManager;
+import com.qwazr.server.ServerException;
+import com.qwazr.server.ServletInfoBuilder;
 import com.qwazr.server.configuration.ServerConfiguration;
-import com.qwazr.utils.*;
+import com.qwazr.utils.FunctionUtils;
+import com.qwazr.utils.StringUtils;
+import com.qwazr.utils.SubstitutedVariables;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.InstanceHandle;
@@ -31,9 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.activation.MimetypesFileTypeMap;
-import javax.annotation.security.DenyAll;
-import javax.annotation.security.PermitAll;
-import javax.annotation.security.RolesAllowed;
 import javax.management.MBeanPermission;
 import javax.management.MBeanServerPermission;
 import javax.script.ScriptEngine;
@@ -53,9 +55,7 @@ import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Collection;
-import java.util.LinkedHashSet;
 import java.util.Objects;
-import java.util.Set;
 
 public class WebappManager {
 
@@ -158,25 +158,21 @@ public class WebappManager {
 		return service;
 	}
 
-	private SecurableServletInfo getStaticServlet(final String urlPath, final String path) {
+	private ServletInfo getStaticServlet(final String urlPath, final String path) {
 		if (path.contains(".") && !path.contains("/"))
-			return (SecurableServletInfo) SecurableServletInfo.servlet(
-					StaticResourceServlet.class.getName() + '@' + urlPath, StaticResourceServlet.class)
-					.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
-							'/' + StringUtils.replaceChars(path, '.', '/'))
-					.addMapping(urlPath);
+			return new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath,
+					StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
+					'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
 		else
-			return (SecurableServletInfo) SecurableServletInfo.servlet(
-					StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class)
-					.addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path)
+			return new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath,
+					StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path)
 					.addMapping(urlPath);
 	}
 
-	private SecurableServletInfo getDefaultFaviconServlet() {
-		return (SecurableServletInfo) SecurableServletInfo.servlet(
-				StaticResourceServlet.class.getName() + '@' + FAVICON_PATH, StaticResourceServlet.class)
-				.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM, "/com/qwazr/webapps/favicon.ico")
-				.addMapping(FAVICON_PATH);
+	private ServletInfo getDefaultFaviconServlet() {
+		return new ServletInfo(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH,
+				StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
+				"/com/qwazr/webapps/favicon.ico").addMapping(FAVICON_PATH);
 	}
 
 	private void registerController(final String urlPath, final String filePath, final GenericServer.Builder builder) {
@@ -194,12 +190,10 @@ public class WebappManager {
 
 	private void registerJavascriptServlet(final String urlPath, final String filePath,
 			final GenericServer.Builder builder) {
-		builder.servlet(
-				(SecurableServletInfo) SecurableServletInfo.servlet(JavascriptServlet.class.getName() + '@' + urlPath,
-						JavascriptServlet.class)
-						.addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath)
-						.addMapping(urlPath)
-						.setMultipartConfig(multipartConfigElement));
+		builder.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath,
+				JavascriptServlet.class).addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath)
+				.addMapping(urlPath)
+				.setMultipartConfig(multipartConfigElement));
 	}
 
 	private void registerJavaController(final String urlPath, final String classDef,
@@ -223,20 +217,14 @@ public class WebappManager {
 		throw new ServerException("This type of class is not supported: " + classDef + " / " + clazz.getName());
 	}
 
-	private boolean isSecurable(Class<?> clazz) {
-		return AnnotationsUtils.getFirstAnnotation(clazz, RolesAllowed.class) != null
-				|| AnnotationsUtils.getFirstAnnotation(clazz, PermitAll.class) != null
-				|| AnnotationsUtils.getFirstAnnotation(clazz, DenyAll.class) != null;
-	}
-
 	private void registerJavaServlet(final String urlPath, final Class<? extends Servlet> servletClass,
 			final GenericServer.Builder builder) throws NoSuchMethodException {
-		builder.servlet((SecurableServletInfo) SecurableServletInfo.servlet(servletClass.getName() + '@' + urlPath,
-				servletClass, new ServletFactory(servletClass))
-				.setSecure(isSecurable(servletClass))
+		final ServletInfo servletInfo = ServletInfoBuilder.servlet(null, servletClass)
 				.addMapping(urlPath)
 				.setMultipartConfig(multipartConfigElement)
-				.setLoadOnStartup(1));
+				.setLoadOnStartup(1);
+		servletInfo.setInstanceFactory(new ServletFactory(servletClass));
+		builder.servlet(servletInfo);
 	}
 
 	private ServletInfo addSwaggerContext(String urlPath, final ServletInfo servletInfo) {
@@ -251,14 +239,11 @@ public class WebappManager {
 
 	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,
 			final GenericServer.Builder builder) throws NoSuchMethodException {
-		final SecurableServletInfo servletInfo =
-				(SecurableServletInfo) SecurableServletInfo.servlet(ServletContainer.class.getName() + '@' + urlPath,
-						ServletContainer.class, new ServletFactory(ServletContainer.class))
-						.setSecure(isSecurable(appClass))
-						.addInitParam("javax.ws.rs.Application", appClass.getName())
-						.setAsyncSupported(true)
+		final ServletInfo servletInfo =
+				ServletInfoBuilder.jaxrs(ServletContainer.class.getName() + '@' + urlPath, appClass)
 						.addMapping(urlPath)
 						.setLoadOnStartup(1);
+		servletInfo.setInstanceFactory(new ServletFactory(ServletContainer.class));
 		addSwaggerContext(urlPath, servletInfo);
 		builder.servlet(servletInfo);
 	}
@@ -267,20 +252,13 @@ public class WebappManager {
 			final GenericServer.Builder builder) throws NoSuchMethodException, ClassNotFoundException {
 		final String[] classes = StringUtils.split(classList, " ,");
 		final String resources = BaseRestApplication.joinResources(classes);
-		final SecurableServletInfo servletInfo =
-				(SecurableServletInfo) SecurableServletInfo.servlet(ServletContainer.class.getName() + '@' + urlPath,
-						ServletContainer.class, new ServletFactory(ServletContainer.class))
-						.addInitParam("jersey.config.server.provider.classnames", resources)
-						.setAsyncSupported(true)
-						.addMapping(urlPath)
-						.setLoadOnStartup(1);
-		final Set<Class<?>> classSet = new LinkedHashSet<>();
-		for (String clazz : classes) {
-			Class<?> cl = classLoaderManager.findClass(clazz);
-			classSet.add(cl);
-			if (isSecurable(cl))
-				servletInfo.setSecure(true);
-		}
+		final ServletInfo servletInfo = ServletInfoBuilder.
+				servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class)
+				.addInitParam("jersey.config.server.provider.classnames", resources)
+				.setAsyncSupported(true)
+				.addMapping(urlPath)
+				.setLoadOnStartup(1);
+		servletInfo.setInstanceFactory(new ServletFactory(ServletContainer.class));
 		addSwaggerContext(urlPath, servletInfo);
 		builder.servlet(servletInfo);
 	}

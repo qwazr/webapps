@@ -39,6 +39,7 @@ public class TestServer {
 		FileUtils.copyDirectoryToDirectory(Paths.get("src", "test", "js").toFile(), dataDir);
 		FileUtils.copyDirectoryToDirectory(Paths.get("src", "test", "css").toFile(), dataDir);
 		FileUtils.copyDirectoryToDirectory(Paths.get("src", "test", "html").toFile(), dataDir);
+		System.setProperty("WEBAPP_AUTH", "BASIC");
 		System.setProperty("WEBAPP_REALM", "testRealm");
 		System.setProperty("QWAZR_ETC_DIR",
 				new File("src/test/resources/com/qwazr/webapps/test/etc").getAbsolutePath());
