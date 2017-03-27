@@ -50,7 +50,7 @@ public class WebappServer implements BaseServer {
 		classLoaderManager.registerContextAttribute(builder);
 		final LibraryManager libraryManager = new LibraryManager(classLoaderManager, null, configuration.dataDirectory,
 				configuration.getEtcFiles()).registerIdentityManager(builder).registerWebService(builder);
-		webappManager = new WebappManager(libraryManager, builder);
+		webappManager = new WebappManager(classLoaderManager, libraryManager, builder);
 		server = builder.build();
 	}
 

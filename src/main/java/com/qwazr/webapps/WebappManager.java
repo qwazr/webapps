@@ -1,5 +1,5 @@
 /**
- * Copyright 2014-2016 Emmanuel Keller / QWAZR
+ * Copyright 2015-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -17,6 +17,7 @@ package com.qwazr.webapps;
 
 import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
+import com.qwazr.server.ApplicationBuilder;
 import com.qwazr.server.GenericServer;
 import com.qwazr.server.InFileSessionPersistenceManager;
 import com.qwazr.server.ServerException;
@@ -27,9 +28,7 @@ import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.SubstitutedVariables;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.api.ServletInfo;
-import io.undertow.servlet.util.ConstructorInstanceFactory;
 import org.apache.commons.io.FilenameUtils;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.slf4j.Logger;
@@ -86,13 +85,13 @@ public class WebappManager {
 	final GlobalConfiguration globalConfiguration;
 	final ScriptEngine scriptEngine;
 
-	public WebappManager(final LibraryManager libraryManager, final GenericServer.Builder builder)
-			throws IOException, ServerException, ReflectiveOperationException {
+	public WebappManager(final ClassLoaderManager classLoaderManager, final LibraryManager libraryManager,
+			final GenericServer.Builder builder) throws IOException, ServerException, ReflectiveOperationException {
 		if (logger.isInfoEnabled())
 			logger.info("Loading Web application");
 
 		this.libraryManager = libraryManager;
-		this.classLoaderManager = libraryManager.getClassLoaderManager();
+		this.classLoaderManager = classLoaderManager;
 
 		final ServerConfiguration configuration = builder.getConfiguration();
 		final Collection<File> etcFiles = configuration.getEtcFiles();
@@ -217,13 +216,13 @@ public class WebappManager {
 		throw new ServerException("This type of class is not supported: " + classDef + " / " + clazz.getName());
 	}
 
-	private void registerJavaServlet(final String urlPath, final Class<? extends Servlet> servletClass,
+	private <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
 			final GenericServer.Builder builder) throws NoSuchMethodException {
 		final ServletInfo servletInfo = ServletInfoBuilder.servlet(null, servletClass)
 				.addMapping(urlPath)
 				.setMultipartConfig(multipartConfigElement)
 				.setLoadOnStartup(1);
-		servletInfo.setInstanceFactory(new ServletFactory(servletClass));
+		servletInfo.setInstanceFactory(new ServletLibraryFactory<>(libraryManager, servletClass));
 		builder.servlet(servletInfo);
 	}
 
@@ -243,38 +242,28 @@ public class WebappManager {
 				ServletInfoBuilder.jaxrs(ServletContainer.class.getName() + '@' + urlPath, appClass)
 						.addMapping(urlPath)
 						.setLoadOnStartup(1);
-		servletInfo.setInstanceFactory(new ServletFactory(ServletContainer.class));
 		addSwaggerContext(urlPath, servletInfo);
 		builder.servlet(servletInfo);
 	}
 
 	private void registerJavaJaxRsClassServlet(final String urlPath, final String classList,
-			final GenericServer.Builder builder) throws NoSuchMethodException, ClassNotFoundException {
+			final GenericServer.Builder builder) throws ReflectiveOperationException {
+		final ApplicationBuilder appBuilder = new ApplicationBuilder(urlPath);
 		final String[] classes = StringUtils.split(classList, " ,");
-		final String resources = BaseRestApplication.joinResources(classes);
-		final ServletInfo servletInfo = ServletInfoBuilder.
-				servlet(ServletContainer.class.getName() + '@' + urlPath, ServletContainer.class)
-				.addInitParam("jersey.config.server.provider.classnames", resources)
-				.setAsyncSupported(true)
-				.addMapping(urlPath)
-				.setLoadOnStartup(1);
-		servletInfo.setInstanceFactory(new ServletFactory(ServletContainer.class));
-		addSwaggerContext(urlPath, servletInfo);
-		builder.servlet(servletInfo);
+		for (String className : classes)
+			appBuilder.classes(classLoaderManager.findClass(className.trim()));
+		registerJaxRsResources(appBuilder, builder);
 	}
 
-	class ServletFactory<T extends Servlet> extends ConstructorInstanceFactory<T> {
-
-		ServletFactory(final Class<T> clazz) throws NoSuchMethodException {
-			super(clazz.getDeclaredConstructor());
-		}
-
-		@Override
-		public InstanceHandle<T> createInstance() throws InstantiationException {
-			final InstanceHandle<T> instance = super.createInstance();
-			libraryManager.inject(instance.getInstance());
-			return instance;
-		}
+	public void registerJaxRsResources(final ApplicationBuilder applicationBuilder, final GenericServer.Builder builder)
+			throws ReflectiveOperationException {
+		applicationBuilder.classes(BaseRestApplication.PROVIDERS_CLASSES);
+		final ServletInfo servletInfo = ServletInfoBuilder.
+				jaxrs(null, applicationBuilder);
+		final Collection<String> paths = applicationBuilder.getApplicationPaths();
+		if (paths != null && !paths.isEmpty())
+			addSwaggerContext(paths.iterator().next(), servletInfo);
+		builder.servlet(servletInfo);
 	}
 
 	public WebappDefinition getWebAppDefinition() throws IOException, URISyntaxException {
