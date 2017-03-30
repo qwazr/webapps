@@ -15,7 +15,6 @@
  **/
 package com.qwazr.webapps;
 
-import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.library.LibraryManager;
 import com.qwazr.server.ApplicationBuilder;
 import com.qwazr.server.GenericServer;
@@ -23,6 +22,7 @@ import com.qwazr.server.InFileSessionPersistenceManager;
 import com.qwazr.server.ServerException;
 import com.qwazr.server.ServletInfoBuilder;
 import com.qwazr.server.configuration.ServerConfiguration;
+import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.SubstitutedVariables;
@@ -80,18 +80,16 @@ public class WebappManager {
 	final WebappDefinition webappDefinition;
 
 	final LibraryManager libraryManager;
-	final ClassLoaderManager classLoaderManager;
 
 	final GlobalConfiguration globalConfiguration;
 	final ScriptEngine scriptEngine;
 
-	public WebappManager(final ClassLoaderManager classLoaderManager, final LibraryManager libraryManager,
-			final GenericServer.Builder builder) throws IOException, ServerException, ReflectiveOperationException {
+	public WebappManager(final LibraryManager libraryManager, final GenericServer.Builder builder)
+			throws IOException, ServerException, ReflectiveOperationException {
 		if (logger.isInfoEnabled())
 			logger.info("Loading Web application");
 
 		this.libraryManager = libraryManager;
-		this.classLoaderManager = classLoaderManager;
 
 		final ServerConfiguration configuration = builder.getConfiguration();
 		final Collection<File> etcFiles = configuration.getEtcFiles();
@@ -125,7 +123,7 @@ public class WebappManager {
 		// Load the listeners
 		if (webappDefinition.listeners != null)
 			for (String listenerClass : webappDefinition.listeners)
-				builder.listener(Servlets.listener(classLoaderManager.findClass(listenerClass)));
+				builder.listener(Servlets.listener(ClassLoaderUtils.findClass(listenerClass)));
 		builder.servletAccessLogger(accessLogger);
 
 		// Load the controllers
@@ -138,11 +136,11 @@ public class WebappManager {
 		// Load the filters
 		if (webappDefinition.filters != null)
 			FunctionUtils.forEach(webappDefinition.filters, (urlPath, filterClass) -> builder.filter(urlPath,
-					Servlets.filter(classLoaderManager.findClass(filterClass))));
+					Servlets.filter(ClassLoaderUtils.findClass(filterClass))));
 
 		// Load the identityManager provider if any
 		if (webappDefinition.identity_manager != null)
-			builder.identityManagerProvider((GenericServer.IdentityManagerProvider) classLoaderManager.findClass(
+			builder.identityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderUtils.findClass(
 					webappDefinition.identity_manager).newInstance());
 
 		// Set the default favicon
@@ -201,7 +199,7 @@ public class WebappManager {
 			registerJavaJaxRsClassServlet(urlPath, classDef, builder);
 			return;
 		}
-		final Class<?> clazz = classLoaderManager.findClass(classDef);
+		final Class<?> clazz = ClassLoaderUtils.findClass(classDef);
 		Objects.requireNonNull(clazz, "Class not found: " + classDef);
 		if (Servlet.class.isAssignableFrom(clazz)) {
 			registerJavaServlet(urlPath, (Class<? extends Servlet>) clazz, builder);
@@ -251,7 +249,7 @@ public class WebappManager {
 		final ApplicationBuilder appBuilder = new ApplicationBuilder(urlPath);
 		final String[] classes = StringUtils.split(classList, " ,");
 		for (String className : classes)
-			appBuilder.classes(classLoaderManager.findClass(className.trim()));
+			appBuilder.classes(ClassLoaderUtils.findClass(className.trim()));
 		registerJaxRsResources(appBuilder, builder);
 	}
 

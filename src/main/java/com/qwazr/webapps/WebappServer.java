@@ -1,5 +1,5 @@
 /**
- * Copyright 2015-2016 Emmanuel Keller / QWAZR
+ * Copyright 2015-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package com.qwazr.webapps;
 
-import com.qwazr.classloader.ClassLoaderManager;
 import com.qwazr.cluster.ClusterManager;
 import com.qwazr.library.LibraryManager;
 import com.qwazr.server.BaseServer;
@@ -39,18 +38,14 @@ public class WebappServer implements BaseServer {
 	private WebappServer(final ServerConfiguration configuration)
 			throws IOException, URISyntaxException, ReflectiveOperationException {
 		final ExecutorService executorService = Executors.newCachedThreadPool();
-		final ClassLoaderManager classLoaderManager =
-				new ClassLoaderManager(configuration.dataDirectory, Thread.currentThread());
 		final GenericServer.Builder builder =
-				GenericServer.of(configuration, executorService, classLoaderManager.getClassLoader())
-						.webService(WelcomeShutdownService.class);
+				GenericServer.of(configuration, executorService).webService(WelcomeShutdownService.class);
 		new ClusterManager(executorService, configuration).registerHttpClientMonitoringThread(builder)
 				.registerProtocolListener(builder)
 				.registerWebService(builder);
-		classLoaderManager.registerContextAttribute(builder);
-		final LibraryManager libraryManager = new LibraryManager(classLoaderManager, null, configuration.dataDirectory,
+		final LibraryManager libraryManager = new LibraryManager(null, configuration.dataDirectory,
 				configuration.getEtcFiles()).registerIdentityManager(builder).registerWebService(builder);
-		webappManager = new WebappManager(classLoaderManager, libraryManager, builder);
+		webappManager = new WebappManager(libraryManager, builder);
 		server = builder.build();
 	}
 
