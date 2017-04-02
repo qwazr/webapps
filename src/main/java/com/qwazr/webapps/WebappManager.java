@@ -135,7 +135,7 @@ public class WebappManager {
 
 		// Load the filters
 		if (webappDefinition.filters != null)
-			FunctionUtils.forEach(webappDefinition.filters, (urlPath, filterClass) -> builder.filter(urlPath,
+			FunctionUtils.forEachEx(webappDefinition.filters, (urlPath, filterClass) -> builder.filter(urlPath,
 					Servlets.filter(ClassLoaderUtils.findClass(filterClass))));
 
 		// Load the identityManager provider if any
