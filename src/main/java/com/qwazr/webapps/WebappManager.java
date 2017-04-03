@@ -216,7 +216,7 @@ public class WebappManager {
 
 	private <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
 			final GenericServer.Builder builder) throws NoSuchMethodException {
-		final ServletInfo servletInfo = ServletInfoBuilder.servlet(null, servletClass)
+		final ServletInfo servletInfo = ServletInfoBuilder.servlet(servletClass.getName() + '@' + urlPath, servletClass)
 				.addMapping(urlPath)
 				.setMultipartConfig(multipartConfigElement)
 				.setLoadOnStartup(1);

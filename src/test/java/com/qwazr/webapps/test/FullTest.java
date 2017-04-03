@@ -89,6 +89,13 @@ public class FullTest {
 	}
 
 	@Test
+	public void test102javaServletBis() throws IOException {
+		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/java-bis"), 200);
+		final String content = checkEntity(response, MIME_TEXT_HTML);
+		checkContains(content, TestServlet.TEST_STRING);
+	}
+
+	@Test
 	public void test150JaxRsAppJson() throws IOException {
 		final String pathParam = "sub-path-app-json";
 		final HttpResponse response =
