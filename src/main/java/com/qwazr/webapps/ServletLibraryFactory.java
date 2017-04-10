@@ -30,21 +30,25 @@ import java.util.Objects;
 class ServletLibraryFactory<T extends Servlet> implements ServletFactory<T> {
 
 	private final LibraryManager libraryManager;
-	private final ReflectiveUtils.InstanceFactory<T> instanceFactory;
+	private final Map<Class<?>, ?> parameterMap;
+	private final Class<T> clazz;
 
 	ServletLibraryFactory(final LibraryManager libraryManager, final Map<Class<?>, ?> parameterMap,
 			final Class<T> clazz) throws NoSuchMethodException {
-		instanceFactory = Objects.requireNonNull(ReflectiveUtils.findBestMatchingConstructor(parameterMap, clazz),
-				() -> "No matching constructor found for class: " + clazz);
 		this.libraryManager = libraryManager;
+		this.parameterMap = parameterMap;
+		this.clazz = clazz;
 	}
 
 	@Override
 	public InstanceHandle<T> createInstance() throws InstantiationException {
 		final T instance;
 		try {
+			final ReflectiveUtils.InstanceFactory<T> instanceFactory =
+					Objects.requireNonNull(ReflectiveUtils.findBestMatchingConstructor(parameterMap, clazz),
+							() -> "No matching constructor found for class: " + clazz);
 			instance = instanceFactory.newInstance();
-		} catch (IllegalAccessException | InvocationTargetException e) {
+		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 			throw new ServerException(e.getMessage(), e);
 		}
 		if (libraryManager != null)
