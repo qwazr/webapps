@@ -21,6 +21,7 @@ import com.qwazr.server.BaseServer;
 import com.qwazr.server.GenericServer;
 import com.qwazr.server.WelcomeShutdownService;
 import com.qwazr.server.configuration.ServerConfiguration;
+import com.qwazr.utils.FunctionUtils;
 
 import javax.management.MBeanException;
 import javax.management.OperationsException;
@@ -33,9 +34,10 @@ import java.util.concurrent.Executors;
 public class WebappServer implements BaseServer {
 
 	private final GenericServer server;
-	private final WebappManager webappManager;
+	private final WebappServiceInterface service;
 
-	private WebappServer(final ServerConfiguration configuration)
+	public WebappServer(final ServerConfiguration configuration,
+			FunctionUtils.BiConsumerEx<WebappManager, GenericServer.Builder, NoSuchMethodException> prebuild)
 			throws IOException, URISyntaxException, ReflectiveOperationException {
 		final ExecutorService executorService = Executors.newCachedThreadPool();
 		final GenericServer.Builder builder =
@@ -45,8 +47,11 @@ public class WebappServer implements BaseServer {
 				.registerWebService(builder);
 		final LibraryManager libraryManager = new LibraryManager(null, configuration.dataDirectory,
 				configuration.getEtcFiles()).registerIdentityManager(builder).registerWebService(builder);
-		webappManager = new WebappManager(libraryManager, builder);
+		final WebappManager webappManager = new WebappManager(libraryManager, builder);
+		if (prebuild != null)
+			prebuild.accept(webappManager, builder);
 		server = builder.build();
+		service = webappManager.getService();
 	}
 
 	@Override
@@ -60,12 +65,16 @@ public class WebappServer implements BaseServer {
 		return INSTANCE;
 	}
 
+	public WebappServiceInterface getService() {
+		return service;
+	}
+
 	public static synchronized void main(final String... args)
 			throws IOException, ReflectiveOperationException, OperationsException, ServletException, MBeanException,
 			URISyntaxException, InterruptedException {
 		if (INSTANCE != null)
 			shutdown();
-		INSTANCE = new WebappServer(new ServerConfiguration(args));
+		INSTANCE = new WebappServer(new ServerConfiguration(args), null);
 		INSTANCE.start();
 	}
 
@@ -75,7 +84,4 @@ public class WebappServer implements BaseServer {
 		INSTANCE = null;
 	}
 
-	public WebappServiceInterface getService() {
-		return webappManager == null ? null : webappManager.getService();
-	}
 }

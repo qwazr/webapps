@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Emmanuel Keller / QWAZR
+ * Copyright 2016-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,15 +18,14 @@ package com.qwazr.webapps.test;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.qwazr.utils.http.HttpRequest;
 import com.qwazr.utils.json.JsonMapper;
+import com.qwazr.webapps.WebappServer;
 import org.apache.http.Header;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.BasicCredentialsProvider;
-import org.apache.http.util.EntityUtils;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -38,17 +37,14 @@ import java.io.IOException;
 import java.net.URISyntaxException;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
-public class FullTest {
-
-	private final static String MIME_TEXT_HTML = "text/html";
-	private final static String MIME_TEXT_CSS = "text/css";
-	private final static String MIME_IMAGE_X_PNG = "image/x-png";
-	private final static String MIME_FAVICON = "image/vnd.microsoft.icon";
+public class FullTest implements TestChecker {
 
 	@Test
 	public void test000StartServer() throws Exception {
 		TestServer.startServer();
-		Assert.assertNotNull(TestServer.service);
+		Assert.assertNotNull(WebappServer.getInstance());
+		Assert.assertNotNull(WebappServer.getInstance().getServer());
+		Assert.assertNotNull(WebappServer.getInstance().getService());
 	}
 
 	@Test
@@ -56,29 +52,6 @@ public class FullTest {
 		Assert.assertEquals(1, TestListener.initializedListeners.size());
 		TestListener listener = TestListener.initializedListeners.iterator().next();
 		Assert.assertEquals(TestListener.class, listener.getClass());
-	}
-
-	private CloseableHttpResponse checkResponse(HttpRequest request, int expectedStatusCode) throws IOException {
-		return checkResponse(request.execute(), expectedStatusCode);
-	}
-
-	private CloseableHttpResponse checkResponse(CloseableHttpResponse response, int expectedStatusCode)
-			throws IOException {
-		Assert.assertNotNull(response);
-		Assert.assertEquals(expectedStatusCode, response.getStatusLine().getStatusCode());
-		return response;
-	}
-
-	private String checkEntity(HttpResponse response, String contentType) throws IOException {
-		final HttpEntity entity = response.getEntity();
-		Assert.assertNotNull(entity);
-		Assert.assertTrue(entity.getContentType().getValue().startsWith(contentType));
-		return EntityUtils.toString(entity);
-	}
-
-	private void checkContains(String content, String... patterns) {
-		for (String pattern : patterns)
-			Assert.assertTrue(content.contains(pattern));
 	}
 
 	@Test

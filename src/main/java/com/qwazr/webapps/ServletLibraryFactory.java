@@ -16,25 +16,40 @@
 package com.qwazr.webapps;
 
 import com.qwazr.library.LibraryManager;
+import com.qwazr.server.ServerException;
+import com.qwazr.server.ServletFactory;
+import com.qwazr.utils.ReflectiveUtils;
 import io.undertow.servlet.api.InstanceHandle;
-import io.undertow.servlet.util.ConstructorInstanceFactory;
+import io.undertow.servlet.util.ImmediateInstanceHandle;
 
 import javax.servlet.Servlet;
+import java.lang.reflect.InvocationTargetException;
+import java.util.Map;
+import java.util.Objects;
 
-class ServletLibraryFactory<T extends Servlet> extends ConstructorInstanceFactory<T> {
+class ServletLibraryFactory<T extends Servlet> implements ServletFactory<T> {
 
 	private final LibraryManager libraryManager;
+	private final ReflectiveUtils.InstanceFactory<T> instanceFactory;
 
-	ServletLibraryFactory(final LibraryManager libraryManager, final Class<T> clazz) throws NoSuchMethodException {
-		super(clazz.getDeclaredConstructor());
+	ServletLibraryFactory(final LibraryManager libraryManager, final Map<Class<?>, ?> parameterMap,
+			final Class<T> clazz) throws NoSuchMethodException {
+		instanceFactory = Objects.requireNonNull(ReflectiveUtils.findBestMatchingConstructor(parameterMap, clazz),
+				() -> "No matching constructor found for class: " + clazz);
 		this.libraryManager = libraryManager;
 	}
 
 	@Override
 	public InstanceHandle<T> createInstance() throws InstantiationException {
-		final InstanceHandle<T> instanceHandle = super.createInstance();
+		final T instance;
+		try {
+			instance = instanceFactory.newInstance();
+		} catch (IllegalAccessException | InvocationTargetException e) {
+			throw new ServerException(e.getMessage(), e);
+		}
 		if (libraryManager != null)
-			libraryManager.inject(instanceHandle.getInstance());
-		return instanceHandle;
+			libraryManager.inject(instance);
+		return new ImmediateInstanceHandle<>(instance);
 	}
+
 }

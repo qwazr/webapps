@@ -54,6 +54,8 @@ import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Collection;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.Objects;
 
 public class WebappManager {
@@ -81,6 +83,8 @@ public class WebappManager {
 
 	final LibraryManager libraryManager;
 
+	private final Map<Class<?>, Object> servletContructorParameters;
+
 	final GlobalConfiguration globalConfiguration;
 	final ScriptEngine scriptEngine;
 
@@ -90,6 +94,7 @@ public class WebappManager {
 			logger.info("Loading Web application");
 
 		this.libraryManager = libraryManager;
+		servletContructorParameters = new HashMap<>();
 
 		final ServerConfiguration configuration = builder.getConfiguration();
 		final Collection<File> etcFiles = configuration.getEtcFiles();
@@ -214,14 +219,18 @@ public class WebappManager {
 		throw new ServerException("This type of class is not supported: " + classDef + " / " + clazz.getName());
 	}
 
-	private <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
+	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
 			final GenericServer.Builder builder) throws NoSuchMethodException {
-		final ServletInfo servletInfo = ServletInfoBuilder.servlet(servletClass.getName() + '@' + urlPath, servletClass)
+		final ServletInfo servletInfo = ServletInfoBuilder.servlet(servletClass.getName() + '@' + urlPath, servletClass,
+				new ServletLibraryFactory<>(libraryManager, servletContructorParameters, servletClass))
 				.addMapping(urlPath)
 				.setMultipartConfig(multipartConfigElement)
 				.setLoadOnStartup(1);
-		servletInfo.setInstanceFactory(new ServletLibraryFactory<>(libraryManager, servletClass));
 		builder.servlet(servletInfo);
+	}
+
+	public void registerContructorParameter(final Object object) {
+		servletContructorParameters.put(object.getClass(), object);
 	}
 
 	private ServletInfo addSwaggerContext(String urlPath, final ServletInfo servletInfo) {
