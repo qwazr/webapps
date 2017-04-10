@@ -20,6 +20,7 @@ import com.qwazr.server.ApplicationBuilder;
 import com.qwazr.server.GenericServer;
 import com.qwazr.server.InFileSessionPersistenceManager;
 import com.qwazr.server.ServerException;
+import com.qwazr.server.ServletFactory;
 import com.qwazr.server.ServletInfoBuilder;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.ClassLoaderUtils;
@@ -54,8 +55,8 @@ import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Collection;
-import java.util.Map;
 import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public class WebappManager {
@@ -220,13 +221,29 @@ public class WebappManager {
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
-			final GenericServer.Builder builder) throws NoSuchMethodException {
+			final ServletFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
 		final ServletInfo servletInfo = ServletInfoBuilder.servlet(servletClass.getName() + '@' + urlPath, servletClass,
-				new ServletLibraryFactory<>(libraryManager, servletContructorParameters, servletClass))
-				.addMapping(urlPath)
-				.setMultipartConfig(multipartConfigElement)
-				.setLoadOnStartup(1);
+				servletFactory == null ?
+						new ServletLibraryFactory<>(libraryManager, servletContructorParameters, servletClass) :
+						servletFactory).setMultipartConfig(multipartConfigElement).setLoadOnStartup(1);
+		if (urlPath != null)
+			servletInfo.addMapping(urlPath);
 		builder.servlet(servletInfo);
+	}
+
+	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
+			final GenericServer.Builder builder) throws NoSuchMethodException {
+		registerJavaServlet(urlPath, servletClass, null, builder);
+	}
+
+	public <T extends Servlet> void registerJavaServlet(final Class<T> servletClass,
+			final ServletFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
+		registerJavaServlet(null, servletClass, servletFactory, builder);
+	}
+
+	public <T extends Servlet> void registerJavaServlet(final Class<T> servletClass,
+			final GenericServer.Builder builder) throws NoSuchMethodException {
+		registerJavaServlet(servletClass, null, builder);
 	}
 
 	public void registerContructorParameter(final Object object) {

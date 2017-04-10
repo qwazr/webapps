@@ -26,6 +26,7 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.protocol.HttpClientContext;
 import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
@@ -268,5 +269,10 @@ public class FullTest implements TestChecker {
 		Assert.assertEquals(TestFilter.class, TestFilter.initializedFilters.iterator().next().getClass());
 		Assert.assertEquals(1, TestFilter.calledFilters.size());
 		Assert.assertEquals(TestFilter.class, TestFilter.calledFilters.iterator().next().getClass());
+	}
+
+	@AfterClass
+	public static void stopServer() {
+		WebappServer.shutdown();
 	}
 }

@@ -28,6 +28,7 @@ import org.junit.Test;
 import javax.management.MBeanException;
 import javax.management.OperationsException;
 import javax.servlet.ServletException;
+import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -35,7 +36,7 @@ import javax.ws.rs.core.MediaType;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
-public class ServletConstructorParameterTest implements TestChecker {
+public class ServletTest implements TestChecker {
 
 	public static WebappServer server;
 	public static String randomString;
@@ -53,15 +54,23 @@ public class ServletConstructorParameterTest implements TestChecker {
 				.build(), (webapp, builder) -> {
 			webapp.registerContructorParameter(randomString);
 			webapp.registerJavaServlet("/", TestServletConstructorParameter.class, builder);
+			webapp.registerJavaServlet(TestServletAnnotation.class, builder);
 		});
 		server.start();
 	}
 
 	@Test
-	public void doTest() throws IOException {
+	public void testConstructorParameter() throws IOException {
 		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/"), 200);
 		final String content = checkEntity(response, MIME_TEXT_HTML);
-		checkContains(content, randomString);
+		checkContains(content, randomString + "CONSTRUCTOR");
+	}
+
+	@Test
+	public void testAnnotatedServlet() throws IOException {
+		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/test"), 200);
+		final String content = checkEntity(response, MIME_TEXT_HTML);
+		checkContains(content, randomString + "ANNOTATION");
 	}
 
 	@AfterClass
@@ -79,7 +88,23 @@ public class ServletConstructorParameterTest implements TestChecker {
 
 		protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
 			resp.setContentType(MediaType.TEXT_HTML);
-			resp.getWriter().write("<html><body>" + testString + "</body></html>");
+			resp.getWriter().write("<html><body>" + testString + "CONSTRUCTOR</body></html>");
+		}
+
+	}
+
+	@WebServlet("/test")
+	public static class TestServletAnnotation extends HttpServlet {
+
+		public final String testString;
+
+		public TestServletAnnotation(String testString) {
+			this.testString = testString;
+		}
+
+		protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException {
+			resp.setContentType(MediaType.TEXT_HTML);
+			resp.getWriter().write("<html><body>" + testString + "ANNOTATION</body></html>");
 		}
 
 	}
