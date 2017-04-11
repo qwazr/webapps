@@ -246,8 +246,12 @@ public class WebappManager {
 		registerJavaServlet(servletClass, null, builder);
 	}
 
-	public void registerContructorParameter(final Object object) {
-		servletContructorParameters.put(object.getClass(), object);
+	public <T> void registerContructorParameter(final T object) {
+		registerContructorParameter((Class<T>) object, object);
+	}
+
+	public <T> void registerContructorParameter(final Class<T> objectClass, final T object) {
+		servletContructorParameters.put(objectClass, object);
 	}
 
 	private ServletInfo addSwaggerContext(String urlPath, final ServletInfo servletInfo) {
