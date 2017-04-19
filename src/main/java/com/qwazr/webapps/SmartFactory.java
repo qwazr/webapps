@@ -16,32 +16,27 @@
 package com.qwazr.webapps;
 
 import com.qwazr.library.LibraryManager;
+import com.qwazr.server.GenericFactory;
 import com.qwazr.server.ServerException;
-import com.qwazr.server.ServletFactory;
 import com.qwazr.utils.ReflectiveUtils;
-import io.undertow.servlet.api.InstanceHandle;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 
-import javax.servlet.Servlet;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Map;
 import java.util.Objects;
 
-class ServletLibraryFactory<T extends Servlet> implements ServletFactory<T> {
+class SmartFactory<T> implements GenericFactory<T> {
 
-	private final LibraryManager libraryManager;
 	private final Map<Class<?>, ?> parameterMap;
 	private final Class<T> clazz;
 
-	ServletLibraryFactory(final LibraryManager libraryManager, final Map<Class<?>, ?> parameterMap,
-			final Class<T> clazz) throws NoSuchMethodException {
-		this.libraryManager = libraryManager;
+	private SmartFactory(final Map<Class<?>, ?> parameterMap, final Class<T> clazz) throws NoSuchMethodException {
 		this.parameterMap = parameterMap;
 		this.clazz = clazz;
 	}
 
 	@Override
-	public InstanceHandle<T> createInstance() throws InstantiationException {
+	public ImmediateInstanceHandle<T> createInstance() throws InstantiationException {
 		final T instance;
 		try {
 			final ReflectiveUtils.InstanceFactory<T> instanceFactory =
@@ -51,9 +46,31 @@ class ServletLibraryFactory<T extends Servlet> implements ServletFactory<T> {
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
 			throw new ServerException(e.getMessage(), e);
 		}
-		if (libraryManager != null)
-			libraryManager.inject(instance);
 		return new ImmediateInstanceHandle<>(instance);
 	}
 
+	final static class WithLibrary<T> extends SmartFactory<T> {
+
+		private final LibraryManager libraryManager;
+
+		private WithLibrary(final LibraryManager libraryManager, final Map<Class<?>, ?> parameterMap,
+				final Class<T> clazz) throws NoSuchMethodException {
+			super(parameterMap, clazz);
+			this.libraryManager = libraryManager;
+		}
+
+		@Override
+		public ImmediateInstanceHandle<T> createInstance() throws InstantiationException {
+			final ImmediateInstanceHandle<T> result = super.createInstance();
+			libraryManager.inject(result.getInstance());
+			return result;
+		}
+	}
+
+	static <T> SmartFactory<T> from(final LibraryManager libraryManager, final Map<Class<?>, ?> parameterMap,
+			final Class<T> clazz) throws NoSuchMethodException {
+		return libraryManager == null ?
+				new SmartFactory<>(parameterMap, clazz) :
+				new WithLibrary<>(libraryManager, parameterMap, clazz);
+	}
 }

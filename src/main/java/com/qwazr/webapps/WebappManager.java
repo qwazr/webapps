@@ -17,10 +17,10 @@ package com.qwazr.webapps;
 
 import com.qwazr.library.LibraryManager;
 import com.qwazr.server.ApplicationBuilder;
+import com.qwazr.server.GenericFactory;
 import com.qwazr.server.GenericServer;
 import com.qwazr.server.InFileSessionPersistenceManager;
 import com.qwazr.server.ServerException;
-import com.qwazr.server.ServletFactory;
 import com.qwazr.server.ServletInfoBuilder;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.ClassLoaderUtils;
@@ -29,6 +29,7 @@ import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.SubstitutedVariables;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ServletInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -40,6 +41,7 @@ import javax.management.MBeanPermission;
 import javax.management.MBeanServerPermission;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import javax.servlet.Filter;
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.ws.rs.Path;
@@ -136,8 +138,13 @@ public class WebappManager {
 		if (webappDefinition.controllers != null)
 			webappDefinition.controllers.forEach((urlPath, filePath) -> registerController(urlPath, filePath, builder));
 
-		// Load the closable filter
-		builder.filter("/*", Servlets.filter(CloseableFilter.class));
+		// Load the filters
+		if (webappDefinition.filters != null)
+			FunctionUtils.forEachEx(webappDefinition.filters,
+					(urlPath, filterClass) -> registerJavaFilter(urlPath, ClassLoaderUtils.findClass(filterClass),
+							builder));
+		// Load the closeable filter
+		registerJavaFilter("/*", CloseableFilter.class, builder);
 
 		// Load the filters
 		if (webappDefinition.filters != null)
@@ -221,10 +228,10 @@ public class WebappManager {
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
-			final ServletFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
+			final GenericFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
 		final ServletInfo servletInfo = ServletInfoBuilder.servlet(servletClass.getName() + '@' + urlPath, servletClass,
 				servletFactory == null ?
-						new ServletLibraryFactory<>(libraryManager, servletContructorParameters, servletClass) :
+						SmartFactory.from(libraryManager, servletContructorParameters, servletClass) :
 						servletFactory).setMultipartConfig(multipartConfigElement).setLoadOnStartup(1);
 		if (urlPath != null)
 			servletInfo.addMapping(urlPath);
@@ -237,13 +244,27 @@ public class WebappManager {
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final Class<T> servletClass,
-			final ServletFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
+			final GenericFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
 		registerJavaServlet(null, servletClass, servletFactory, builder);
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final Class<T> servletClass,
 			final GenericServer.Builder builder) throws NoSuchMethodException {
 		registerJavaServlet(servletClass, null, builder);
+	}
+
+	public <T extends Filter> void registerJavaFilter(final String urlPath, final Class<T> filterClass,
+			final GenericFactory<T> filterFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
+		final FilterInfo filterInfo = Servlets.filter(filterClass.getName() + '@' + urlPath, filterClass,
+				filterFactory == null ?
+						SmartFactory.from(libraryManager, servletContructorParameters, filterClass) :
+						filterFactory);
+		builder.filter(urlPath, filterInfo);
+	}
+
+	public <T extends Filter> void registerJavaFilter(final String urlPath, final Class<T> filterClass,
+			final GenericServer.Builder builder) throws NoSuchMethodException {
+		registerJavaFilter(urlPath, filterClass, null, builder);
 	}
 
 	public void registerContructorParameter(final Object object) {

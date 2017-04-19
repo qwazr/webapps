@@ -31,6 +31,7 @@ import java.security.Principal;
 /**
  * Example of JAX-RS
  */
+
 public class TestJaxRsResources {
 
 	public final static String TEST_STRING = "JAX_RS_TEST_STRING";
