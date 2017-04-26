@@ -27,6 +27,7 @@ import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.SubstitutedVariables;
+import com.qwazr.utils.reflection.ConstructorParametersImpl;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.FilterInfo;
@@ -57,11 +58,10 @@ import java.security.Permissions;
 import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Objects;
+import java.util.concurrent.ConcurrentHashMap;
 
-public class WebappManager {
+public class WebappManager extends ConstructorParametersImpl {
 
 	public final static String SERVICE_NAME_WEBAPPS = "webapps";
 
@@ -86,18 +86,16 @@ public class WebappManager {
 
 	final LibraryManager libraryManager;
 
-	private final Map<Class<?>, Object> servletContructorParameters;
-
 	final GlobalConfiguration globalConfiguration;
 	final ScriptEngine scriptEngine;
 
 	public WebappManager(final LibraryManager libraryManager, final GenericServer.Builder builder)
 			throws IOException, ServerException, ReflectiveOperationException {
+		super(new ConcurrentHashMap<>());
 		if (logger.isInfoEnabled())
 			logger.info("Loading Web application");
 
 		this.libraryManager = libraryManager;
-		servletContructorParameters = new HashMap<>();
 
 		final ServerConfiguration configuration = builder.getConfiguration();
 		final Collection<File> etcFiles = configuration.getEtcFiles();
@@ -230,9 +228,9 @@ public class WebappManager {
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
 			final GenericFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
 		final ServletInfo servletInfo = ServletInfoBuilder.servlet(servletClass.getName() + '@' + urlPath, servletClass,
-				servletFactory == null ?
-						SmartFactory.from(libraryManager, servletContructorParameters, servletClass) :
-						servletFactory).setMultipartConfig(multipartConfigElement).setLoadOnStartup(1);
+				servletFactory == null ? SmartFactory.from(libraryManager, this, servletClass) : servletFactory)
+				.setMultipartConfig(multipartConfigElement)
+				.setLoadOnStartup(1);
 		if (urlPath != null)
 			servletInfo.addMapping(urlPath);
 		builder.servlet(servletInfo);
@@ -256,23 +254,13 @@ public class WebappManager {
 	public <T extends Filter> void registerJavaFilter(final String urlPath, final Class<T> filterClass,
 			final GenericFactory<T> filterFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
 		final FilterInfo filterInfo = Servlets.filter(filterClass.getName() + '@' + urlPath, filterClass,
-				filterFactory == null ?
-						SmartFactory.from(libraryManager, servletContructorParameters, filterClass) :
-						filterFactory);
+				filterFactory == null ? SmartFactory.from(libraryManager, this, filterClass) : filterFactory);
 		builder.filter(urlPath, filterInfo);
 	}
 
 	public <T extends Filter> void registerJavaFilter(final String urlPath, final Class<T> filterClass,
 			final GenericServer.Builder builder) throws NoSuchMethodException {
 		registerJavaFilter(urlPath, filterClass, null, builder);
-	}
-
-	public void registerContructorParameter(final Object object) {
-		registerContructorParameter(object.getClass(), object);
-	}
-
-	public <T> void registerContructorParameter(final Class<? extends T> objectClass, final T object) {
-		servletContructorParameters.put(objectClass, object);
 	}
 
 	private ServletInfo addSwaggerContext(String urlPath, final ServletInfo servletInfo) {

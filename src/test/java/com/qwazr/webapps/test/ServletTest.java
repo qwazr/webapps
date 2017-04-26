@@ -52,7 +52,7 @@ public class ServletTest implements TestChecker {
 				.listenAddress("localhost")
 				.etcFilter("*.json")
 				.build(), (webapp, builder) -> {
-			webapp.registerContructorParameter(randomString);
+			webapp.registerConstructorParameter(randomString);
 			webapp.registerJavaServlet("/", TestServletConstructorParameter.class, builder);
 			webapp.registerJavaServlet(TestServletAnnotation.class, builder);
 		});

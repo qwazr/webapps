@@ -18,20 +18,21 @@ package com.qwazr.webapps;
 import com.qwazr.library.LibraryManager;
 import com.qwazr.server.GenericFactory;
 import com.qwazr.server.ServerException;
-import com.qwazr.utils.ReflectiveUtils;
+import com.qwazr.utils.reflection.ConstructorParametersImpl;
+import com.qwazr.utils.reflection.InstanceFactory;
 import io.undertow.servlet.util.ImmediateInstanceHandle;
 
 import java.lang.reflect.InvocationTargetException;
-import java.util.Map;
 import java.util.Objects;
 
 class SmartFactory<T> implements GenericFactory<T> {
 
-	private final Map<Class<?>, ?> parameterMap;
+	private final ConstructorParametersImpl constructorParameters;
 	private final Class<T> clazz;
 
-	private SmartFactory(final Map<Class<?>, ?> parameterMap, final Class<T> clazz) throws NoSuchMethodException {
-		this.parameterMap = parameterMap;
+	private SmartFactory(final ConstructorParametersImpl constructorParameters, final Class<T> clazz)
+			throws NoSuchMethodException {
+		this.constructorParameters = constructorParameters;
 		this.clazz = clazz;
 	}
 
@@ -39,8 +40,8 @@ class SmartFactory<T> implements GenericFactory<T> {
 	public ImmediateInstanceHandle<T> createInstance() throws InstantiationException {
 		final T instance;
 		try {
-			final ReflectiveUtils.InstanceFactory<T> instanceFactory =
-					Objects.requireNonNull(ReflectiveUtils.findBestMatchingConstructor(parameterMap, clazz),
+			final InstanceFactory<T> instanceFactory =
+					Objects.requireNonNull(constructorParameters.findBestMatchingConstructor(clazz),
 							() -> "No matching constructor found for class: " + clazz);
 			instance = instanceFactory.newInstance();
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
@@ -53,9 +54,9 @@ class SmartFactory<T> implements GenericFactory<T> {
 
 		private final LibraryManager libraryManager;
 
-		private WithLibrary(final LibraryManager libraryManager, final Map<Class<?>, ?> parameterMap,
+		private WithLibrary(final LibraryManager libraryManager, final ConstructorParametersImpl constructorParameters,
 				final Class<T> clazz) throws NoSuchMethodException {
-			super(parameterMap, clazz);
+			super(constructorParameters, clazz);
 			this.libraryManager = libraryManager;
 		}
 
@@ -67,10 +68,10 @@ class SmartFactory<T> implements GenericFactory<T> {
 		}
 	}
 
-	static <T> SmartFactory<T> from(final LibraryManager libraryManager, final Map<Class<?>, ?> parameterMap,
-			final Class<T> clazz) throws NoSuchMethodException {
+	static <T> SmartFactory<T> from(final LibraryManager libraryManager,
+			final ConstructorParametersImpl constructorParameters, final Class<T> clazz) throws NoSuchMethodException {
 		return libraryManager == null ?
-				new SmartFactory<>(parameterMap, clazz) :
-				new WithLibrary<>(libraryManager, parameterMap, clazz);
+				new SmartFactory<>(constructorParameters, clazz) :
+				new WithLibrary<>(libraryManager, constructorParameters, clazz);
 	}
 }
