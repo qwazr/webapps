@@ -45,8 +45,9 @@ public class WebappServer implements BaseServer {
 		new ClusterManager(executorService, configuration).registerHttpClientMonitoringThread(builder)
 				.registerProtocolListener(builder)
 				.registerWebService(builder);
-		final LibraryManager libraryManager = new LibraryManager(null, configuration.dataDirectory,
-				configuration.getEtcFiles()).registerIdentityManager(builder).registerWebService(builder);
+		final LibraryManager libraryManager =
+				new LibraryManager(configuration.dataDirectory, configuration.getEtcFiles()).registerIdentityManager(
+						builder).registerWebService(builder);
 		final WebappManager webappManager = new WebappManager(libraryManager, builder);
 		if (prebuild != null)
 			prebuild.accept(webappManager, builder);

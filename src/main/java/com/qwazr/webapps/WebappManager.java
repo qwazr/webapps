@@ -138,16 +138,21 @@ public class WebappManager extends ConstructorParametersImpl {
 
 		// Load the filters
 		if (webappDefinition.filters != null)
-			FunctionUtils.forEachEx(webappDefinition.filters,
-					(urlPath, filterClass) -> registerJavaFilter(urlPath, ClassLoaderUtils.findClass(filterClass),
-							builder));
+			FunctionUtils.forEachEx(webappDefinition.filters, (urlPath, filterClass) -> registerJavaFilter(urlPath,
+																										   ClassLoaderUtils
+																												   .findClass(
+																														   filterClass),
+																										   builder));
 		// Load the closeable filter
 		registerJavaFilter("/*", CloseableFilter.class, builder);
 
 		// Load the filters
 		if (webappDefinition.filters != null)
 			FunctionUtils.forEachEx(webappDefinition.filters, (urlPath, filterClass) -> builder.filter(urlPath,
-					Servlets.filter(ClassLoaderUtils.findClass(filterClass))));
+																									   Servlets.filter(
+																											   ClassLoaderUtils
+																													   .findClass(
+																															   filterClass))));
 
 		// Load the identityManager provider if any
 		if (webappDefinition.identity_manager != null)
@@ -169,18 +174,20 @@ public class WebappManager extends ConstructorParametersImpl {
 	private ServletInfo getStaticServlet(final String urlPath, final String path) {
 		if (path.contains(".") && !path.contains("/"))
 			return new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath,
-					StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
-					'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
+								   StaticResourceServlet.class).addInitParam(
+					StaticResourceServlet.STATIC_RESOURCE_PARAM, '/' + StringUtils.replaceChars(path, '.', '/'))
+					.addMapping(urlPath);
 		else
 			return new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath,
-					StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path)
+								   StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path)
 					.addMapping(urlPath);
 	}
 
 	private ServletInfo getDefaultFaviconServlet() {
 		return new ServletInfo(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH,
-				StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
-				"/com/qwazr/webapps/favicon.ico").addMapping(FAVICON_PATH);
+							   StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
+																		 "/com/qwazr/webapps/favicon.ico")
+				.addMapping(FAVICON_PATH);
 	}
 
 	private void registerController(final String urlPath, final String filePath, final GenericServer.Builder builder) {
@@ -188,7 +195,7 @@ public class WebappManager extends ConstructorParametersImpl {
 			String ext = FilenameUtils.getExtension(filePath).toLowerCase();
 			if ("js".equals(ext))
 				registerJavascriptServlet(urlPath, SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath),
-						builder);
+										  builder);
 			else
 				registerJavaController(urlPath, filePath, builder);
 		} catch (ReflectiveOperationException e) {
@@ -199,9 +206,10 @@ public class WebappManager extends ConstructorParametersImpl {
 	private void registerJavascriptServlet(final String urlPath, final String filePath,
 			final GenericServer.Builder builder) {
 		builder.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath,
-				JavascriptServlet.class).addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath)
-				.addMapping(urlPath)
-				.setMultipartConfig(multipartConfigElement));
+										JavascriptServlet.class).addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM,
+																			  filePath)
+								.addMapping(urlPath)
+								.setMultipartConfig(multipartConfigElement));
 	}
 
 	private void registerJavaController(final String urlPath, final String classDef,
@@ -228,7 +236,10 @@ public class WebappManager extends ConstructorParametersImpl {
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
 			final GenericFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
 		final ServletInfo servletInfo = ServletInfoBuilder.servlet(servletClass.getName() + '@' + urlPath, servletClass,
-				servletFactory == null ? SmartFactory.from(libraryManager, this, servletClass) : servletFactory)
+																   servletFactory == null ?
+																		   SmartFactory.from(libraryManager, this,
+																							 servletClass) :
+																		   servletFactory)
 				.setMultipartConfig(multipartConfigElement)
 				.setLoadOnStartup(1);
 		if (urlPath != null)
@@ -254,7 +265,9 @@ public class WebappManager extends ConstructorParametersImpl {
 	public <T extends Filter> void registerJavaFilter(final String urlPath, final Class<T> filterClass,
 			final GenericFactory<T> filterFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
 		final FilterInfo filterInfo = Servlets.filter(filterClass.getName() + '@' + urlPath, filterClass,
-				filterFactory == null ? SmartFactory.from(libraryManager, this, filterClass) : filterFactory);
+													  filterFactory == null ?
+															  SmartFactory.from(libraryManager, this, filterClass) :
+															  filterFactory);
 		builder.filter(urlPath, filterInfo);
 	}
 
