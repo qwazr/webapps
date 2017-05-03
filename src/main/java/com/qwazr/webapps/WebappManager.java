@@ -30,7 +30,6 @@ import com.qwazr.utils.SubstitutedVariables;
 import com.qwazr.utils.reflection.ConstructorParametersImpl;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
-import io.undertow.servlet.api.FilterInfo;
 import io.undertow.servlet.api.ServletInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -42,8 +41,8 @@ import javax.management.MBeanPermission;
 import javax.management.MBeanServerPermission;
 import javax.script.ScriptEngine;
 import javax.script.ScriptEngineManager;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
-import javax.servlet.MultipartConfigElement;
 import javax.servlet.Servlet;
 import javax.ws.rs.Path;
 import javax.ws.rs.core.Application;
@@ -66,10 +65,6 @@ public class WebappManager extends ConstructorParametersImpl {
 	public final static String SERVICE_NAME_WEBAPPS = "webapps";
 
 	public final static String SESSIONS_PERSISTENCE_DIR = "webapp-sessions";
-
-	//TODO Parameters for fileupload limitation
-	private final static MultipartConfigElement multipartConfigElement =
-			new MultipartConfigElement(System.getProperty("java.io.tmpdir"));
 
 	private static final Logger logger = LoggerFactory.getLogger(WebappManager.class);
 
@@ -138,26 +133,24 @@ public class WebappManager extends ConstructorParametersImpl {
 
 		// Load the filters
 		if (webappDefinition.filters != null)
-			FunctionUtils.forEachEx(webappDefinition.filters, (urlPath, filterClass) -> registerJavaFilter(urlPath,
-																										   ClassLoaderUtils
-																												   .findClass(
-																														   filterClass),
-																										   builder));
+			FunctionUtils.forEachEx(webappDefinition.filters,
+					(urlPath, filterClass) -> registerJavaFilter(urlPath, ClassLoaderUtils.findClass(filterClass),
+							builder));
 		// Load the closeable filter
 		registerJavaFilter("/*", CloseableFilter.class, builder);
 
 		// Load the filters
 		if (webappDefinition.filters != null)
-			FunctionUtils.forEachEx(webappDefinition.filters, (urlPath, filterClass) -> builder.filter(urlPath,
-																									   Servlets.filter(
-																											   ClassLoaderUtils
-																													   .findClass(
-																															   filterClass))));
+			FunctionUtils.forEachEx(webappDefinition.filters, (urlPath, filterClass) -> {
+				final String name = filterClass + "@" + urlPath;
+				builder.filter(name, ClassLoaderUtils.findClass(filterClass));
+				builder.urlFilterMapping(name, urlPath, DispatcherType.REQUEST);
+			});
 
 		// Load the identityManager provider if any
 		if (webappDefinition.identity_manager != null)
-			builder.identityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderUtils.findClass(
-					webappDefinition.identity_manager).newInstance());
+			builder.identityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderUtils
+					.findClass(webappDefinition.identity_manager).newInstance());
 
 		// Set the default favicon
 		builder.servlet(getDefaultFaviconServlet());
@@ -173,20 +166,17 @@ public class WebappManager extends ConstructorParametersImpl {
 
 	private ServletInfo getStaticServlet(final String urlPath, final String path) {
 		if (path.contains(".") && !path.contains("/"))
-			return new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath,
-								   StaticResourceServlet.class).addInitParam(
-					StaticResourceServlet.STATIC_RESOURCE_PARAM, '/' + StringUtils.replaceChars(path, '.', '/'))
-					.addMapping(urlPath);
+			return new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath, StaticResourceServlet.class)
+					.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
+							'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
 		else
-			return new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath,
-								   StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path)
-					.addMapping(urlPath);
+			return new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class)
+					.addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path).addMapping(urlPath);
 	}
 
 	private ServletInfo getDefaultFaviconServlet() {
-		return new ServletInfo(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH,
-							   StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
-																		 "/com/qwazr/webapps/favicon.ico")
+		return new ServletInfo(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH, StaticResourceServlet.class)
+				.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM, "/com/qwazr/webapps/favicon.ico")
 				.addMapping(FAVICON_PATH);
 	}
 
@@ -195,7 +185,7 @@ public class WebappManager extends ConstructorParametersImpl {
 			String ext = FilenameUtils.getExtension(filePath).toLowerCase();
 			if ("js".equals(ext))
 				registerJavascriptServlet(urlPath, SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath),
-										  builder);
+						builder);
 			else
 				registerJavaController(urlPath, filePath, builder);
 		} catch (ReflectiveOperationException e) {
@@ -205,11 +195,8 @@ public class WebappManager extends ConstructorParametersImpl {
 
 	private void registerJavascriptServlet(final String urlPath, final String filePath,
 			final GenericServer.Builder builder) {
-		builder.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath,
-										JavascriptServlet.class).addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM,
-																			  filePath)
-								.addMapping(urlPath)
-								.setMultipartConfig(multipartConfigElement));
+		builder.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath, JavascriptServlet.class)
+				.addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath).addMapping(urlPath));
 	}
 
 	private void registerJavaController(final String urlPath, final String classDef,
@@ -235,16 +222,9 @@ public class WebappManager extends ConstructorParametersImpl {
 
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
 			final GenericFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
-		final ServletInfo servletInfo = ServletInfoBuilder.servlet(servletClass.getName() + '@' + urlPath, servletClass,
-																   servletFactory == null ?
-																		   SmartFactory.from(libraryManager, this,
-																							 servletClass) :
-																		   servletFactory)
-				.setMultipartConfig(multipartConfigElement)
-				.setLoadOnStartup(1);
-		if (urlPath != null)
-			servletInfo.addMapping(urlPath);
-		builder.servlet(servletInfo);
+		builder.servlet(servletClass.getName() + '@' + urlPath, servletClass,
+				servletFactory == null ? SmartFactory.from(libraryManager, this, servletClass) : servletFactory,
+				urlPath == null ? null : StringUtils.split(urlPath));
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
@@ -262,13 +242,16 @@ public class WebappManager extends ConstructorParametersImpl {
 		registerJavaServlet(servletClass, null, builder);
 	}
 
-	public <T extends Filter> void registerJavaFilter(final String urlPath, final Class<T> filterClass,
+	public <T extends Filter> void registerJavaFilter(final String urlPathes, final Class<T> filterClass,
 			final GenericFactory<T> filterFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
-		final FilterInfo filterInfo = Servlets.filter(filterClass.getName() + '@' + urlPath, filterClass,
-													  filterFactory == null ?
-															  SmartFactory.from(libraryManager, this, filterClass) :
-															  filterFactory);
-		builder.filter(urlPath, filterInfo);
+		final String filterName = filterClass.getName() + '@' + urlPathes;
+		builder.filter(filterName, filterClass,
+				filterFactory == null ? SmartFactory.from(libraryManager, this, filterClass) : filterFactory);
+		if (urlPathes != null) {
+			String[] urlPaths = StringUtils.split(urlPathes);
+			for (String urlPath : urlPaths)
+				builder.urlFilterMapping(filterName, urlPath, DispatcherType.REQUEST);
+		}
 	}
 
 	public <T extends Filter> void registerJavaFilter(final String urlPath, final Class<T> filterClass,
@@ -289,8 +272,7 @@ public class WebappManager extends ConstructorParametersImpl {
 	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,
 			final GenericServer.Builder builder) throws NoSuchMethodException {
 		final ServletInfo servletInfo =
-				ServletInfoBuilder.jaxrs(ServletContainer.class.getName() + '@' + urlPath, appClass)
-						.addMapping(urlPath)
+				ServletInfoBuilder.jaxrs(ServletContainer.class.getName() + '@' + urlPath, appClass).addMapping(urlPath)
 						.setLoadOnStartup(1);
 		addSwaggerContext(urlPath, servletInfo);
 		builder.servlet(servletInfo);
