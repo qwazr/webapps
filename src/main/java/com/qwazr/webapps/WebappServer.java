@@ -23,8 +23,7 @@ import com.qwazr.server.WelcomeShutdownService;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.FunctionUtils;
 
-import javax.management.MBeanException;
-import javax.management.OperationsException;
+import javax.management.JMException;
 import javax.servlet.ServletException;
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -41,7 +40,7 @@ public class WebappServer implements BaseServer {
 			throws IOException, URISyntaxException, ReflectiveOperationException {
 		final ExecutorService executorService = Executors.newCachedThreadPool();
 		final GenericServer.Builder builder =
-				GenericServer.of(configuration, executorService).webService(WelcomeShutdownService.class);
+				GenericServer.of(configuration, executorService).singletons(new WelcomeShutdownService());
 		new ClusterManager(executorService, configuration).registerHttpClientMonitoringThread(builder)
 				.registerProtocolListener(builder)
 				.registerWebService(builder);
@@ -71,8 +70,8 @@ public class WebappServer implements BaseServer {
 	}
 
 	public static synchronized void main(final String... args)
-			throws IOException, ReflectiveOperationException, OperationsException, ServletException, MBeanException,
-			URISyntaxException, InterruptedException {
+			throws IOException, ReflectiveOperationException, ServletException, JMException, URISyntaxException,
+			InterruptedException {
 		if (INSTANCE != null)
 			shutdown();
 		INSTANCE = new WebappServer(new ServerConfiguration(args), null);

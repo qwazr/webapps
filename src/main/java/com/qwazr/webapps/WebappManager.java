@@ -104,9 +104,6 @@ public class WebappManager extends ConstructorParametersImpl {
 		dataDir = configuration.dataDirectory;
 		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
-		// Register the webservice
-		builder.webService(WebappServiceImpl.class);
-
 		File sessionPersistenceDir = new File(configuration.tempDirectory, SESSIONS_PERSISTENCE_DIR);
 		if (!sessionPersistenceDir.exists())
 			sessionPersistenceDir.mkdir();
@@ -149,15 +146,17 @@ public class WebappManager extends ConstructorParametersImpl {
 
 		// Load the identityManager provider if any
 		if (webappDefinition.identity_manager != null)
-			builder.identityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderUtils
-					.findClass(webappDefinition.identity_manager).newInstance());
+			builder.identityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderUtils.findClass(
+					webappDefinition.identity_manager).newInstance());
 
 		// Set the default favicon
 		builder.servlet(getDefaultFaviconServlet());
 
 		builder.contextAttribute(this);
 
+		// Register the webservice
 		service = new WebappServiceImpl(this);
+		builder.singletons(service);
 	}
 
 	public WebappServiceInterface getService() {
@@ -166,18 +165,19 @@ public class WebappManager extends ConstructorParametersImpl {
 
 	private ServletInfo getStaticServlet(final String urlPath, final String path) {
 		if (path.contains(".") && !path.contains("/"))
-			return new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath, StaticResourceServlet.class)
-					.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
-							'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
+			return new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath,
+					StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
+					'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
 		else
-			return new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class)
-					.addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path).addMapping(urlPath);
+			return new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath,
+					StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path)
+					.addMapping(urlPath);
 	}
 
 	private ServletInfo getDefaultFaviconServlet() {
-		return new ServletInfo(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH, StaticResourceServlet.class)
-				.addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM, "/com/qwazr/webapps/favicon.ico")
-				.addMapping(FAVICON_PATH);
+		return new ServletInfo(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH,
+				StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
+				"/com/qwazr/webapps/favicon.ico").addMapping(FAVICON_PATH);
 	}
 
 	private void registerController(final String urlPath, final String filePath, final GenericServer.Builder builder) {
@@ -195,8 +195,9 @@ public class WebappManager extends ConstructorParametersImpl {
 
 	private void registerJavascriptServlet(final String urlPath, final String filePath,
 			final GenericServer.Builder builder) {
-		builder.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath, JavascriptServlet.class)
-				.addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath).addMapping(urlPath));
+		builder.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath,
+				JavascriptServlet.class).addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath)
+				.addMapping(urlPath));
 	}
 
 	private void registerJavaController(final String urlPath, final String classDef,
@@ -272,7 +273,8 @@ public class WebappManager extends ConstructorParametersImpl {
 	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,
 			final GenericServer.Builder builder) throws NoSuchMethodException {
 		final ServletInfo servletInfo =
-				ServletInfoBuilder.jaxrs(ServletContainer.class.getName() + '@' + urlPath, appClass).addMapping(urlPath)
+				ServletInfoBuilder.jaxrs(ServletContainer.class.getName() + '@' + urlPath, appClass)
+						.addMapping(urlPath)
 						.setLoadOnStartup(1);
 		addSwaggerContext(urlPath, servletInfo);
 		builder.servlet(servletInfo);

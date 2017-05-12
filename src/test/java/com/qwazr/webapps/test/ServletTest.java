@@ -25,8 +25,7 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import javax.management.MBeanException;
-import javax.management.OperationsException;
+import javax.management.JMException;
 import javax.servlet.ServletException;
 import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
@@ -43,8 +42,7 @@ public class ServletTest implements TestChecker {
 
 	@BeforeClass
 	public static void before()
-			throws IOException, URISyntaxException, ReflectiveOperationException, MBeanException, OperationsException,
-			ServletException {
+			throws IOException, URISyntaxException, ReflectiveOperationException, JMException, ServletException {
 		randomString = RandomStringUtils.randomAlphanumeric(10);
 		server = new WebappServer(ServerConfiguration.of()
 				.data(Files.createTempDir())
