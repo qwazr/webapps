@@ -1,5 +1,5 @@
 /**
- * Copyright 2014-2016 Emmanuel Keller / QWAZR
+ * Copyright 2015-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -30,6 +30,7 @@ public class WebappDefinition {
 	public final Map<String, String> statics;
 	public final Set<String> listeners;
 	public final String identity_manager;
+	public final Set<String> secure_paths;
 
 	public WebappDefinition() {
 		controllers = null;
@@ -37,6 +38,7 @@ public class WebappDefinition {
 		statics = null;
 		listeners = null;
 		identity_manager = null;
+		secure_paths = null;
 	}
 
 	private WebappDefinition(Builder builder) {
@@ -45,6 +47,7 @@ public class WebappDefinition {
 		this.statics = builder.statics.isEmpty() ? null : new LinkedHashMap<>(builder.statics);
 		this.listeners = builder.listeners.isEmpty() ? null : new LinkedHashSet<>(builder.listeners);
 		this.identity_manager = builder.identity_manager;
+		this.secure_paths = builder.securePaths.isEmpty() ? null : new LinkedHashSet<>(builder.securePaths);
 	}
 
 	@JsonIgnore
@@ -60,6 +63,7 @@ public class WebappDefinition {
 		private final Map<String, String> statics;
 		private final Set<String> listeners;
 		private String identity_manager;
+		private final Set<String> securePaths;
 
 		Builder() {
 			controllers = new LinkedHashMap<>();
@@ -67,6 +71,7 @@ public class WebappDefinition {
 			statics = new LinkedHashMap<>();
 			listeners = new LinkedHashSet<>();
 			identity_manager = null;
+			securePaths = new LinkedHashSet<>();
 		}
 
 		public Builder add(WebappDefinition webappDefinition) {
@@ -82,6 +87,8 @@ public class WebappDefinition {
 				listeners.addAll(webappDefinition.listeners);
 			if (webappDefinition.identity_manager != null)
 				identity_manager = webappDefinition.identity_manager;
+			if (webappDefinition.secure_paths != null)
+				securePaths.addAll(webappDefinition.secure_paths);
 			return this;
 		}
 
@@ -117,6 +124,11 @@ public class WebappDefinition {
 
 		public Builder setIdentityManager(Class<?> identityManager) {
 			this.identity_manager = identityManager == null ? null : identityManager.getName();
+			return this;
+		}
+
+		public Builder addSecurePath(String securePath) {
+			securePaths.add(securePath);
 			return this;
 		}
 

@@ -1,5 +1,5 @@
 /**
- * Copyright 2014-2016 Emmanuel Keller / QWAZR
+ * Copyright 2015-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,17 +16,17 @@
 package com.qwazr.webapps;
 
 import com.qwazr.server.ServiceInterface;
-import com.qwazr.server.ServiceName;
 
 import javax.annotation.security.RolesAllowed;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;
 
-@RolesAllowed(WebappManager.SERVICE_NAME_WEBAPPS)
-@Path("/webapps")
-@ServiceName(WebappManager.SERVICE_NAME_WEBAPPS)
+@RolesAllowed(WebappServiceInterface.SERVICE_NAME)
+@Path("/" + WebappServiceInterface.SERVICE_NAME)
 public interface WebappServiceInterface extends ServiceInterface {
+
+	String SERVICE_NAME = "webapps";
 
 	@GET
 	@Path("/")

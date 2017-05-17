@@ -22,5 +22,9 @@
     "/index": "html/index.html",
     "/html/*": "html/"
   },
-  "identity_manager": "com.qwazr.webapps.test.TestIdentityProvider"
+  "identity_manager": "com.qwazr.webapps.test.TestIdentityProvider",
+  "secure_paths": [
+    "/jaxrs-app-auth/*",
+    "/jaxrs-auth/*"
+  ]
 }

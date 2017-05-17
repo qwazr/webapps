@@ -21,7 +21,7 @@ import com.qwazr.server.GenericFactory;
 import com.qwazr.server.GenericServer;
 import com.qwazr.server.InFileSessionPersistenceManager;
 import com.qwazr.server.ServerException;
-import com.qwazr.server.ServletInfoBuilder;
+import com.qwazr.server.ServletContextBuilder;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.FunctionUtils;
@@ -30,6 +30,7 @@ import com.qwazr.utils.SubstitutedVariables;
 import com.qwazr.utils.reflection.ConstructorParametersImpl;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
+import io.undertow.servlet.api.SecurityInfo;
 import io.undertow.servlet.api.ServletInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.glassfish.jersey.servlet.ServletContainer;
@@ -61,8 +62,6 @@ import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 
 public class WebappManager extends ConstructorParametersImpl {
-
-	public final static String SERVICE_NAME_WEBAPPS = "webapps";
 
 	public final static String SESSIONS_PERSISTENCE_DIR = "webapp-sessions";
 
@@ -109,9 +108,11 @@ public class WebappManager extends ConstructorParametersImpl {
 			sessionPersistenceDir.mkdir();
 		builder.sessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
 
+		final ServletContextBuilder context = builder.getWebAppContext();
+
 		// Load the static handlers
 		if (webappDefinition.statics != null)
-			webappDefinition.statics.forEach((urlPath, filePath) -> builder.servlet(
+			webappDefinition.statics.forEach((urlPath, filePath) -> context.servlet(
 					getStaticServlet(urlPath, SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath))));
 
 		// Prepare the Javascript interpreter
@@ -121,27 +122,27 @@ public class WebappManager extends ConstructorParametersImpl {
 		// Load the listeners
 		if (webappDefinition.listeners != null)
 			for (String listenerClass : webappDefinition.listeners)
-				builder.listener(Servlets.listener(ClassLoaderUtils.findClass(listenerClass)));
-		builder.servletAccessLogger(accessLogger);
+				context.listener(Servlets.listener(ClassLoaderUtils.findClass(listenerClass)));
+		builder.webAppAccessLogger(accessLogger);
 
 		// Load the controllers
 		if (webappDefinition.controllers != null)
-			webappDefinition.controllers.forEach((urlPath, filePath) -> registerController(urlPath, filePath, builder));
+			webappDefinition.controllers.forEach((urlPath, filePath) -> registerController(urlPath, filePath, context));
 
 		// Load the filters
 		if (webappDefinition.filters != null)
 			FunctionUtils.forEachEx(webappDefinition.filters,
 					(urlPath, filterClass) -> registerJavaFilter(urlPath, ClassLoaderUtils.findClass(filterClass),
-							builder));
+							context));
 		// Load the closeable filter
-		registerJavaFilter("/*", CloseableFilter.class, builder);
+		registerJavaFilter("/*", CloseableFilter.class, context);
 
 		// Load the filters
 		if (webappDefinition.filters != null)
 			FunctionUtils.forEachEx(webappDefinition.filters, (urlPath, filterClass) -> {
 				final String name = filterClass + "@" + urlPath;
-				builder.filter(name, ClassLoaderUtils.findClass(filterClass));
-				builder.urlFilterMapping(name, urlPath, DispatcherType.REQUEST);
+				context.filter(name, ClassLoaderUtils.findClass(filterClass));
+				context.urlFilterMapping(name, urlPath, DispatcherType.REQUEST);
 			});
 
 		// Load the identityManager provider if any
@@ -149,14 +150,25 @@ public class WebappManager extends ConstructorParametersImpl {
 			builder.identityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderUtils.findClass(
 					webappDefinition.identity_manager).newInstance());
 
+		// Load the security constraint
+		if (webappDefinition.secure_paths != null)
+			registerSecurePaths(webappDefinition.secure_paths, context);
+
 		// Set the default favicon
-		builder.servlet(getDefaultFaviconServlet());
+		context.servlet(getDefaultFaviconServlet());
 
-		builder.contextAttribute(this);
-
-		// Register the webservice
+		// Create the webservice singleton
 		service = new WebappServiceImpl(this);
+	}
+
+	public WebappManager registerWebService(ApplicationBuilder builder) {
 		builder.singletons(service);
+		return this;
+	}
+
+	public WebappManager registerContextAttribute(final GenericServer.Builder builder) {
+		builder.contextAttribute(this);
+		return this;
 	}
 
 	public WebappServiceInterface getService() {
@@ -180,84 +192,90 @@ public class WebappManager extends ConstructorParametersImpl {
 				"/com/qwazr/webapps/favicon.ico").addMapping(FAVICON_PATH);
 	}
 
-	private void registerController(final String urlPath, final String filePath, final GenericServer.Builder builder) {
+	private void registerController(final String urlPath, final String filePath, final ServletContextBuilder context) {
 		try {
 			String ext = FilenameUtils.getExtension(filePath).toLowerCase();
 			if ("js".equals(ext))
 				registerJavascriptServlet(urlPath, SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath),
-						builder);
+						context);
 			else
-				registerJavaController(urlPath, filePath, builder);
+				registerJavaController(urlPath, filePath, context);
 		} catch (ReflectiveOperationException e) {
 			throw new ServerException("Cannot build an instance of the controller: " + filePath, e);
 		}
 	}
 
 	private void registerJavascriptServlet(final String urlPath, final String filePath,
-			final GenericServer.Builder builder) {
-		builder.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath,
+			final ServletContextBuilder context) {
+		context.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath,
 				JavascriptServlet.class).addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath)
 				.addMapping(urlPath));
 	}
 
 	private void registerJavaController(final String urlPath, final String classDef,
-			final GenericServer.Builder builder) throws ReflectiveOperationException {
+			final ServletContextBuilder context) throws ReflectiveOperationException {
 		if (classDef.contains(" ") || classDef.contains(" ,")) {
-			registerJavaJaxRsClassServlet(urlPath, classDef, builder);
+			registerJavaJaxRsClassServlet(urlPath, classDef, context);
 			return;
 		}
 		final Class<?> clazz = ClassLoaderUtils.findClass(classDef);
 		Objects.requireNonNull(clazz, "Class not found: " + classDef);
 		if (Servlet.class.isAssignableFrom(clazz)) {
-			registerJavaServlet(urlPath, (Class<? extends Servlet>) clazz, builder);
+			registerJavaServlet(urlPath, (Class<? extends Servlet>) clazz, context);
 			return;
 		} else if (Application.class.isAssignableFrom(clazz)) {
-			registerJavaJaxRsAppServlet(urlPath, (Class<? extends Application>) clazz, builder);
+			registerJavaJaxRsAppServlet(urlPath, (Class<? extends Application>) clazz, context);
 			return;
 		} else if (clazz.isAnnotationPresent(Path.class)) {
-			registerJavaJaxRsClassServlet(urlPath, classDef, builder);
+			registerJavaJaxRsClassServlet(urlPath, classDef, context);
 			return;
 		}
 		throw new ServerException("This type of class is not supported: " + classDef + " / " + clazz.getName());
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
-			final GenericFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
-		builder.servlet(servletClass.getName() + '@' + urlPath, servletClass,
+			final GenericFactory<T> servletFactory, final ServletContextBuilder context) throws NoSuchMethodException {
+		context.servlet(servletClass.getName() + '@' + urlPath, servletClass,
 				servletFactory == null ? SmartFactory.from(libraryManager, this, servletClass) : servletFactory,
 				urlPath == null ? null : StringUtils.split(urlPath));
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
-			final GenericServer.Builder builder) throws NoSuchMethodException {
-		registerJavaServlet(urlPath, servletClass, null, builder);
+			final ServletContextBuilder context) throws NoSuchMethodException {
+		registerJavaServlet(urlPath, servletClass, null, context);
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final Class<T> servletClass,
-			final GenericFactory<T> servletFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
-		registerJavaServlet(null, servletClass, servletFactory, builder);
+			final GenericFactory<T> servletFactory, final ServletContextBuilder context) throws NoSuchMethodException {
+		registerJavaServlet(null, servletClass, servletFactory, context);
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final Class<T> servletClass,
-			final GenericServer.Builder builder) throws NoSuchMethodException {
-		registerJavaServlet(servletClass, null, builder);
+			final ServletContextBuilder context) throws NoSuchMethodException {
+		registerJavaServlet(servletClass, null, context);
 	}
 
 	public <T extends Filter> void registerJavaFilter(final String urlPathes, final Class<T> filterClass,
-			final GenericFactory<T> filterFactory, final GenericServer.Builder builder) throws NoSuchMethodException {
+			final GenericFactory<T> filterFactory, final ServletContextBuilder context) throws NoSuchMethodException {
 		final String filterName = filterClass.getName() + '@' + urlPathes;
-		builder.filter(filterName, filterClass,
+		context.filter(filterName, filterClass,
 				filterFactory == null ? SmartFactory.from(libraryManager, this, filterClass) : filterFactory);
 		if (urlPathes != null) {
 			String[] urlPaths = StringUtils.split(urlPathes);
 			for (String urlPath : urlPaths)
-				builder.urlFilterMapping(filterName, urlPath, DispatcherType.REQUEST);
+				context.urlFilterMapping(filterName, urlPath, DispatcherType.REQUEST);
 		}
 	}
 
 	public <T extends Filter> void registerJavaFilter(final String urlPath, final Class<T> filterClass,
-			final GenericServer.Builder builder) throws NoSuchMethodException {
-		registerJavaFilter(urlPath, filterClass, null, builder);
+			final ServletContextBuilder context) throws NoSuchMethodException {
+		registerJavaFilter(urlPath, filterClass, null, context);
+	}
+
+	public void registerSecurePaths(final Collection<String> securePaths, final ServletContextBuilder context) {
+		context.addSecurityConstraint(Servlets.securityConstraint()
+				.setEmptyRoleSemantic(SecurityInfo.EmptyRoleSemantic.AUTHENTICATE)
+				.addWebResourceCollection(Servlets.webResourceCollection().addUrlPatterns(securePaths)));
 	}
 
 	private ServletInfo addSwaggerContext(String urlPath, final ServletInfo servletInfo) {
@@ -271,33 +289,30 @@ public class WebappManager extends ConstructorParametersImpl {
 	}
 
 	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,
-			final GenericServer.Builder builder) throws NoSuchMethodException {
-		final ServletInfo servletInfo =
-				ServletInfoBuilder.jaxrs(ServletContainer.class.getName() + '@' + urlPath, appClass)
-						.addMapping(urlPath)
-						.setLoadOnStartup(1);
-		addSwaggerContext(urlPath, servletInfo);
-		builder.servlet(servletInfo);
+			final ServletContextBuilder context) throws NoSuchMethodException {
+		context.jaxrs(ServletContainer.class.getName() + '@' + urlPath, appClass, servletInfo -> {
+			servletInfo.addMapping(urlPath).setLoadOnStartup(1);
+			addSwaggerContext(urlPath, servletInfo);
+		});
 	}
 
 	private void registerJavaJaxRsClassServlet(final String urlPath, final String classList,
-			final GenericServer.Builder builder) throws ReflectiveOperationException {
+			final ServletContextBuilder context) throws ReflectiveOperationException {
 		final ApplicationBuilder appBuilder = new ApplicationBuilder(urlPath);
 		final String[] classes = StringUtils.split(classList, " ,");
 		for (String className : classes)
 			appBuilder.classes(ClassLoaderUtils.findClass(className.trim()));
-		registerJaxRsResources(appBuilder, builder);
+		registerJaxRsResources(appBuilder, context);
 	}
 
-	public void registerJaxRsResources(final ApplicationBuilder applicationBuilder, final GenericServer.Builder builder)
-			throws ReflectiveOperationException {
+	public void registerJaxRsResources(final ApplicationBuilder applicationBuilder,
+			final ServletContextBuilder context) {
 		applicationBuilder.classes(BaseRestApplication.PROVIDERS_CLASSES);
-		final ServletInfo servletInfo = ServletInfoBuilder.
-				jaxrs(null, applicationBuilder);
-		final Collection<String> paths = applicationBuilder.getApplicationPaths();
-		if (paths != null && !paths.isEmpty())
-			addSwaggerContext(paths.iterator().next(), servletInfo);
-		builder.servlet(servletInfo);
+		context.jaxrs(null, applicationBuilder, servletInfo -> {
+			final Collection<String> paths = applicationBuilder.getApplicationPaths();
+			if (paths != null && !paths.isEmpty())
+				addSwaggerContext(paths.iterator().next(), servletInfo);
+		});
 	}
 
 	public WebappDefinition getWebAppDefinition() throws IOException, URISyntaxException {
