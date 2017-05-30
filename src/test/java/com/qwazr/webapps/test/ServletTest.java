@@ -52,7 +52,7 @@ public class ServletTest implements TestChecker {
 				.etcFilter("*.json")
 				.build(), (webapp, builder) -> {
 			final ServletContextBuilder context = builder.getWebAppContext();
-			webapp.registerConstructorParameter(randomString);
+			builder.getConstructorParameters().registerConstructorParameter(randomString);
 			webapp.registerJavaServlet("/", TestServletConstructorParameter.class, context);
 			webapp.registerJavaServlet(TestServletAnnotation.class, context);
 		});

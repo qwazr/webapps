@@ -27,7 +27,7 @@ import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.SubstitutedVariables;
-import com.qwazr.utils.reflection.ConstructorParametersImpl;
+import com.qwazr.utils.reflection.ConstructorParameters;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.SecurityInfo;
@@ -59,9 +59,8 @@ import java.security.ProtectionDomain;
 import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.Objects;
-import java.util.concurrent.ConcurrentHashMap;
 
-public class WebappManager extends ConstructorParametersImpl {
+public class WebappManager {
 
 	public final static String SESSIONS_PERSISTENCE_DIR = "webapp-sessions";
 
@@ -79,17 +78,19 @@ public class WebappManager extends ConstructorParametersImpl {
 	final WebappDefinition webappDefinition;
 
 	final LibraryManager libraryManager;
+	final ConstructorParameters constructorParameters;
 
 	final GlobalConfiguration globalConfiguration;
 	final ScriptEngine scriptEngine;
 
 	public WebappManager(final LibraryManager libraryManager, final GenericServer.Builder builder)
 			throws IOException, ServerException, ReflectiveOperationException {
-		super(new ConcurrentHashMap<>());
+
 		if (logger.isInfoEnabled())
 			logger.info("Loading Web application");
 
 		this.libraryManager = libraryManager;
+		this.constructorParameters = builder.getConstructorParameters();
 
 		final ServerConfiguration configuration = builder.getConfiguration();
 		final Collection<File> etcFiles = configuration.getEtcFiles();
@@ -146,9 +147,13 @@ public class WebappManager extends ConstructorParametersImpl {
 			});
 
 		// Load the identityManager provider if any
-		if (webappDefinition.identity_manager != null)
-			builder.identityManagerProvider((GenericServer.IdentityManagerProvider) ClassLoaderUtils.findClass(
-					webappDefinition.identity_manager).newInstance());
+		if (webappDefinition.identity_manager != null) {
+			final Class<? extends GenericServer.IdentityManagerProvider> identityManagerClass =
+					ClassLoaderUtils.findClass(webappDefinition.identity_manager);
+			final GenericServer.IdentityManagerProvider identityManagerProvider = SmartFactory.from(libraryManager,
+					builder.getConstructorParameters(), identityManagerClass).createInstance().getInstance();
+			builder.identityManagerProvider(identityManagerProvider);
+		}
 
 		// Load the security constraint
 		if (webappDefinition.secure_paths != null)
@@ -182,8 +187,8 @@ public class WebappManager extends ConstructorParametersImpl {
 					'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
 		else
 			return new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath,
-					StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path)
-					.addMapping(urlPath);
+					StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path).addMapping(
+					urlPath);
 	}
 
 	private ServletInfo getDefaultFaviconServlet() {
@@ -235,9 +240,9 @@ public class WebappManager extends ConstructorParametersImpl {
 
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
 			final GenericFactory<T> servletFactory, final ServletContextBuilder context) throws NoSuchMethodException {
-		context.servlet(servletClass.getName() + '@' + urlPath, servletClass,
-				servletFactory == null ? SmartFactory.from(libraryManager, this, servletClass) : servletFactory,
-				urlPath == null ? null : StringUtils.split(urlPath));
+		context.servlet(servletClass.getName() + '@' + urlPath, servletClass, servletFactory == null ?
+				SmartFactory.from(libraryManager, constructorParameters, servletClass) :
+				servletFactory, urlPath == null ? null : StringUtils.split(urlPath));
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
@@ -258,8 +263,9 @@ public class WebappManager extends ConstructorParametersImpl {
 	public <T extends Filter> void registerJavaFilter(final String urlPathes, final Class<T> filterClass,
 			final GenericFactory<T> filterFactory, final ServletContextBuilder context) throws NoSuchMethodException {
 		final String filterName = filterClass.getName() + '@' + urlPathes;
-		context.filter(filterName, filterClass,
-				filterFactory == null ? SmartFactory.from(libraryManager, this, filterClass) : filterFactory);
+		context.filter(filterName, filterClass, filterFactory == null ?
+				SmartFactory.from(libraryManager, constructorParameters, filterClass) :
+				filterFactory);
 		if (urlPathes != null) {
 			String[] urlPaths = StringUtils.split(urlPathes);
 			for (String urlPath : urlPaths)
@@ -282,10 +288,9 @@ public class WebappManager extends ConstructorParametersImpl {
 		final String contextId = ServletContainer.class.getName() + '@' + urlPath;
 		urlPath = StringUtils.removeEnd(urlPath, "*");
 		urlPath = StringUtils.removeEnd(urlPath, "/");
-		return servletInfo.addInitParam(SwaggerContextService.SCANNER_ID_KEY, contextId)
-				.addInitParam(SwaggerContextService.CONFIG_ID_KEY, contextId)
-				.addInitParam(SwaggerContextService.CONTEXT_ID_KEY, contextId)
-				.addInitParam("swagger.api.basepath", urlPath);
+		return servletInfo.addInitParam(SwaggerContextService.SCANNER_ID_KEY, contextId).addInitParam(
+				SwaggerContextService.CONFIG_ID_KEY, contextId).addInitParam(SwaggerContextService.CONTEXT_ID_KEY,
+				contextId).addInitParam("swagger.api.basepath", urlPath);
 	}
 
 	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,
