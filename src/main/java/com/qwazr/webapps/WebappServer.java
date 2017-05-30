@@ -61,9 +61,10 @@ public class WebappServer implements BaseServer {
 				.registerContextAttribute(builder)
 				.registerWebService(webServices);
 
-		final LibraryManager libraryManager =
-				new LibraryManager(configuration.dataDirectory, configuration.getEtcFiles()).registerIdentityManager(
-						builder).registerContextAttribute(builder).registerWebService(webServices);
+		final LibraryManager libraryManager = new LibraryManager(configuration.dataDirectory,
+				configuration.getEtcFiles()).registerIdentityManager(builder)
+				.registerContextAttribute(builder)
+				.registerWebService(webServices);
 
 		final WebappManager webappManager = new WebappManager(libraryManager, builder).registerContextAttribute(builder)
 				.registerWebService(webServices);
