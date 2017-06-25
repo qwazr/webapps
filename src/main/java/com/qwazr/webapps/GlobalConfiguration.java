@@ -1,5 +1,5 @@
-/**
- * Copyright 2016 Emmanuel Keller / QWAZR
+/*
+ * Copyright 2016-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,23 +12,24 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps;
 
-import com.qwazr.utils.LockUtils;
+import com.qwazr.utils.LoggerUtils;
+import com.qwazr.utils.concurrent.ReadWriteLock;
 import com.qwazr.utils.json.JsonMapper;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.LinkedHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 class GlobalConfiguration {
 
-	private static final Logger logger = LoggerFactory.getLogger(GlobalConfiguration.class);
+	private static final Logger logger = LoggerUtils.getLogger(GlobalConfiguration.class);
 
-	private final LockUtils.ReadWriteLock mapLock = new LockUtils.ReadWriteLock();
+	private final ReadWriteLock mapLock = ReadWriteLock.stamped();
 
 	private final LinkedHashMap<File, WebappDefinition> webappFileMap;
 
@@ -53,16 +54,14 @@ class GlobalConfiguration {
 				return;
 			}
 
-			if (logger.isInfoEnabled())
-				logger.info("Load WebApp configuration file: " + jsonFile.getAbsolutePath());
+			logger.info(() -> "Load WebApp configuration file: " + jsonFile.getAbsolutePath());
 
 			mapLock.write(() -> {
 				webappFileMap.put(jsonFile, webappDefinition);
 			});
 
 		} catch (IOException e) {
-			if (logger.isErrorEnabled())
-				logger.error(e.getMessage(), e);
+			logger.log(Level.SEVERE, e, e::getMessage);
 		}
 	}
 
@@ -71,8 +70,7 @@ class GlobalConfiguration {
 			final WebappDefinition webappDefinition = webappFileMap.remove(jsonFile);
 			if (webappDefinition == null)
 				return;
-			if (logger.isInfoEnabled())
-				logger.info("Unload WebApp configuration file: " + jsonFile.getAbsolutePath());
+			logger.info(() -> "Unload WebApp configuration file: " + jsonFile.getAbsolutePath());
 		});
 	}
 

@@ -1,5 +1,5 @@
-/**
- * Copyright 2014-2016 Emmanuel Keller / QWAZR
+/*
+ * Copyright 2015-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,14 +12,15 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps.exception;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.qwazr.utils.LoggerUtils;
 
 import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class WebappRedirectException extends AbstractWebappException {
 
@@ -30,7 +31,7 @@ public class WebappRedirectException extends AbstractWebappException {
 
 	private final String location;
 
-	private static final Logger logger = LoggerFactory.getLogger(WebappRedirectException.class);
+	private static final Logger logger = LoggerUtils.getLogger(WebappRedirectException.class);
 
 	public WebappRedirectException(String location) {
 		this.location = location;
@@ -41,8 +42,7 @@ public class WebappRedirectException extends AbstractWebappException {
 		try {
 			response.sendRedirect(location);
 		} catch (IOException e) {
-			if (logger.isWarnEnabled())
-				logger.warn("Redirect failed - " + e.getMessage(), e);
+			logger.log(Level.WARNING, e, () -> "Redirect failed - " + e.getMessage());
 		}
 	}
 

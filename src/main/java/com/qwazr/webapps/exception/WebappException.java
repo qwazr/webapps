@@ -1,5 +1,5 @@
-/**
- * Copyright 2014-2016 Emmanuel Keller / QWAZR
+/*
+ * Copyright 2015-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,19 +12,20 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps.exception;
 
 import com.jamesmurty.utils.XMLBuilder2;
+import com.qwazr.utils.LoggerUtils;
 import com.qwazr.utils.json.JsonMapper;
 import org.apache.commons.lang3.StringEscapeUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response.Status;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class WebappException extends AbstractWebappException {
 
@@ -33,7 +34,7 @@ public class WebappException extends AbstractWebappException {
 	 */
 	private static final long serialVersionUID = -1221758741584043195L;
 
-	private static final Logger logger = LoggerFactory.getLogger(WebappException.class);
+	private static final Logger logger = LoggerUtils.getLogger(WebappException.class);
 
 	public enum Title {
 
@@ -120,8 +121,7 @@ public class WebappException extends AbstractWebappException {
 			}
 			sendQuietlyHTML(response);
 		} catch (IOException e) {
-			if (logger.isWarnEnabled())
-				logger.warn(e.getMessage(), e);
+			logger.log(Level.WARNING, e, e::getMessage);
 		}
 	}
 

@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps;
 
 import com.qwazr.library.LibraryManager;
@@ -25,6 +25,7 @@ import com.qwazr.server.ServletContextBuilder;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.FunctionUtils;
+import com.qwazr.utils.LoggerUtils;
 import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.SubstitutedVariables;
 import com.qwazr.utils.reflection.ConstructorParametersImpl;
@@ -34,8 +35,6 @@ import io.undertow.servlet.api.SecurityInfo;
 import io.undertow.servlet.api.ServletInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.glassfish.jersey.servlet.ServletContainer;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.activation.MimetypesFileTypeMap;
 import javax.management.MBeanPermission;
@@ -60,15 +59,16 @@ import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Logger;
 
 public class WebappManager extends ConstructorParametersImpl {
 
 	public final static String SESSIONS_PERSISTENCE_DIR = "webapp-sessions";
 
-	private static final Logger logger = LoggerFactory.getLogger(WebappManager.class);
+	private static final Logger logger = LoggerUtils.getLogger(WebappManager.class);
 
 	private static final String ACCESS_LOG_LOGGER_NAME = "com.qwazr.webapps.accessLogger";
-	private static final Logger accessLogger = LoggerFactory.getLogger(ACCESS_LOG_LOGGER_NAME);
+	private static final Logger accessLogger = Logger.getLogger(ACCESS_LOG_LOGGER_NAME);
 
 	private final WebappServiceInterface service;
 
@@ -88,8 +88,7 @@ public class WebappManager extends ConstructorParametersImpl {
 		super(builder.getConstructorParameters() == null ?
 				new ConcurrentHashMap<>() :
 				builder.getConstructorParameters().getMap());
-		if (logger.isInfoEnabled())
-			logger.info("Loading Web application");
+		logger.info("Loading Web application");
 
 		this.libraryManager = libraryManager;
 

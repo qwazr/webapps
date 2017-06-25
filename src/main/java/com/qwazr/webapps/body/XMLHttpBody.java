@@ -1,5 +1,5 @@
-/**
- * Copyright 2014-2016 Emmanuel Keller / QWAZR
+/*
+ * Copyright 2015-2017 Emmanuel Keller / QWAZR
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,11 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps.body;
 
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import com.qwazr.utils.LoggerUtils;
 import org.w3c.dom.Document;
 import org.xml.sax.ErrorHandler;
 import org.xml.sax.SAXException;
@@ -28,17 +27,19 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import java.io.IOException;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class XMLHttpBody extends InputStreamHttpBody {
 
-	private static final Logger logger = LoggerFactory.getLogger(XMLHttpBody.class);
+	private static final Logger logger = LoggerUtils.getLogger(XMLHttpBody.class);
 
 	XMLHttpBody(HttpServletRequest request) throws IOException, ServletException {
 		super(request);
 	}
 
 	public Document getDom(Boolean validating, Boolean namespaceAware)
-					throws IOException, SAXException, ParserConfigurationException {
+			throws IOException, SAXException, ParserConfigurationException {
 		final DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
 		if (namespaceAware)
 			documentBuilderFactory.setNamespaceAware(namespaceAware);
@@ -55,12 +56,12 @@ public class XMLHttpBody extends InputStreamHttpBody {
 
 		@Override
 		public void warning(SAXParseException exception) throws SAXException {
-			logger.warn(exception.getMessage(), exception);
+			logger.log(Level.WARNING, exception, exception::getMessage);
 		}
 
 		@Override
 		public void error(SAXParseException exception) throws SAXException {
-			logger.error(exception.getMessage(), exception);
+			logger.log(Level.SEVERE, exception, exception::getMessage);
 		}
 
 		@Override
