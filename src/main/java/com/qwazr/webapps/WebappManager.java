@@ -59,6 +59,7 @@ import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 import java.util.logging.Logger;
 
 public class WebappManager extends ConstructorParametersImpl {
@@ -247,7 +248,7 @@ public class WebappManager extends ConstructorParametersImpl {
 
 	public <T extends Servlet> void registerJavaServlet(final String urlPath, final Class<T> servletClass,
 			final ServletContextBuilder context) throws NoSuchMethodException {
-		registerJavaServlet(urlPath, servletClass, null, context);
+		registerJavaServlet(urlPath, servletClass, (GenericFactory<T>) null, context);
 	}
 
 	public <T extends Servlet> void registerJavaServlet(final Class<T> servletClass,
@@ -255,9 +256,14 @@ public class WebappManager extends ConstructorParametersImpl {
 		registerJavaServlet(null, servletClass, servletFactory, context);
 	}
 
+	public <T extends Servlet> void registerJavaServlet(final Class<T> servletClass, final Supplier<T> servletSupplier,
+			final ServletContextBuilder context) throws NoSuchMethodException {
+		registerJavaServlet(null, servletClass, GenericFactory.fromSupplier(servletSupplier), context);
+	}
+
 	public <T extends Servlet> void registerJavaServlet(final Class<T> servletClass,
 			final ServletContextBuilder context) throws NoSuchMethodException {
-		registerJavaServlet(servletClass, null, context);
+		registerJavaServlet(servletClass, (GenericFactory<T>) null, context);
 	}
 
 	public <T extends Filter> void registerJavaFilter(final String urlPathes, final Class<T> filterClass,

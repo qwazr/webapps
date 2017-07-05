@@ -18,9 +18,9 @@ package com.qwazr.webapps.test;
 import com.google.common.io.Files;
 import com.qwazr.server.ServletContextBuilder;
 import com.qwazr.server.configuration.ServerConfiguration;
+import com.qwazr.utils.RandomUtils;
 import com.qwazr.utils.http.HttpRequest;
 import com.qwazr.webapps.WebappServer;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.apache.http.HttpResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
@@ -39,12 +39,14 @@ import java.net.URISyntaxException;
 public class ServletTest implements TestChecker {
 
 	public static WebappServer server;
-	public static String randomString;
+	public static String randomString1;
+	public static String randomString2;
 
 	@BeforeClass
 	public static void before()
 			throws IOException, URISyntaxException, ReflectiveOperationException, JMException, ServletException {
-		randomString = RandomStringUtils.randomAlphanumeric(10);
+		randomString1 = RandomUtils.alphanumeric(10);
+		randomString2 = RandomUtils.alphanumeric(10);
 		server = new WebappServer(ServerConfiguration.of()
 				.data(Files.createTempDir())
 				.publicAddress("localhost")
@@ -52,9 +54,11 @@ public class ServletTest implements TestChecker {
 				.etcFilter("*.json")
 				.build(), (webapp, builder) -> {
 			final ServletContextBuilder context = builder.getWebAppContext();
-			builder.getConstructorParameters().registerConstructorParameter(randomString);
+			builder.getConstructorParameters().registerConstructorParameter(randomString1);
 			webapp.registerJavaServlet("/", TestServletConstructorParameter.class, context);
-			webapp.registerJavaServlet(TestServletAnnotation.class, context);
+			webapp.registerJavaServlet(TestServletAnnotation1.class, context);
+			webapp.registerJavaServlet(TestServletAnnotation2.class, () -> new TestServletAnnotation2(randomString2),
+					context);
 		});
 		server.start();
 	}
@@ -63,14 +67,21 @@ public class ServletTest implements TestChecker {
 	public void testConstructorParameter() throws IOException {
 		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/"), 200);
 		final String content = checkEntity(response, MIME_TEXT_HTML);
-		checkContains(content, randomString + "CONSTRUCTOR");
+		checkContains(content, randomString1 + "CONSTRUCTOR");
 	}
 
 	@Test
-	public void testAnnotatedServlet() throws IOException {
-		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/test"), 200);
+	public void testAnnotatedServlet1() throws IOException {
+		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/test1"), 200);
 		final String content = checkEntity(response, MIME_TEXT_HTML);
-		checkContains(content, randomString + "ANNOTATION");
+		checkContains(content, randomString1 + "ANNOTATION");
+	}
+
+	@Test
+	public void testAnnotatedServlet2() throws IOException {
+		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/test2"), 200);
+		final String content = checkEntity(response, MIME_TEXT_HTML);
+		checkContains(content, randomString2 + "ANNOTATION");
 	}
 
 	@AfterClass
@@ -93,12 +104,12 @@ public class ServletTest implements TestChecker {
 
 	}
 
-	@WebServlet("/test")
-	public static class TestServletAnnotation extends HttpServlet {
+	@WebServlet("/test1")
+	public static class TestServletAnnotation1 extends HttpServlet {
 
 		public final String testString;
 
-		public TestServletAnnotation(String testString) {
+		public TestServletAnnotation1(String testString) {
 			this.testString = testString;
 		}
 
@@ -107,5 +118,13 @@ public class ServletTest implements TestChecker {
 			resp.getWriter().write("<html><body>" + testString + "ANNOTATION</body></html>");
 		}
 
+	}
+
+	@WebServlet("/test2")
+	public static class TestServletAnnotation2 extends TestServletAnnotation1 {
+
+		public TestServletAnnotation2(String testString) {
+			super(testString);
+		}
 	}
 }
