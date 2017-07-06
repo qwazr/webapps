@@ -114,8 +114,8 @@ public class WebappManager extends ConstructorParametersImpl {
 
 		// Load the static handlers
 		if (webappDefinition.statics != null)
-			webappDefinition.statics.forEach((urlPath, filePath) -> context.servlet(
-					getStaticServlet(urlPath, SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath))));
+			webappDefinition.statics.forEach((urlPath, filePath) -> registerStaticServlet(urlPath,
+					SubstitutedVariables.propertyAndEnvironmentSubstitute(filePath), context));
 
 		// Prepare the Javascript interpreter
 		final ScriptEngineManager manager = new ScriptEngineManager();
@@ -181,15 +181,17 @@ public class WebappManager extends ConstructorParametersImpl {
 		return service;
 	}
 
-	private ServletInfo getStaticServlet(final String urlPath, final String path) {
+	public void registerStaticServlet(final String urlPath, final String path, final ServletContextBuilder context) {
+		final ServletInfo servletInfo;
 		if (path.contains(".") && !path.contains("/"))
-			return new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath,
+			servletInfo = new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath,
 					StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
 					'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
 		else
-			return new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath,
+			servletInfo = new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath,
 					StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path).addMapping(
 					urlPath);
+		context.servlet(servletInfo);
 	}
 
 	private ServletInfo getDefaultFaviconServlet() {
