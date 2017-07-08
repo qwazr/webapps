@@ -51,6 +51,7 @@ import java.io.FilePermission;
 import java.io.IOException;
 import java.net.SocketPermission;
 import java.net.URISyntaxException;
+import java.nio.file.Files;
 import java.security.AccessControlContext;
 import java.security.CodeSource;
 import java.security.Permissions;
@@ -105,9 +106,10 @@ public class WebappManager extends ConstructorParametersImpl {
 		dataDir = configuration.dataDirectory;
 		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
-		File sessionPersistenceDir = new File(configuration.tempDirectory, SESSIONS_PERSISTENCE_DIR);
-		if (!sessionPersistenceDir.exists())
-			sessionPersistenceDir.mkdir();
+		final java.nio.file.Path sessionPersistenceDir = new File(configuration.tempDirectory, SESSIONS_PERSISTENCE_DIR)
+				.toPath();
+		if (!Files.exists(sessionPersistenceDir))
+			Files.createDirectory(sessionPersistenceDir);
 		builder.sessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
 
 		final ServletContextBuilder context = builder.getWebAppContext();
