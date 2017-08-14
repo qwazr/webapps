@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2016-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,12 +12,12 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps.test;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.qwazr.utils.ObjectMappers;
 import com.qwazr.utils.http.HttpRequest;
-import com.qwazr.utils.json.JsonMapper;
 import com.qwazr.webapps.WebappServer;
 import org.apache.http.Header;
 import org.apache.http.HttpResponse;
@@ -72,8 +72,8 @@ public class FullTest implements TestChecker {
 	@Test
 	public void test150JaxRsAppJson() throws IOException {
 		final String pathParam = "sub-path-app-json";
-		final HttpResponse response =
-				checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/json/test/" + pathParam), 200);
+		final HttpResponse response = checkResponse(
+				HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/json/test/" + pathParam), 200);
 		final String content = checkEntity(response, "application/json");
 		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
 		checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/swagger.json"), 404);
@@ -82,8 +82,8 @@ public class FullTest implements TestChecker {
 	@Test
 	public void test151JaxRsAppXml() throws IOException {
 		final String pathParam = "sub-path-app-xml";
-		final HttpResponse response =
-				checkResponse(HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-app/xml/test/" + pathParam), 200);
+		final HttpResponse response = checkResponse(
+				HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-app/xml/test/" + pathParam), 200);
 		final String content = checkEntity(response, "application/xml");
 		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
 		checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/swagger.json"), 404);
@@ -92,9 +92,8 @@ public class FullTest implements TestChecker {
 	@Test
 	public void test160JaxRsClassJson() throws IOException {
 		final String pathParam = "sub-path-class-json";
-		final HttpResponse response =
-				checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/json/test/" + pathParam),
-						200);
+		final HttpResponse response = checkResponse(
+				HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/json/test/" + pathParam), 200);
 		final String content = checkEntity(response, "application/json");
 		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
 		checkSwagger(
@@ -105,9 +104,8 @@ public class FullTest implements TestChecker {
 	@Test
 	public void test161JaxRsClassXml() throws IOException {
 		final String pathParam = "sub-path-class-xml";
-		final HttpResponse response =
-				checkResponse(HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/xml/test/" + pathParam),
-						200);
+		final HttpResponse response = checkResponse(
+				HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/xml/test/" + pathParam), 200);
 		final String content = checkEntity(response, "application/xml");
 		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
 		checkSwagger(checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/swagger.json"), 200),
@@ -117,14 +115,12 @@ public class FullTest implements TestChecker {
 	@Test
 	public void test170JaxRsClassBoth() throws IOException {
 		final String pathParam = "sub-path-class-both";
-		HttpResponse response =
-				checkResponse(HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/xml/test/" + pathParam),
-						200);
+		HttpResponse response = checkResponse(
+				HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/xml/test/" + pathParam), 200);
 		String content = checkEntity(response, "application/xml");
 		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
-		response =
-				checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/json/test/" + pathParam),
-						200);
+		response = checkResponse(
+				HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/json/test/" + pathParam), 200);
 		content = checkEntity(response, "application/json");
 		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
 		checkSwagger(
@@ -150,7 +146,7 @@ public class FullTest implements TestChecker {
 
 	private void checkSwagger(final HttpResponse response, final String title, final String basePath)
 			throws IOException {
-		JsonNode root = JsonMapper.MAPPER.readTree(response.getEntity().getContent());
+		final JsonNode root = ObjectMappers.JSON.readTree(response.getEntity().getContent());
 		Assert.assertNotNull(root);
 		Assert.assertTrue(root.has("swagger"));
 		Assert.assertEquals("2.0", root.get("swagger").asText());
@@ -166,8 +162,8 @@ public class FullTest implements TestChecker {
 		checkResponse(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test"), 401);
 		checkResponse(wrongAuth(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 401);
 		checkResponse(validAuth(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/wrong-role")), 403);
-		final HttpResponse response =
-				checkResponse(validAuth(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 204);
+		final HttpResponse response = checkResponse(
+				validAuth(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 204);
 		final Header userHeader = response.getFirstHeader(TestJaxRsResources.ServiceAuth.xAuthUser);
 		Assert.assertNotNull(userHeader);
 		checkSwagger(

@@ -17,8 +17,8 @@ package com.qwazr.webapps.exception;
 
 import com.jamesmurty.utils.XMLBuilder2;
 import com.qwazr.utils.LoggerUtils;
-import com.qwazr.utils.json.JsonMapper;
-import org.apache.commons.lang3.StringEscapeUtils;
+import com.qwazr.utils.ObjectMappers;
+import org.apache.commons.text.StringEscapeUtils;
 
 import javax.servlet.http.HttpServletResponse;
 import javax.ws.rs.core.Response.Status;
@@ -102,7 +102,7 @@ public class WebappException extends AbstractWebappException {
 	}
 
 	private void sendQuietlyJSON(HttpServletResponse response) throws IOException {
-		JsonMapper.MAPPER.writeValue(response.getWriter(), error);
+		ObjectMappers.JSON.writeValue(response.getWriter(), error);
 	}
 
 	@Override

@@ -16,8 +16,8 @@
 package com.qwazr.webapps;
 
 import com.qwazr.utils.LoggerUtils;
+import com.qwazr.utils.ObjectMappers;
 import com.qwazr.utils.concurrent.ReadWriteLock;
-import com.qwazr.utils.json.JsonMapper;
 
 import java.io.File;
 import java.io.IOException;
@@ -47,7 +47,7 @@ class GlobalConfiguration {
 
 	void loadWebappDefinition(final File jsonFile) {
 		try {
-			final WebappDefinition webappDefinition = JsonMapper.MAPPER.readValue(jsonFile, WebappDefinition.class);
+			final WebappDefinition webappDefinition = ObjectMappers.JSON.readValue(jsonFile, WebappDefinition.class);
 
 			if (webappDefinition == null || webappDefinition.isEmpty()) {
 				unloadWebappDefinition(jsonFile);
