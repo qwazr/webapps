@@ -40,12 +40,12 @@ class SmartFactory<T> implements GenericFactory<T> {
 	public ImmediateInstanceHandle<T> createInstance() throws InstantiationException {
 		final T instance;
 		try {
-			final InstanceFactory<T> instanceFactory = Objects.requireNonNull(
-					constructorParameters.findBestMatchingConstructor(clazz),
-					() -> "No matching constructor found for class: " + clazz);
+			final InstanceFactory<T> instanceFactory =
+					Objects.requireNonNull(constructorParameters.findBestMatchingConstructor(clazz),
+							() -> "No matching constructor found for class: " + clazz);
 			instance = instanceFactory.newInstance();
 		} catch (IllegalAccessException | InvocationTargetException | NoSuchMethodException e) {
-			throw new ServerException(e.getMessage(), e);
+			throw ServerException.of(e);
 		}
 		return new ImmediateInstanceHandle<>(instance);
 	}
@@ -70,7 +70,8 @@ class SmartFactory<T> implements GenericFactory<T> {
 
 	static <T> SmartFactory<T> from(final LibraryManager libraryManager,
 			final ConstructorParametersImpl constructorParameters, final Class<T> clazz) throws NoSuchMethodException {
-		return libraryManager == null ? new SmartFactory<>(constructorParameters, clazz) : new WithLibrary<>(
-				libraryManager, constructorParameters, clazz);
+		return libraryManager == null ?
+				new SmartFactory<>(constructorParameters, clazz) :
+				new WithLibrary<>(libraryManager, constructorParameters, clazz);
 	}
 }

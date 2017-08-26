@@ -106,8 +106,8 @@ public class WebappManager extends ConstructorParametersImpl {
 		dataDir = configuration.dataDirectory;
 		mimeTypeMap = new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));
 
-		final java.nio.file.Path sessionPersistenceDir = new File(configuration.tempDirectory, SESSIONS_PERSISTENCE_DIR)
-				.toPath();
+		final java.nio.file.Path sessionPersistenceDir =
+				new File(configuration.tempDirectory, SESSIONS_PERSISTENCE_DIR).toPath();
 		if (!Files.exists(sessionPersistenceDir))
 			Files.createDirectory(sessionPersistenceDir);
 		builder.sessionPersistenceManager(new InFileSessionPersistenceManager(sessionPersistenceDir));
@@ -153,8 +153,8 @@ public class WebappManager extends ConstructorParametersImpl {
 		if (webappDefinition.identity_manager != null) {
 			final Class<? extends GenericServer.IdentityManagerProvider> identityManagerClass =
 					ClassLoaderUtils.findClass(webappDefinition.identity_manager);
-			final GenericServer.IdentityManagerProvider identityManagerProvider = SmartFactory.from(libraryManager,
-					this, identityManagerClass).createInstance().getInstance();
+			final GenericServer.IdentityManagerProvider identityManagerProvider =
+					SmartFactory.from(libraryManager, this, identityManagerClass).createInstance().getInstance();
 			builder.identityManagerProvider(identityManagerProvider);
 		}
 
@@ -191,8 +191,8 @@ public class WebappManager extends ConstructorParametersImpl {
 					'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
 		else
 			servletInfo = new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath,
-					StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path).addMapping(
-					urlPath);
+					StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path)
+					.addMapping(urlPath);
 		context.servlet(servletInfo);
 	}
 
@@ -211,7 +211,7 @@ public class WebappManager extends ConstructorParametersImpl {
 			else
 				registerJavaController(urlPath, filePath, context);
 		} catch (ReflectiveOperationException e) {
-			throw new ServerException("Cannot build an instance of the controller: " + filePath, e);
+			throw ServerException.of("Cannot build an instance of the controller: " + filePath, e);
 		}
 	}
 
@@ -297,9 +297,10 @@ public class WebappManager extends ConstructorParametersImpl {
 		final String contextId = ServletContainer.class.getName() + '@' + urlPath;
 		urlPath = StringUtils.removeEnd(urlPath, "*");
 		urlPath = StringUtils.removeEnd(urlPath, "/");
-		return servletInfo.addInitParam(SwaggerContextService.SCANNER_ID_KEY, contextId).addInitParam(
-				SwaggerContextService.CONFIG_ID_KEY, contextId).addInitParam(SwaggerContextService.CONTEXT_ID_KEY,
-				contextId).addInitParam("swagger.api.basepath", urlPath);
+		return servletInfo.addInitParam(SwaggerContextService.SCANNER_ID_KEY, contextId)
+				.addInitParam(SwaggerContextService.CONFIG_ID_KEY, contextId)
+				.addInitParam(SwaggerContextService.CONTEXT_ID_KEY, contextId)
+				.addInitParam("swagger.api.basepath", urlPath);
 	}
 
 	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,

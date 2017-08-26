@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 201-2016 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,10 +12,9 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps.exception;
 
-import com.qwazr.utils.ExceptionUtils;
 import com.qwazr.webapps.exception.WebappException.Title;
 
 import javax.script.ScriptException;
@@ -33,9 +32,9 @@ public abstract class AbstractWebappException extends RuntimeException {
 
 	public abstract void sendQuietly(HttpServletResponse response);
 
-	public static AbstractWebappException newInstance(Exception e) {
+	public static AbstractWebappException newInstance(Throwable e) {
 		if (e instanceof RuntimeException)
-			e = ExceptionUtils.getCauseIfException(e);
+			e = e.getCause() != null ? e.getCause() : e;
 		if (e instanceof PrivilegedActionException)
 			e = ((PrivilegedActionException) e).getException();
 		if (e instanceof AbstractWebappException)
