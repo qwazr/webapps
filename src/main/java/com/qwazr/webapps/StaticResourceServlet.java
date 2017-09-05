@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015-2016 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,31 +12,29 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps;
 
 import org.apache.commons.io.IOUtils;
 
-import javax.servlet.ServletConfig;
+import javax.activation.MimetypesFileTypeMap;
 import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
-public class StaticResourceServlet extends BaseHttpServlet {
+public class StaticResourceServlet extends HttpServlet {
 
-	final static String STATIC_RESOURCE_PARAM = "com.qwazr.webapps.static.resource";
+	private final String resourcePrefix;
 
-	private volatile String resourcePrefix = null;
+	private final MimetypesFileTypeMap mimeTypeMap;
 
-	@Override
-	public void init(ServletConfig config) throws ServletException {
-		super.init(config);
-		resourcePrefix = config.getInitParameter(STATIC_RESOURCE_PARAM);
-		if (resourcePrefix == null || resourcePrefix.isEmpty())
-			throw new ServletException("The init-param " + STATIC_RESOURCE_PARAM + " is missing.");
+	public StaticResourceServlet(final String resourcePrefix, final MimetypesFileTypeMap mimeTypeMap) {
+		this.resourcePrefix = resourcePrefix;
+		this.mimeTypeMap = mimeTypeMap;
 	}
 
 	private String getResourcePath(final HttpServletRequest request) {
@@ -56,7 +54,7 @@ public class StaticResourceServlet extends BaseHttpServlet {
 			throws ServletException, IOException {
 		final String resourcePath = getResourcePath(request);
 		try (final InputStream input = findResource(resourcePath)) {
-			final String type = webappManager.mimeTypeMap.getContentType(resourcePath);
+			final String type = mimeTypeMap.getContentType(resourcePath);
 			StaticFileServlet.head(null, type, null, response);
 		} catch (FileNotFoundException e) {
 			response.sendError(404, e.getMessage());
@@ -68,7 +66,7 @@ public class StaticResourceServlet extends BaseHttpServlet {
 			throws ServletException, IOException {
 		final String resourcePath = getResourcePath(request);
 		try (final InputStream input = findResource(resourcePath)) {
-			final String type = webappManager.mimeTypeMap.getContentType(resourcePath);
+			final String type = mimeTypeMap.getContentType(resourcePath);
 			StaticFileServlet.head(null, type, null, response);
 			IOUtils.copy(input, response.getOutputStream());
 		} catch (FileNotFoundException e) {

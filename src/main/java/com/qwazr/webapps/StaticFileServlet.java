@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2015-2016 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,14 +12,17 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps;
 
+import com.qwazr.server.ServerException;
+import com.qwazr.utils.StringUtils;
 import org.apache.commons.io.IOUtils;
 
-import javax.servlet.ServletConfig;
+import javax.activation.MimetypesFileTypeMap;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import java.io.File;
@@ -27,25 +30,22 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.file.Paths;
 
-public class StaticFileServlet extends BaseHttpServlet {
+public class StaticFileServlet extends HttpServlet {
 
-	public final static String STATIC_PATH_PARAM = "com.qwazr.webapps.static.path";
+	private final MimetypesFileTypeMap mimeTypeMap;
+	private final File rootFile;
 
-	private volatile File rootFile = null;
-
-	@Override
-	public void init(final ServletConfig config) throws ServletException {
-		super.init(config);
-		final String path = config.getInitParameter(STATIC_PATH_PARAM);
-		if (path == null || path.isEmpty())
-			throw new ServletException("The init-param " + STATIC_PATH_PARAM + " is missing.");
+	public StaticFileServlet(final MimetypesFileTypeMap mimeTypeMap, final File dataDirectory, final String path) {
+		this.mimeTypeMap = mimeTypeMap;
+		if (path == null || StringUtils.isBlank(path))
+			throw new ServerException("The path is empty");
 		if (Paths.get(path).isAbsolute())
 			rootFile = new File(path);
 		else
-			rootFile = new File(webappManager.dataDir, path);
+			rootFile = new File(dataDirectory, path);
 		if (!rootFile.exists())
-			throw new ServletException("Cannot initialize the static path: " + path + " - The path does not exists "
-					+ rootFile.getAbsolutePath());
+			throw new ServerException("Cannot initialize the static path: " + path + " - The path does not exists " +
+					rootFile.getAbsolutePath());
 	}
 
 	private File handleFile(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
@@ -93,7 +93,7 @@ public class StaticFileServlet extends BaseHttpServlet {
 		final File staticFile = handleFile(request, response);
 		if (staticFile == null)
 			return;
-		final String type = webappManager.mimeTypeMap.getContentType(staticFile);
+		final String type = mimeTypeMap.getContentType(staticFile);
 		head(staticFile.length(), type, staticFile.lastModified(), response);
 	}
 
@@ -103,7 +103,7 @@ public class StaticFileServlet extends BaseHttpServlet {
 		final File staticFile = handleFile(request, response);
 		if (staticFile == null)
 			return;
-		final String type = webappManager.mimeTypeMap.getContentType(staticFile);
+		final String type = mimeTypeMap.getContentType(staticFile);
 		head(staticFile.length(), type, staticFile.lastModified(), response);
 		try (final FileInputStream fis = new FileInputStream(staticFile)) {
 			final ServletOutputStream out = response.getOutputStream();

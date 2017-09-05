@@ -65,7 +65,7 @@ import java.util.logging.Logger;
 
 public class WebappManager extends ConstructorParametersImpl {
 
-	public final static String SESSIONS_PERSISTENCE_DIR = "webapp-sessions";
+	private final static String SESSIONS_PERSISTENCE_DIR = "webapp-sessions";
 
 	private static final Logger logger = LoggerUtils.getLogger(WebappManager.class);
 
@@ -74,16 +74,14 @@ public class WebappManager extends ConstructorParametersImpl {
 
 	private final WebappServiceInterface service;
 
-	final static String FAVICON_PATH = "/favicon.ico";
+	private final static String FAVICON_PATH = "/favicon.ico";
 
-	final File dataDir;
-	final MimetypesFileTypeMap mimeTypeMap;
-	final WebappDefinition webappDefinition;
+	private final File dataDir;
+	private final MimetypesFileTypeMap mimeTypeMap;
+	private final WebappDefinition webappDefinition;
 
-	final LibraryManager libraryManager;
-
-	final GlobalConfiguration globalConfiguration;
-	final ScriptEngine scriptEngine;
+	private final LibraryManager libraryManager;
+	private final ScriptEngine scriptEngine;
 
 	public WebappManager(final LibraryManager libraryManager, final GenericServer.Builder builder)
 			throws IOException, ServerException, ReflectiveOperationException {
@@ -98,7 +96,7 @@ public class WebappManager extends ConstructorParametersImpl {
 		final Collection<File> etcFiles = configuration.getEtcFiles();
 
 		// Load the configuration
-		globalConfiguration = new GlobalConfiguration();
+		final GlobalConfiguration globalConfiguration = new GlobalConfiguration();
 		if (etcFiles != null)
 			etcFiles.forEach(globalConfiguration::loadWebappDefinition);
 		webappDefinition = globalConfiguration.getWebappDefinition();
@@ -186,20 +184,21 @@ public class WebappManager extends ConstructorParametersImpl {
 	public void registerStaticServlet(final String urlPath, final String path, final ServletContextBuilder context) {
 		final ServletInfo servletInfo;
 		if (path.contains(".") && !path.contains("/"))
-			servletInfo = new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath,
-					StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
-					'/' + StringUtils.replaceChars(path, '.', '/')).addMapping(urlPath);
+			servletInfo =
+					new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath, StaticResourceServlet.class,
+							GenericFactory.fromInstance(
+									new StaticResourceServlet('/' + StringUtils.replaceChars(path, '.', '/'),
+											mimeTypeMap))).addMapping(urlPath);
 		else
-			servletInfo = new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath,
-					StaticFileServlet.class).addInitParam(StaticFileServlet.STATIC_PATH_PARAM, path)
-					.addMapping(urlPath);
+			servletInfo = new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class,
+					GenericFactory.fromInstance(new StaticFileServlet(mimeTypeMap, dataDir, path))).addMapping(urlPath);
 		context.servlet(servletInfo);
 	}
 
 	private ServletInfo getDefaultFaviconServlet() {
-		return new ServletInfo(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH,
-				StaticResourceServlet.class).addInitParam(StaticResourceServlet.STATIC_RESOURCE_PARAM,
-				"/com/qwazr/webapps/favicon.ico").addMapping(FAVICON_PATH);
+		return new ServletInfo(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH, StaticResourceServlet.class,
+				GenericFactory.fromInstance(new StaticResourceServlet("/com/qwazr/webapps/favicon.ico", mimeTypeMap))).
+				addMapping(FAVICON_PATH);
 	}
 
 	private void registerController(final String urlPath, final String filePath, final ServletContextBuilder context) {
@@ -217,9 +216,10 @@ public class WebappManager extends ConstructorParametersImpl {
 
 	private void registerJavascriptServlet(final String urlPath, final String filePath,
 			final ServletContextBuilder context) {
-		context.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath,
-				JavascriptServlet.class).addInitParam(JavascriptServlet.JAVASCRIPT_PATH_PARAM, filePath)
-				.addMapping(urlPath));
+		context.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath, JavascriptServlet.class,
+				GenericFactory.fromInstance(
+						new JavascriptServlet(scriptEngine, libraryManager, new File(dataDir, filePath)))).addMapping(
+				urlPath));
 	}
 
 	private void registerJavaController(final String urlPath, final String classDef,
