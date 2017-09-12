@@ -19,6 +19,7 @@ import com.qwazr.library.LibraryManager;
 import com.qwazr.server.ApplicationBuilder;
 import com.qwazr.server.GenericFactory;
 import com.qwazr.server.GenericServer;
+import com.qwazr.server.GenericServerBuilder;
 import com.qwazr.server.InFileSessionPersistenceManager;
 import com.qwazr.server.ServerException;
 import com.qwazr.server.ServletContextBuilder;
@@ -83,7 +84,7 @@ public class WebappManager extends ConstructorParametersImpl {
 	private final LibraryManager libraryManager;
 	private final ScriptEngine scriptEngine;
 
-	public WebappManager(final LibraryManager libraryManager, final GenericServer.Builder builder)
+	public WebappManager(final LibraryManager libraryManager, final GenericServerBuilder builder)
 			throws IOException, ServerException, ReflectiveOperationException {
 		super(builder.getConstructorParameters() == null ?
 				new ConcurrentHashMap<>() :
@@ -172,7 +173,7 @@ public class WebappManager extends ConstructorParametersImpl {
 		return this;
 	}
 
-	public WebappManager registerContextAttribute(final GenericServer.Builder builder) {
+	public WebappManager registerContextAttribute(final GenericServerBuilder builder) {
 		builder.contextAttribute(this);
 		return this;
 	}
