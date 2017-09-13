@@ -70,9 +70,6 @@ public class WebappManager extends ConstructorParametersImpl {
 
 	private static final Logger logger = LoggerUtils.getLogger(WebappManager.class);
 
-	private static final String ACCESS_LOG_LOGGER_NAME = "com.qwazr.webapps.accessLogger";
-	private static final Logger accessLogger = Logger.getLogger(ACCESS_LOG_LOGGER_NAME);
-
 	private final WebappServiceInterface service;
 
 	private final static String FAVICON_PATH = "/favicon.ico";
@@ -126,7 +123,6 @@ public class WebappManager extends ConstructorParametersImpl {
 		if (webappDefinition.listeners != null)
 			for (String listenerClass : webappDefinition.listeners)
 				context.listener(Servlets.listener(ClassLoaderUtils.findClass(listenerClass)));
-		builder.webAppAccessLogger(accessLogger);
 
 		// Load the controllers
 		if (webappDefinition.controllers != null)

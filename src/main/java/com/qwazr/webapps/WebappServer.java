@@ -27,6 +27,7 @@ import com.qwazr.server.RestApplication;
 import com.qwazr.server.WelcomeShutdownService;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.FunctionUtils;
+import com.qwazr.utils.LoggerUtils;
 
 import javax.management.JMException;
 import javax.servlet.ServletException;
@@ -36,8 +37,11 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.logging.Logger;
 
 public class WebappServer implements BaseServer {
+
+	private final static Logger ACCESS_LOGS = LoggerUtils.getLogger(WebappServer.class);
 
 	private final GenericServer server;
 	private final WebappServiceInterface service;
@@ -48,6 +52,8 @@ public class WebappServer implements BaseServer {
 
 		final ExecutorService executorService = Executors.newCachedThreadPool();
 		final GenericServerBuilder builder = GenericServer.of(configuration, executorService);
+
+		builder.webAppAccessLogger(ACCESS_LOGS);
 
 		final Set<String> services = new HashSet<>();
 		services.add(ClusterServiceInterface.SERVICE_NAME);
