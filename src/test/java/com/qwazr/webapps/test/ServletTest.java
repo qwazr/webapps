@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright 2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -12,16 +12,14 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps.test;
 
 import com.google.common.io.Files;
 import com.qwazr.server.ServletContextBuilder;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.RandomUtils;
-import com.qwazr.utils.http.HttpRequest;
 import com.qwazr.webapps.WebappServer;
-import org.apache.http.HttpResponse;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -32,13 +30,19 @@ import javax.servlet.annotation.WebServlet;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
 public class ServletTest implements TestChecker {
 
 	public static WebappServer server;
+	public static Client client;
+	public static WebTarget target;
 	public static String randomString1;
 	public static String randomString2;
 
@@ -61,32 +65,50 @@ public class ServletTest implements TestChecker {
 					context);
 		});
 		server.start();
+		client = ClientBuilder.newClient();
+		target = client.target(TestServer.BASE_SERVLET_URL);
 	}
 
 	@Test
 	public void testConstructorParameter() throws IOException {
-		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/"), 200);
-		final String content = checkEntity(response, MIME_TEXT_HTML);
-		checkContains(content, randomString1 + "CONSTRUCTOR");
+		final Response response = checkResponse(target.request().get(), 200);
+		try {
+			final String content = checkEntity(response, MediaType.TEXT_HTML_TYPE);
+			checkContains(content, randomString1 + "CONSTRUCTOR");
+		} finally {
+			response.close();
+		}
 	}
 
 	@Test
 	public void testAnnotatedServlet1() throws IOException {
-		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/test1"), 200);
-		final String content = checkEntity(response, MIME_TEXT_HTML);
-		checkContains(content, randomString1 + "ANNOTATION");
+		final Response response = checkResponse(target.path("test1").request().get(), 200);
+		try {
+			final String content = checkEntity(response, MediaType.TEXT_HTML_TYPE);
+			checkContains(content, randomString1 + "ANNOTATION");
+		} finally {
+			response.close();
+		}
 	}
 
 	@Test
 	public void testAnnotatedServlet2() throws IOException {
-		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/test2"), 200);
-		final String content = checkEntity(response, MIME_TEXT_HTML);
-		checkContains(content, randomString2 + "ANNOTATION");
+		final Response response = checkResponse(target.path("test2").request().get(), 200);
+		try {
+			final String content = checkEntity(response, MediaType.TEXT_HTML_TYPE);
+			checkContains(content, randomString2 + "ANNOTATION");
+		} finally {
+			response.close();
+		}
 	}
 
 	@AfterClass
 	public static void after() {
 		server.stop();
+		if (client != null) {
+			client.close();
+			client = null;
+		}
 	}
 
 	public static class TestServletConstructorParameter extends HttpServlet {

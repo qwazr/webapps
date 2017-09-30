@@ -17,28 +17,45 @@ package com.qwazr.webapps.test;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.qwazr.utils.ObjectMappers;
-import com.qwazr.utils.http.HttpRequest;
 import com.qwazr.webapps.WebappServer;
-import org.apache.http.Header;
-import org.apache.http.HttpResponse;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.methods.CloseableHttpResponse;
-import org.apache.http.client.protocol.HttpClientContext;
-import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.glassfish.jersey.client.authentication.HttpAuthenticationFeature;
 import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
 import javax.servlet.ServletException;
+import javax.ws.rs.client.Client;
+import javax.ws.rs.client.ClientBuilder;
+import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
+import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.net.URISyntaxException;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class FullTest implements TestChecker {
+
+	static Client client;
+	static WebTarget target;
+
+	@BeforeClass
+	public static void setup() {
+		client = ClientBuilder.newClient();
+		target = client.target(TestServer.BASE_SERVLET_URL);
+
+	}
+
+	@AfterClass
+	public static void cleanup() {
+		if (client != null) {
+			client.close();
+			client = null;
+		}
+		WebappServer.shutdown();
+	}
 
 	@Test
 	public void test000StartServer() throws Exception {
@@ -57,96 +74,116 @@ public class FullTest implements TestChecker {
 
 	@Test
 	public void test100javaServlet() throws IOException {
-		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/java"), 200);
-		final String content = checkEntity(response, MIME_TEXT_HTML);
-		checkContains(content, TestServlet.TEST_STRING);
+		final Response response = checkResponse(target.path("java").request().get(), 200);
+		try {
+			final String content = checkEntity(response, MediaType.TEXT_HTML_TYPE);
+			checkContains(content, TestServlet.TEST_STRING);
+		} finally {
+			response.close();
+		}
 	}
 
 	@Test
 	public void test102javaServletBis() throws IOException {
-		final HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/java-bis"), 200);
-		final String content = checkEntity(response, MIME_TEXT_HTML);
-		checkContains(content, TestServlet.TEST_STRING);
+		final Response response = checkResponse(target.path("java-bis").request().get(), 200);
+		try {
+			final String content = checkEntity(response, MediaType.TEXT_HTML_TYPE);
+			checkContains(content, TestServlet.TEST_STRING);
+		} finally {
+			response.close();
+		}
 	}
 
 	@Test
 	public void test150JaxRsAppJson() throws IOException {
 		final String pathParam = "sub-path-app-json";
-		final HttpResponse response = checkResponse(
-				HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/json/test/" + pathParam), 200);
-		final String content = checkEntity(response, "application/json");
-		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
-		checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/swagger.json"), 404);
+		final Response response = checkResponse(target.path("/jaxrs-app/json/test/" + pathParam).request().get(), 200);
+		try {
+			final String content = checkEntity(response, MediaType.APPLICATION_JSON_TYPE);
+			checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+			checkResponse(target.path("/jaxrs-app/swagger.json").request().get(), 404).close();
+		} finally {
+			response.close();
+		}
 	}
 
 	@Test
 	public void test151JaxRsAppXml() throws IOException {
 		final String pathParam = "sub-path-app-xml";
-		final HttpResponse response = checkResponse(
-				HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-app/xml/test/" + pathParam), 200);
-		final String content = checkEntity(response, "application/xml");
-		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
-		checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-app/swagger.json"), 404);
+		final Response response =
+				checkResponse(target.path("/jaxrs-app/xml/test/" + pathParam).request().post(null), 200);
+		try {
+			final String content = checkEntity(response, MediaType.APPLICATION_XML_TYPE);
+			checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+			checkResponse(target.path("/jaxrs-app/swagger.json").request().get(), 404).close();
+		} finally {
+			response.close();
+		}
 	}
 
 	@Test
 	public void test160JaxRsClassJson() throws IOException {
 		final String pathParam = "sub-path-class-json";
-		final HttpResponse response = checkResponse(
-				HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/json/test/" + pathParam), 200);
-		final String content = checkEntity(response, "application/json");
-		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
-		checkSwagger(
-				checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-json/swagger.json"), 200),
-				"ServiceJson", "/jaxrs-class-json");
+		final Response response =
+				checkResponse(target.path("/jaxrs-class-json/json/test/" + pathParam).request().get(), 200);
+		try {
+			final String content = checkEntity(response, MediaType.APPLICATION_JSON_TYPE);
+			checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+			checkSwagger(checkResponse(target.path("/jaxrs-class-json/swagger.json").request().get(), 200),
+					"ServiceJson", "/jaxrs-class-json");
+		} finally {
+			response.close();
+		}
 	}
 
 	@Test
 	public void test161JaxRsClassXml() throws IOException {
 		final String pathParam = "sub-path-class-xml";
-		final HttpResponse response = checkResponse(
-				HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/xml/test/" + pathParam), 200);
-		final String content = checkEntity(response, "application/xml");
-		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
-		checkSwagger(checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-xml/swagger.json"), 200),
-				"ServiceXml", "/jaxrs-class-xml");
+		final Response response =
+				checkResponse(target.path("/jaxrs-class-xml/xml/test/" + pathParam).request().post(null), 200);
+		try {
+			final String content = checkEntity(response, MediaType.APPLICATION_XML_TYPE);
+			checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+			checkSwagger(checkResponse(target.path("/jaxrs-class-xml/swagger.json").request().get(), 200), "ServiceXml",
+					"/jaxrs-class-xml");
+		} finally {
+			response.close();
+		}
 	}
 
 	@Test
 	public void test170JaxRsClassBoth() throws IOException {
 		final String pathParam = "sub-path-class-both";
-		HttpResponse response = checkResponse(
-				HttpRequest.Post(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/xml/test/" + pathParam), 200);
-		String content = checkEntity(response, "application/xml");
-		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
-		response = checkResponse(
-				HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/json/test/" + pathParam), 200);
-		content = checkEntity(response, "application/json");
-		checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
-		checkSwagger(
-				checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/jaxrs-class-both/swagger.json"), 200),
-				"ServiceBoth", "/jaxrs-class-both");
+		Response response =
+				checkResponse(target.path("/jaxrs-class-both/xml/test/" + pathParam).request().post(null), 200);
+		try {
+			String content = checkEntity(response, MediaType.APPLICATION_XML_TYPE);
+			checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+			response.close();
+			response = checkResponse(target.path("/jaxrs-class-both/json/test/" + pathParam).request().get(), 200);
+			content = checkEntity(response, MediaType.APPLICATION_JSON_TYPE);
+			checkContains(content, TestJaxRsResources.TEST_STRING, pathParam);
+			checkSwagger(checkResponse(target.path("/jaxrs-class-both/swagger.json").request().get(), 200),
+					"ServiceBoth", "/jaxrs-class-both");
+		} finally {
+			response.close();
+		}
 	}
 
-	private CloseableHttpResponse auth(HttpRequest request, String user, String pass) throws IOException {
-		final HttpClientContext context = HttpClientContext.create();
-		final BasicCredentialsProvider credentialsProvider = new BasicCredentialsProvider();
-		credentialsProvider.setCredentials(AuthScope.ANY, new UsernamePasswordCredentials(user, pass));
-		context.setAttribute(HttpClientContext.CREDS_PROVIDER, credentialsProvider);
-		return request.execute(context);
+	Client getAuthClient(String user, String pass) {
+		return ClientBuilder.newClient().register(HttpAuthenticationFeature.basic(user, pass));
 	}
 
-	private CloseableHttpResponse validAuth(HttpRequest request) throws IOException {
-		return auth(request, TestIdentityProvider.TEST_USER, TestIdentityProvider.TEST_PASSWORD);
+	private Client getValidAuth() {
+		return getAuthClient(TestIdentityProvider.TEST_USER, TestIdentityProvider.TEST_PASSWORD);
 	}
 
-	private CloseableHttpResponse wrongAuth(HttpRequest request) throws IOException {
-		return auth(request, "dummy", "dummy");
+	private Client getWrongAuth() {
+		return getAuthClient("dummy", "dummy");
 	}
 
-	private void checkSwagger(final HttpResponse response, final String title, final String basePath)
-			throws IOException {
-		final JsonNode root = ObjectMappers.JSON.readTree(response.getEntity().getContent());
+	private void checkSwagger(final Response response, final String title, final String basePath) throws IOException {
+		final JsonNode root = ObjectMappers.JSON.readTree(response.readEntity(String.class));
 		Assert.assertNotNull(root);
 		Assert.assertTrue(root.has("swagger"));
 		Assert.assertEquals("2.0", root.get("swagger").asText());
@@ -159,16 +196,26 @@ public class FullTest implements TestChecker {
 	}
 
 	private void testAuth(final String appPath, final String appTitle) throws IOException {
-		checkResponse(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test"), 401);
-		checkResponse(wrongAuth(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 401);
-		checkResponse(validAuth(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/wrong-role")), 403);
-		final HttpResponse response = checkResponse(
-				validAuth(HttpRequest.Head(TestServer.BASE_SERVLET_URL + appPath + "/auth/test")), 204);
-		final Header userHeader = response.getFirstHeader(TestJaxRsResources.ServiceAuth.xAuthUser);
-		Assert.assertNotNull(userHeader);
-		checkSwagger(
-				checkResponse(validAuth(HttpRequest.Get(TestServer.BASE_SERVLET_URL + appPath + "/swagger.json")), 200),
-				appTitle, appPath);
+		checkResponse(target.path(appPath).path("/auth/test").request().head(), 401).close();
+		Client wrongAuthClient = getWrongAuth();
+		checkResponse(
+				wrongAuthClient.target(TestServer.BASE_SERVLET_URL).path(appPath).path("/auth/test").request().head(),
+				401).close();
+		wrongAuthClient.close();
+		Client validAuthClient = getValidAuth();
+		checkResponse(validAuthClient.target(TestServer.BASE_SERVLET_URL)
+				.path(appPath)
+				.path("/auth/wrong-role")
+				.request()
+				.head(), 403).close();
+		final Response response = checkResponse(
+				validAuthClient.target(TestServer.BASE_SERVLET_URL).path(appPath).path("/auth/test").request().head(),
+				204);
+		Assert.assertNotNull(response.getHeaderString(TestJaxRsResources.ServiceAuth.xAuthUser));
+		response.close();
+		checkSwagger(checkResponse(
+				validAuthClient.target(TestServer.BASE_SERVLET_URL).path(appPath).path("/swagger.json").request().get(),
+				200), appTitle, appPath);
 	}
 
 	@Test
@@ -184,78 +231,75 @@ public class FullTest implements TestChecker {
 
 	@Test
 	public void test200javascriptServlet() throws IOException {
-		HttpResponse response = checkResponse(HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/javascript"), 200);
-		checkContains(checkEntity(response, MIME_TEXT_HTML), TestServlet.TEST_STRING);
-	}
-
-	private final static String PARAM_TEST_STRING = "testParam=testValue";
-
-	@Test
-	public void test210javascriptServletWithParam() throws IOException {
-		try (final CloseableHttpResponse response = checkResponse(
-				HttpRequest.Get(TestServer.BASE_SERVLET_URL + "/javascript?" + PARAM_TEST_STRING), 200)) {
-			final String content = checkEntity(response, MIME_TEXT_HTML);
-			checkContains(content, TestServlet.TEST_STRING, PARAM_TEST_STRING);
+		final Response response = checkResponse(target.path("/javascript").request().get(), 200);
+		try {
+			checkContains(checkEntity(response, MediaType.TEXT_HTML_TYPE), TestServlet.TEST_STRING);
+		} finally {
+			response.close();
 		}
 	}
 
-	private final void checkContentType(HttpResponse response, String contentTypePrefix) {
-		Assert.assertNotNull(response);
-		Header contentType = response.getFirstHeader("Content-Type");
-		Assert.assertNotNull(contentType);
-		Assert.assertTrue(contentType.getValue().startsWith(contentTypePrefix));
+	@Test
+	public void test210javascriptServletWithParam() throws IOException {
+		final Response response =
+				checkResponse(target.path("/javascript").queryParam("testParam", "testValue").request().get(), 200);
+		try {
+			final String content = checkEntity(response, MediaType.TEXT_HTML_TYPE);
+			checkContains(content, TestServlet.TEST_STRING, "testParam=testValue");
+		} finally {
+			response.close();
+		}
 	}
 
 	@Test
 	public void test300staticFile() throws IOException {
-		final String badUrl = TestServer.BASE_SERVLET_URL + "/css/dummy.css";
-		checkResponse(HttpRequest.Head(badUrl), 404);
-		checkResponse(HttpRequest.Get(badUrl), 404);
-		final String goodUrl = TestServer.BASE_SERVLET_URL + "/css/test.css";
-		checkContentType(checkResponse(HttpRequest.Head(goodUrl), 200), MIME_TEXT_CSS);
-		checkContains(checkEntity(checkResponse(HttpRequest.Get(goodUrl), 200), MIME_TEXT_CSS), ".qwazr {");
+		final String badUrl = "/css/dummy.css";
+		checkResponse(target.path(badUrl).request().head(), 404).close();
+		checkResponse(target.path(badUrl).request().get(), 404).close();
+		final String goodUrl = "/css/test.css";
+		checkContentType(checkResponse(target.path(goodUrl).request().head(), 200), MIME_TEXT_CSS).close();
+		checkContains(checkEntity(checkResponse(target.path(goodUrl).request().get(), 200), MIME_TEXT_CSS), ".qwazr {");
 	}
 
 	@Test
 	public void test301staticResource() throws IOException {
-		final String badUrl = TestServer.BASE_SERVLET_URL + "/img/dummy.png";
-		checkResponse(HttpRequest.Head(badUrl), 404);
-		checkResponse(HttpRequest.Get(badUrl), 404);
-		final String goodUrl = TestServer.BASE_SERVLET_URL + "/img/logo.png";
-		checkContentType(checkResponse(HttpRequest.Head(goodUrl), 200), MIME_IMAGE_X_PNG);
-		checkEntity(checkResponse(HttpRequest.Get(goodUrl), 200), MIME_IMAGE_X_PNG);
+		final String badUrl = "/img/dummy.png";
+		checkResponse(target.path(badUrl).request().head(), 404).close();
+		checkResponse(target.path(badUrl).request().get(), 404).close();
+		final String goodUrl = "/img/logo.png";
+		checkContentType(checkResponse(target.path(goodUrl).request().head(), 200), MIME_IMAGE_X_PNG).close();
+		checkEntity(checkResponse(target.path(goodUrl).request().get(), 200), MIME_IMAGE_X_PNG);
 	}
 
 	@Test
 	public void test302favicon() throws IOException {
-		final String url = TestServer.BASE_SERVLET_URL + "/favicon.ico";
-		checkResponse(HttpRequest.Head(url), 200);
-		HttpResponse response = checkResponse(HttpRequest.Get(url), 200);
-		checkEntity(response, MIME_FAVICON);
+		final String url = "/favicon.ico";
+		checkResponse(target.path(url).request().head(), 200).close();
+		checkEntity(checkResponse(target.path(url).request().get(), 200), MIME_FAVICON);
 	}
 
 	@Test
 	public void test400staticHtml() throws IOException {
-		final String url = TestServer.BASE_SERVLET_URL + "/index";
-		checkResponse(HttpRequest.Get(url), 200);
-		final HttpResponse response = checkResponse(HttpRequest.Get(url), 200);
-		checkContains(checkEntity(response, MediaType.TEXT_HTML), "QWAZR - Hello World!");
+		final String url = "/index";
+		checkResponse(target.path(url).request().head(), 200).close();
+		checkContains(checkEntity(checkResponse(target.path(url).request().get(), 200), MediaType.TEXT_HTML_TYPE),
+				"QWAZR - Hello World!");
 	}
 
 	@Test
 	public void test402staticIndexHtml() throws IOException {
-		final String url = TestServer.BASE_SERVLET_URL + "/html";
-		checkResponse(HttpRequest.Get(url), 200);
-		final HttpResponse response = checkResponse(HttpRequest.Get(url), 200);
-		checkContains(checkEntity(response, MediaType.TEXT_HTML), "QWAZR - Hello World!");
+		final String url = "/html";
+		checkResponse(target.path(url).request().head(), 200).close();
+		checkContains(checkEntity(checkResponse(target.path(url).request().get(), 200), MediaType.TEXT_HTML_TYPE),
+				"QWAZR - Hello World!");
 	}
 
 	@Test
 	public void test404staticIndexHtml() throws IOException {
-		final String url = TestServer.BASE_SERVLET_URL + "/html/index.html";
-		checkResponse(HttpRequest.Get(url), 200);
-		final HttpResponse response = checkResponse(HttpRequest.Get(url), 200);
-		checkContains(checkEntity(response, MediaType.TEXT_HTML), "QWAZR - Hello World!");
+		final String url = "/html/index.html";
+		checkResponse(target.path(url).request().head(), 200).close();
+		checkContains(checkEntity(checkResponse(target.path(url).request().get(), 200), MediaType.TEXT_HTML_TYPE),
+				"QWAZR - Hello World!");
 	}
 
 	@Test
@@ -265,10 +309,5 @@ public class FullTest implements TestChecker {
 		Assert.assertEquals(TestFilter.class, TestFilter.initializedFilters.iterator().next().getClass());
 		Assert.assertEquals(1, TestFilter.calledFilters.size());
 		Assert.assertEquals(TestFilter.class, TestFilter.calledFilters.iterator().next().getClass());
-	}
-
-	@AfterClass
-	public static void stopServer() {
-		WebappServer.shutdown();
 	}
 }
