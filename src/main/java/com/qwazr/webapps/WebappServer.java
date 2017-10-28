@@ -26,8 +26,8 @@ import com.qwazr.server.GenericServerBuilder;
 import com.qwazr.server.RestApplication;
 import com.qwazr.server.WelcomeShutdownService;
 import com.qwazr.server.configuration.ServerConfiguration;
-import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.LoggerUtils;
+import com.qwazr.utils.concurrent.BiConsumerEx;
 
 import javax.management.JMException;
 import javax.servlet.ServletException;
@@ -47,7 +47,7 @@ public class WebappServer implements BaseServer {
 	private final WebappServiceInterface service;
 
 	public WebappServer(final ServerConfiguration configuration,
-			FunctionUtils.BiConsumerEx<WebappManager, GenericServerBuilder, NoSuchMethodException> prebuild)
+			BiConsumerEx<WebappManager, GenericServerBuilder, NoSuchMethodException> prebuild)
 			throws IOException, URISyntaxException, ReflectiveOperationException {
 
 		final ExecutorService executorService = Executors.newCachedThreadPool();

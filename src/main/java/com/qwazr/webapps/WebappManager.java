@@ -25,10 +25,10 @@ import com.qwazr.server.ServerException;
 import com.qwazr.server.ServletContextBuilder;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.ClassLoaderUtils;
-import com.qwazr.utils.FunctionUtils;
 import com.qwazr.utils.LoggerUtils;
 import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.SubstitutedVariables;
+import com.qwazr.utils.concurrent.ConcurrentUtils;
 import com.qwazr.utils.reflection.ConstructorParametersImpl;
 import io.swagger.jaxrs.config.SwaggerContextService;
 import io.undertow.servlet.Servlets;
@@ -130,7 +130,7 @@ public class WebappManager extends ConstructorParametersImpl {
 
 		// Load the filters
 		if (webappDefinition.filters != null)
-			FunctionUtils.forEachEx(webappDefinition.filters,
+			ConcurrentUtils.forEachEx(webappDefinition.filters,
 					(urlPath, filterClass) -> registerJavaFilter(urlPath, ClassLoaderUtils.findClass(filterClass),
 							context));
 		// Load the closeable filter
@@ -138,7 +138,7 @@ public class WebappManager extends ConstructorParametersImpl {
 
 		// Load the filters
 		if (webappDefinition.filters != null)
-			FunctionUtils.forEachEx(webappDefinition.filters, (urlPath, filterClass) -> {
+			ConcurrentUtils.forEachEx(webappDefinition.filters, (urlPath, filterClass) -> {
 				final String name = filterClass + "@" + urlPath;
 				context.filter(name, ClassLoaderUtils.findClass(filterClass));
 				context.urlFilterMapping(name, urlPath, DispatcherType.REQUEST);
