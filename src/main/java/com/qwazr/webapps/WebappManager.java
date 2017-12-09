@@ -36,6 +36,7 @@ import io.undertow.servlet.api.SecurityInfo;
 import io.undertow.servlet.api.ServletInfo;
 import org.apache.commons.io.FilenameUtils;
 import org.glassfish.jersey.servlet.ServletContainer;
+import org.webjars.servlet.WebjarsServlet;
 
 import javax.activation.MimetypesFileTypeMap;
 import javax.management.MBeanPermission;
@@ -172,6 +173,24 @@ public class WebappManager extends ConstructorParametersImpl {
 	public WebappManager registerContextAttribute(final GenericServerBuilder builder) {
 		builder.contextAttribute(this);
 		return this;
+	}
+
+	public WebappManager registerWebjars(final ServletContextBuilder context, final boolean disableCache,
+			final String... urlMappings) {
+		ServletInfo servletInfo =
+				new ServletInfo("WebjarsServlet", WebjarsServlet.class).setLoadOnStartup(2).addMappings(urlMappings);
+		if (disableCache)
+			servletInfo = servletInfo.addInitParam("disableCache", Boolean.toString(disableCache));
+		context.addServlet(servletInfo);
+		return this;
+	}
+
+	public WebappManager registerWebjars(final ServletContextBuilder context, final boolean disableCache) {
+		return registerWebjars(context, disableCache, "/webjars/*");
+	}
+
+	public WebappManager registerWebjars(final ServletContextBuilder context) {
+		return registerWebjars(context, false);
 	}
 
 	public WebappServiceInterface getService() {

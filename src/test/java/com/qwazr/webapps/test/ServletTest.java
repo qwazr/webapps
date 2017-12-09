@@ -63,6 +63,7 @@ public class ServletTest implements TestChecker {
 			webapp.registerJavaServlet(TestServletAnnotation1.class, context);
 			webapp.registerJavaServlet(TestServletAnnotation2.class, () -> new TestServletAnnotation2(randomString2),
 					context);
+			webapp.registerWebjars(context);
 		});
 		server.start();
 		client = ClientBuilder.newClient();
@@ -71,34 +72,34 @@ public class ServletTest implements TestChecker {
 
 	@Test
 	public void testConstructorParameter() throws IOException {
-		final Response response = checkResponse(target.request().get(), 200);
-		try {
+		try (Response response = checkResponse(target.request().get(), 200)) {
 			final String content = checkEntity(response, MediaType.TEXT_HTML_TYPE);
 			checkContains(content, randomString1 + "CONSTRUCTOR");
-		} finally {
-			response.close();
 		}
 	}
 
 	@Test
 	public void testAnnotatedServlet1() throws IOException {
-		final Response response = checkResponse(target.path("test1").request().get(), 200);
-		try {
+		try (Response response = checkResponse(target.path("test1").request().get(), 200)) {
 			final String content = checkEntity(response, MediaType.TEXT_HTML_TYPE);
 			checkContains(content, randomString1 + "ANNOTATION");
-		} finally {
-			response.close();
 		}
 	}
 
 	@Test
 	public void testAnnotatedServlet2() throws IOException {
-		final Response response = checkResponse(target.path("test2").request().get(), 200);
-		try {
+		try (final Response response = checkResponse(target.path("test2").request().get(), 200)) {
 			final String content = checkEntity(response, MediaType.TEXT_HTML_TYPE);
 			checkContains(content, randomString2 + "ANNOTATION");
-		} finally {
-			response.close();
+		}
+	}
+
+	@Test
+	public void testWebjars() throws IOException {
+		try (final Response response = checkResponse(
+				target.path("webjars/bootstrap/4.0.0-beta.2/css/bootstrap.css").request().get(), 200)) {
+			final String content = checkEntity(response, MediaType.valueOf("text/css"));
+			checkContains(content, "bootstrap");
 		}
 	}
 

@@ -18,7 +18,6 @@ package com.qwazr.webapps;
 import org.apache.commons.io.IOUtils;
 
 import javax.activation.MimetypesFileTypeMap;
-import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -51,7 +50,7 @@ public class StaticResourceServlet extends HttpServlet {
 
 	@Override
 	final protected void doHead(final HttpServletRequest request, final HttpServletResponse response)
-			throws ServletException, IOException {
+			throws IOException {
 		final String resourcePath = getResourcePath(request);
 		try (final InputStream input = findResource(resourcePath)) {
 			final String type = mimeTypeMap.getContentType(resourcePath);
@@ -63,7 +62,7 @@ public class StaticResourceServlet extends HttpServlet {
 
 	@Override
 	final protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
-			throws ServletException, IOException {
+			throws IOException {
 		final String resourcePath = getResourcePath(request);
 		try (final InputStream input = findResource(resourcePath)) {
 			final String type = mimeTypeMap.getContentType(resourcePath);

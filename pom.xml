@@ -22,6 +22,7 @@
     </scm>
 
     <dependencies>
+
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-scripts</artifactId>
@@ -67,6 +68,19 @@
             <artifactId>swagger-jersey2-jaxrs</artifactId>
             <version>1.5.16</version>
         </dependency>
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>webjars-servlet-2.x</artifactId>
+            <version>1.5</version>
+        </dependency>
+
+        <dependency>
+            <groupId>org.webjars</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>4.0.0-beta.2</version>
+            <scope>test</scope>
+        </dependency>
+
     </dependencies>
 
     <profiles>
