@@ -16,7 +16,6 @@
 package com.qwazr.webapps.test;
 
 import com.google.common.io.Files;
-import com.qwazr.server.ServletContextBuilder;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.RandomUtils;
 import com.qwazr.webapps.WebappServer;
@@ -57,13 +56,11 @@ public class ServletTest implements TestChecker {
 				.listenAddress("localhost")
 				.etcFilter("*.json")
 				.build(), (webapp, builder) -> {
-			final ServletContextBuilder context = builder.getWebAppContext();
 			builder.getConstructorParameters().registerConstructorParameter(randomString1);
-			webapp.registerJavaServlet("/", TestServletConstructorParameter.class, context);
-			webapp.registerJavaServlet(TestServletAnnotation1.class, context);
-			webapp.registerJavaServlet(TestServletAnnotation2.class, () -> new TestServletAnnotation2(randomString2),
-					context);
-			webapp.registerWebjars(context);
+			webapp.registerJavaServlet("/", TestServletConstructorParameter.class);
+			webapp.registerJavaServlet(TestServletAnnotation1.class);
+			webapp.registerJavaServlet(TestServletAnnotation2.class, () -> new TestServletAnnotation2(randomString2));
+			webapp.registerWebjars();
 		});
 		server.start();
 		client = ClientBuilder.newClient();

@@ -27,7 +27,6 @@ import com.qwazr.server.RestApplication;
 import com.qwazr.server.WelcomeShutdownService;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.LoggerUtils;
-import com.qwazr.utils.concurrent.BiConsumerEx;
 
 import javax.management.JMException;
 import javax.servlet.ServletException;
@@ -46,8 +45,7 @@ public class WebappServer implements BaseServer {
 	private final GenericServer server;
 	private final WebappServiceInterface service;
 
-	public WebappServer(final ServerConfiguration configuration,
-			BiConsumerEx<WebappManager, GenericServerBuilder, NoSuchMethodException> prebuild)
+	public WebappServer(final ServerConfiguration configuration, final PreBuild prebuild)
 			throws IOException, URISyntaxException, ReflectiveOperationException {
 
 		final ExecutorService executorService = Executors.newCachedThreadPool();
@@ -71,12 +69,20 @@ public class WebappServer implements BaseServer {
 				new LibraryManager(configuration.dataDirectory, configuration.getEtcFiles()).registerIdentityManager(
 						builder).registerContextAttribute(builder).registerWebService(webServices);
 
-		final WebappManager webappManager = new WebappManager(libraryManager, builder).registerContextAttribute(builder)
-				.registerWebService(webServices);
-		if (prebuild != null)
-			prebuild.accept(webappManager, builder);
+		final WebappManager.Builder webappManagerBuilder = WebappManager.of(builder, builder.getWebAppContext())
+				.libraryManager(libraryManager)
+				.registerDefaultFaviconServlet()
+				.persistSessions(configuration.tempDirectory.toPath().resolve(WebappManager.SESSIONS_PERSISTENCE_DIR))
+				.webappDefinition(configuration.dataDirectory.toPath(),
+						WebappDefinition.load(configuration.getEtcFiles()));
 
+		if (prebuild != null)
+			prebuild.accept(webappManagerBuilder, builder);
+
+		final WebappManager webappManager = webappManagerBuilder.build();
+		webServices.singletons(webappManager.getService());
 		builder.getWebServiceContext().jaxrs(webServices);
+
 		server = builder.build();
 		service = webappManager.getService();
 	}
@@ -97,8 +103,7 @@ public class WebappServer implements BaseServer {
 	}
 
 	public static synchronized void main(final String... args)
-			throws IOException, ReflectiveOperationException, ServletException, JMException, URISyntaxException,
-			InterruptedException {
+			throws IOException, ReflectiveOperationException, ServletException, JMException, URISyntaxException {
 		if (INSTANCE != null)
 			shutdown();
 		INSTANCE = new WebappServer(new ServerConfiguration(args), null);
@@ -109,6 +114,11 @@ public class WebappServer implements BaseServer {
 		if (INSTANCE != null)
 			INSTANCE.stop();
 		INSTANCE = null;
+	}
+
+	@FunctionalInterface
+	public interface PreBuild {
+		void accept(final WebappManager.Builder webAppBuilder, final GenericServerBuilder serverBuilder);
 	}
 
 }

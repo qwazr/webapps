@@ -17,7 +17,6 @@ package com.qwazr.webapps;
 
 import com.qwazr.library.LibraryManager;
 import com.qwazr.scripts.ScriptConsole;
-import com.qwazr.utils.ScriptUtils;
 
 import javax.script.Bindings;
 import javax.script.ScriptEngine;
@@ -26,21 +25,21 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.File;
-import java.io.FileReader;
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.security.PrivilegedActionException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class JavascriptServlet extends HttpServlet {
 
 	private final ScriptEngine scriptEngine;
 
-	private final File controllerFile;
+	private final Path controllerFile;
 
 	private final LibraryManager libraryManager;
 
 	public JavascriptServlet(final ScriptEngine scriptEngine, final LibraryManager libraryManager,
-			final File controllerFile) {
+			final Path controllerFile) {
 		this.scriptEngine = scriptEngine;
 		this.libraryManager = libraryManager;
 		this.controllerFile = controllerFile;
@@ -59,10 +58,9 @@ public class JavascriptServlet extends HttpServlet {
 		bindings.put("closeable", req.getAttribute(CloseableFilter.ATTRIBUTE_NAME));
 		bindings.put("session", request.getSession());
 		bindings.putAll(request.getAttributes());
-		try (final FileReader fileReader = new FileReader(controllerFile)) {
-			ScriptUtils.evalScript(scriptEngine, WebappManager.RestrictedAccessControlContext.INSTANCE, fileReader,
-					bindings);
-		} catch (ScriptException | PrivilegedActionException e) {
+		try (final BufferedReader reader = Files.newBufferedReader(controllerFile)) {
+			scriptEngine.eval(reader, bindings);
+		} catch (ScriptException e) {
 			throw new ServletException(e);
 		}
 	}

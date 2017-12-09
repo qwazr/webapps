@@ -30,8 +30,7 @@ class SmartFactory<T> implements GenericFactory<T> {
 	private final ConstructorParametersImpl constructorParameters;
 	private final Class<T> clazz;
 
-	private SmartFactory(final ConstructorParametersImpl constructorParameters, final Class<T> clazz)
-			throws NoSuchMethodException {
+	private SmartFactory(final ConstructorParametersImpl constructorParameters, final Class<T> clazz) {
 		this.constructorParameters = constructorParameters;
 		this.clazz = clazz;
 	}
@@ -55,7 +54,7 @@ class SmartFactory<T> implements GenericFactory<T> {
 		private final LibraryManager libraryManager;
 
 		private WithLibrary(final LibraryManager libraryManager, final ConstructorParametersImpl constructorParameters,
-				final Class<T> clazz) throws NoSuchMethodException {
+				final Class<T> clazz) {
 			super(constructorParameters, clazz);
 			this.libraryManager = libraryManager;
 		}
@@ -69,7 +68,7 @@ class SmartFactory<T> implements GenericFactory<T> {
 	}
 
 	static <T> SmartFactory<T> from(final LibraryManager libraryManager,
-			final ConstructorParametersImpl constructorParameters, final Class<T> clazz) throws NoSuchMethodException {
+			final ConstructorParametersImpl constructorParameters, final Class<T> clazz) {
 		return libraryManager == null ?
 				new SmartFactory<>(constructorParameters, clazz) :
 				new WithLibrary<>(libraryManager, constructorParameters, clazz);

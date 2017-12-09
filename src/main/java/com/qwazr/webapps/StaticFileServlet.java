@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Emmanuel Keller / QWAZR
+ * Copyright 2015-2017 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,11 +16,9 @@
 package com.qwazr.webapps;
 
 import com.qwazr.server.ServerException;
-import com.qwazr.utils.StringUtils;
 import org.apache.commons.io.IOUtils;
 
 import javax.activation.MimetypesFileTypeMap;
-import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -28,55 +26,53 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.nio.file.Paths;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 public class StaticFileServlet extends HttpServlet {
 
 	private final MimetypesFileTypeMap mimeTypeMap;
-	private final File rootFile;
+	private final Path staticPath;
 
-	public StaticFileServlet(final MimetypesFileTypeMap mimeTypeMap, final File dataDirectory, final String path) {
+	public StaticFileServlet(final MimetypesFileTypeMap mimeTypeMap, final Path staticPath) {
 		this.mimeTypeMap = mimeTypeMap;
-		if (path == null || StringUtils.isBlank(path))
+		if (staticPath == null)
 			throw new ServerException("The path is empty");
-		if (Paths.get(path).isAbsolute())
-			rootFile = new File(path);
-		else
-			rootFile = new File(dataDirectory, path);
-		if (!rootFile.exists())
-			throw new ServerException("Cannot initialize the static path: " + path + " - The path does not exists " +
-					rootFile.getAbsolutePath());
+		if (!Files.exists(staticPath))
+			throw new ServerException("Cannot initialize the static path: " + staticPath.toAbsolutePath() +
+					" - The path does not exists.");
+		this.staticPath = staticPath;
 	}
 
 	private File handleFile(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
 		final String contextPath = request.getContextPath();
 		final String servletPath = request.getServletPath();
 		final String pathInfo = request.getPathInfo();
-		final File staticFile;
+		final Path staticFile;
 		final String fullPath;
 		if (pathInfo == null) {
-			staticFile = rootFile;
+			staticFile = staticPath;
 			fullPath = contextPath + servletPath;
 		} else {
-			staticFile = new File(rootFile, pathInfo);
+			staticFile = staticPath.resolve(pathInfo.startsWith("/") ? pathInfo.substring(1) : pathInfo);
 			fullPath = contextPath + servletPath + pathInfo;
 		}
-		if (staticFile.isDirectory()) {
-			if (new File(staticFile, "index.html").exists()) {
+		if (Files.isDirectory(staticFile)) {
+			if (Files.exists(staticFile.resolve("index.html"))) {
 				final boolean slashEnd = fullPath.endsWith("/");
 				response.sendRedirect(fullPath + (slashEnd ? "index.html" : "/index.html"));
 			}
 			return null;
 		}
-		if (!staticFile.exists() || !staticFile.isFile()) {
+		if (!Files.exists(staticFile) || !Files.isRegularFile(staticFile)) {
 			response.sendError(404, "File not found: " + fullPath);
 			return null;
 		}
-		return staticFile;
+		return staticFile.toFile();
 	}
 
 	final static void head(final Long length, final String type, final Long lastModified,
-			final HttpServletResponse response) throws IOException {
+			final HttpServletResponse response) {
 		if (type != null)
 			response.setContentType(type);
 		if (length != null)
@@ -88,8 +84,7 @@ public class StaticFileServlet extends HttpServlet {
 	}
 
 	@Override
-	protected void doHead(final HttpServletRequest request, final HttpServletResponse response)
-			throws ServletException, IOException {
+	protected void doHead(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
 		final File staticFile = handleFile(request, response);
 		if (staticFile == null)
 			return;
@@ -98,8 +93,7 @@ public class StaticFileServlet extends HttpServlet {
 	}
 
 	@Override
-	protected void doGet(final HttpServletRequest request, final HttpServletResponse response)
-			throws ServletException, IOException {
+	protected void doGet(final HttpServletRequest request, final HttpServletResponse response) throws IOException {
 		final File staticFile = handleFile(request, response);
 		if (staticFile == null)
 			return;

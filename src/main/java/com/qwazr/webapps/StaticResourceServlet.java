@@ -24,6 +24,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Objects;
 
 public class StaticResourceServlet extends HttpServlet {
 
@@ -33,7 +34,7 @@ public class StaticResourceServlet extends HttpServlet {
 
 	public StaticResourceServlet(final String resourcePrefix, final MimetypesFileTypeMap mimeTypeMap) {
 		this.resourcePrefix = resourcePrefix;
-		this.mimeTypeMap = mimeTypeMap;
+		this.mimeTypeMap = Objects.requireNonNull(mimeTypeMap, "The mimeTypeMap is missing");
 	}
 
 	private String getResourcePath(final HttpServletRequest request) {

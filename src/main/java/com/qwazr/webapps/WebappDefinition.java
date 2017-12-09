@@ -18,8 +18,15 @@ package com.qwazr.webapps;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.qwazr.utils.ObjectMappers;
 
-import java.util.*;
+import java.io.File;
+import java.io.IOException;
+import java.util.Collection;
+import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
+import java.util.Map;
+import java.util.Set;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -55,6 +62,8 @@ public class WebappDefinition {
 		return (controllers == null || controllers.isEmpty()) && (statics == null || statics.isEmpty()) &&
 				(listeners == null || listeners.isEmpty() && (identity_manager == null || identity_manager.isEmpty()));
 	}
+
+	public final static WebappDefinition EMPTY = new WebappDefinition();
 
 	public static class Builder {
 
@@ -136,4 +145,23 @@ public class WebappDefinition {
 			return new WebappDefinition(this);
 		}
 	}
+
+	public static WebappDefinition load(final File jsonFile) throws IOException {
+		return jsonFile == null ? EMPTY : ObjectMappers.JSON.readValue(jsonFile, WebappDefinition.class);
+	}
+
+	public static WebappDefinition load(final Collection<File> configurationFiles) {
+		if (configurationFiles == null || configurationFiles.isEmpty())
+			return EMPTY;
+		final WebappDefinition.Builder builder = new WebappDefinition.Builder();
+		configurationFiles.stream().filter(f -> f.getName().endsWith(".json")).forEach(f -> {
+			try {
+				builder.add(load(f));
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+		});
+		return builder.build();
+	}
+
 }
