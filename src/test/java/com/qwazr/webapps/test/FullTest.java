@@ -26,14 +26,12 @@ import org.junit.FixMethodOrder;
 import org.junit.Test;
 import org.junit.runners.MethodSorters;
 
-import javax.servlet.ServletException;
 import javax.ws.rs.client.Client;
 import javax.ws.rs.client.ClientBuilder;
 import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.URISyntaxException;
 
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class FullTest implements TestChecker {
@@ -303,8 +301,7 @@ public class FullTest implements TestChecker {
 	}
 
 	@Test
-	public void test800Filters()
-			throws URISyntaxException, IOException, InstantiationException, ServletException, IllegalAccessException {
+	public void test800Filters() {
 		Assert.assertEquals(1, TestFilter.initializedFilters.size());
 		Assert.assertEquals(TestFilter.class, TestFilter.initializedFilters.iterator().next().getClass());
 		Assert.assertEquals(1, TestFilter.calledFilters.size());

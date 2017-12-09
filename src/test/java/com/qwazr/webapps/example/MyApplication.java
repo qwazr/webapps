@@ -33,7 +33,7 @@ public class MyApplication {
 
 		// Build the configuration of the server
 		final ServerConfiguration configuration =
-				ServerConfiguration.of().listenAddress("127.0.0.1").webAppPort(8080).build();
+				ServerConfiguration.of().listenAddress("127.0.0.1").webAppPort(8081).build();
 
 		// This is the generic server builder
 		final GenericServerBuilder builder = GenericServer.of(configuration);

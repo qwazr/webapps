@@ -33,7 +33,7 @@ public class MyApplicationTest {
 		MyApplication.main(null);
 		Assert.assertNotNull(MyApplication.serverInstance);
 
-		final WebTarget target = ClientBuilder.newClient().target("http://localhost:8080");
+		final WebTarget target = ClientBuilder.newClient().target("http://localhost:8081");
 
 		final String html = target.path("/test").request(MediaType.TEXT_HTML_TYPE).get(String.class);
 		Assert.assertEquals("<html>Hello World</html>\n", html);
