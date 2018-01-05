@@ -17,6 +17,4 @@ Get started by reading the online [documentation](http://www.qwazr.com/webapps).
 
 License
 -------
-Released under the
-[Apache 2 license](https://www.apache.org/licenses/LICENSE-2.0).
-https://www.apache.org/licenses/LICENSE-2.0).
+Released under the [Apache 2 license](https://www.apache.org/licenses/LICENSE-2.0).
