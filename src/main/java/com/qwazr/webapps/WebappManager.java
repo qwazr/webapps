@@ -344,14 +344,14 @@ public class WebappManager {
 					.addInitParam("swagger.api.basepath", urlPath);
 		}
 
-		private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass) {
+		public void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass) {
 			context.jaxrs(ServletContainer.class.getName() + '@' + urlPath, appClass, servletInfo -> {
 				servletInfo.addMapping(urlPath).setLoadOnStartup(1);
 				addSwaggerContext(urlPath, servletInfo);
 			});
 		}
 
-		private void registerJavaJaxRsClassServlet(final String urlPath, final String classList)
+		public void registerJavaJaxRsClassServlet(final String urlPath, final String classList)
 				throws ReflectiveOperationException {
 			final ApplicationBuilder appBuilder = new ApplicationBuilder(urlPath);
 			final String[] classes = StringUtils.split(classList, " ,");
