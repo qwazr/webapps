@@ -16,28 +16,17 @@
 package com.qwazr.webapps;
 
 import com.qwazr.server.AbstractServiceImpl;
-import com.qwazr.server.ServerException;
-import com.qwazr.utils.LoggerUtils;
 
 import javax.annotation.PostConstruct;
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.util.logging.Logger;
 
 class WebappServiceImpl extends AbstractServiceImpl implements WebappServiceInterface {
-
-	private static final Logger LOGGER = LoggerUtils.getLogger(WebappServiceImpl.class);
 
 	private volatile WebappManager webappManager;
 
 	WebappServiceImpl(WebappManager webappManager) {
 		this.webappManager = webappManager;
 	}
-
-	public WebappServiceImpl() {
-		this(null);
-	}
-
+	
 	@PostConstruct
 	public void init() {
 		webappManager = getContextAttribute(WebappManager.class);
@@ -45,11 +34,7 @@ class WebappServiceImpl extends AbstractServiceImpl implements WebappServiceInte
 
 	@Override
 	public WebappDefinition get() {
-		try {
-			final WebappDefinition result = webappManager.getWebAppDefinition();
-			return result == null ? new WebappDefinition() : result;
-		} catch (IOException | URISyntaxException e) {
-			throw ServerException.getJsonException(LOGGER, e);
-		}
+		final WebappDefinition result = webappManager.getWebAppDefinition();
+		return result == null ? new WebappDefinition() : result;
 	}
 }

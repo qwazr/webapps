@@ -51,7 +51,6 @@ import java.io.File;
 import java.io.FilePermission;
 import java.io.IOException;
 import java.net.SocketPermission;
-import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.security.AccessControlContext;
 import java.security.CodeSource;
@@ -300,15 +299,15 @@ public class WebappManager extends ConstructorParametersImpl {
 				.addInitParam("swagger.api.basepath", urlPath);
 	}
 
-	private void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,
-			final ServletContextBuilder context) throws NoSuchMethodException {
+	public void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass,
+			final ServletContextBuilder context) {
 		context.jaxrs(ServletContainer.class.getName() + '@' + urlPath, appClass, servletInfo -> {
 			servletInfo.addMapping(urlPath).setLoadOnStartup(1);
 			addSwaggerContext(urlPath, servletInfo);
 		});
 	}
 
-	private void registerJavaJaxRsClassServlet(final String urlPath, final String classList,
+	public void registerJavaJaxRsClassServlet(final String urlPath, final String classList,
 			final ServletContextBuilder context) throws ReflectiveOperationException {
 		final ApplicationBuilder appBuilder = new ApplicationBuilder(urlPath);
 		final String[] classes = StringUtils.split(classList, " ,");
@@ -327,7 +326,7 @@ public class WebappManager extends ConstructorParametersImpl {
 		});
 	}
 
-	public WebappDefinition getWebAppDefinition() throws IOException, URISyntaxException {
+	public WebappDefinition getWebAppDefinition() {
 		return webappDefinition;
 	}
 
