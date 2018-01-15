@@ -52,6 +52,7 @@ import java.io.FilePermission;
 import java.io.IOException;
 import java.net.SocketPermission;
 import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.security.AccessControlContext;
 import java.security.CodeSource;
 import java.security.Permissions;
@@ -177,17 +178,26 @@ public class WebappManager extends ConstructorParametersImpl {
 		return service;
 	}
 
-	public void registerStaticServlet(final String urlPath, final String path, final ServletContextBuilder context) {
-		final ServletInfo servletInfo;
-		if (path.contains(".") && !path.contains("/"))
-			servletInfo =
-					new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath, StaticResourceServlet.class,
-							GenericFactory.fromInstance(
-									new StaticResourceServlet('/' + StringUtils.replaceChars(path, '.', '/'),
-											mimeTypeMap))).addMapping(urlPath);
-		else
-			servletInfo = new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class,
-					GenericFactory.fromInstance(new StaticFileServlet(mimeTypeMap, dataDir, path))).addMapping(urlPath);
+	public void registerStaticServlet(final String urlPath, final java.nio.file.Path filePath,
+			final ServletContextBuilder context) {
+		final ServletInfo servletInfo =
+				new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class,
+						GenericFactory.fromInstance(
+								new StaticFileServlet(mimeTypeMap, dataDir, filePath.toString()))).addMapping(urlPath);
+		context.servlet(servletInfo);
+	}
+
+	public void registerStaticServlet(final String urlPath, final String resourcePath,
+			final ServletContextBuilder context) {
+		if (!resourcePath.contains(".") || resourcePath.contains("/") || resourcePath.contains(File.separator)) {
+			registerStaticServlet(urlPath, Paths.get(resourcePath), context);
+			return;
+		}
+		final ServletInfo servletInfo =
+				new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath, StaticResourceServlet.class,
+						GenericFactory.fromInstance(
+								new StaticResourceServlet('/' + StringUtils.replaceChars(resourcePath, '.', '/'),
+										mimeTypeMap))).addMapping(urlPath);
 		context.servlet(servletInfo);
 	}
 
