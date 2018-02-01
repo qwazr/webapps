@@ -15,6 +15,8 @@
  */
 package com.qwazr.webapps;
 
+import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
+import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.qwazr.library.LibraryManager;
 import com.qwazr.server.ApplicationBuilder;
 import com.qwazr.server.GenericFactory;
@@ -27,11 +29,15 @@ import com.qwazr.utils.ClassLoaderUtils;
 import com.qwazr.utils.StringUtils;
 import com.qwazr.utils.SubstitutedVariables;
 import com.qwazr.utils.concurrent.ConcurrentUtils;
+import com.qwazr.utils.json.JacksonConfig;
 import com.qwazr.utils.reflection.ConstructorParametersImpl;
 import io.swagger.jaxrs.config.SwaggerContextService;
+import io.swagger.jaxrs.listing.ApiListingResource;
+import io.swagger.jaxrs.listing.SwaggerSerializers;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.SecurityInfo;
 import io.undertow.servlet.api.ServletInfo;
+import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 import org.glassfish.jersey.servlet.ServletContainer;
 import org.webjars.servlet.WebjarsServlet;
 
@@ -45,11 +51,20 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Application;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
 public class WebappManager {
+
+	public final static List<Class<?>> SWAGGER_CLASSES =
+			Collections.unmodifiableList(Arrays.asList(ApiListingResource.class, SwaggerSerializers.class));
+
+	public final static List<Class<?>> JACKSON_CLASSES = Collections.unmodifiableList(
+			Arrays.asList(JacksonConfig.class, JacksonXMLProvider.class, JacksonJsonProvider.class));
 
 	public final static String SESSIONS_PERSISTENCE_DIR = "webapp-sessions";
 
@@ -357,17 +372,26 @@ public class WebappManager {
 			final String[] classes = StringUtils.split(classList, " ,");
 			for (String className : classes)
 				appBuilder.classes(ClassLoaderUtils.findClass(className.trim()));
-			registerJaxRsResources(appBuilder);
+			registerJaxRsResources(appBuilder, true, true);
 		}
 
-		public Builder registerJaxRsResources(final ApplicationBuilder applicationBuilder) {
-			applicationBuilder.classes(BaseRestApplication.PROVIDERS_CLASSES);
+		public Builder registerJaxRsResources(final ApplicationBuilder applicationBuilder, boolean withSwagger,
+				boolean withRoleFeature) {
+			applicationBuilder.classes(JACKSON_CLASSES);
+			if (withRoleFeature)
+				applicationBuilder.classes(RolesAllowedDynamicFeature.class);
+			if (withSwagger)
+				applicationBuilder.classes(SWAGGER_CLASSES);
 			context.jaxrs(null, applicationBuilder, servletInfo -> {
 				final Collection<String> paths = applicationBuilder.getApplicationPaths();
-				if (paths != null && !paths.isEmpty())
+				if (paths != null && !paths.isEmpty() && withSwagger)
 					addSwaggerContext(paths.iterator().next(), servletInfo);
 			});
 			return this;
+		}
+
+		public Builder registerJaxRsResources(final ApplicationBuilder applicationBuilder) {
+			return registerJaxRsResources(applicationBuilder, false, false);
 		}
 
 		public WebappManager build() {
