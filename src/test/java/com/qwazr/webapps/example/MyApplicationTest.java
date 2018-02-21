@@ -38,7 +38,7 @@ public class MyApplicationTest {
 		final String html = target.path("/test").request(MediaType.TEXT_HTML_TYPE).get(String.class);
 		Assert.assertEquals("<html>Hello World</html>\n", html);
 
-		final String css = target.path("webjars/bootstrap/4.0.0-beta.3/css/bootstrap.css")
+		final String css = target.path("webjars/bootstrap/4.0.0/css/bootstrap.css")
 				.request(MediaType.TEXT_HTML_TYPE)
 				.get(String.class);
 		Assert.assertTrue(css.contains("bootstrap"));
