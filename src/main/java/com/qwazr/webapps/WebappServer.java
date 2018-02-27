@@ -61,9 +61,9 @@ public class WebappServer implements BaseServer {
 		final ApplicationBuilder webServices = ApplicationBuilder.of("/*").classes(RestApplication.JSON_CLASSES).
 				singletons(new WelcomeShutdownService());
 
-		new ClusterManager(executorService, configuration).registerProtocolListener(builder, services)
-				.registerContextAttribute(builder)
-				.registerWebService(webServices);
+		final ClusterManager clusterManager =
+				new ClusterManager(executorService, configuration).registerProtocolListener(builder, services);
+		webServices.singletons(clusterManager.getService());
 
 		final LibraryManager libraryManager =
 				new LibraryManager(configuration.dataDirectory, configuration.getEtcFiles());
