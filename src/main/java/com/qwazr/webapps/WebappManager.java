@@ -17,7 +17,7 @@ package com.qwazr.webapps;
 
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
-import com.qwazr.library.LibraryManager;
+import com.qwazr.library.LibraryServiceInterface;
 import com.qwazr.server.ApplicationBuilder;
 import com.qwazr.server.GenericFactory;
 import com.qwazr.server.GenericServer;
@@ -98,7 +98,7 @@ public class WebappManager {
 		private final ServletContextBuilder context;
 		private MimetypesFileTypeMap mimeTypeMap;
 		private ScriptEngine scriptEngine;
-		private LibraryManager libraryManager;
+		private LibraryServiceInterface libraryService;
 		private WebappDefinition webappDefinition;
 
 		private Builder(final GenericServerBuilder serverBuilder, final ServletContextBuilder context) {
@@ -106,8 +106,8 @@ public class WebappManager {
 			this.context = context;
 		}
 
-		public Builder libraryManager(LibraryManager libraryManager) {
-			this.libraryManager = libraryManager;
+		public Builder libraryService(LibraryServiceInterface libraryService) {
+			this.libraryService = libraryService;
 			return this;
 		}
 
@@ -158,7 +158,7 @@ public class WebappManager {
 				final Class<? extends GenericServer.IdentityManagerProvider> identityManagerClass =
 						ClassLoaderUtils.findClass(webappDefinition.identity_manager);
 				final GenericServer.IdentityManagerProvider identityManagerProvider =
-						SmartFactory.from(libraryManager, getConstructorParameters(), identityManagerClass)
+						SmartFactory.from(libraryService, getConstructorParameters(), identityManagerClass)
 								.createInstance()
 								.getInstance();
 				serverBuilder.identityManagerProvider(identityManagerProvider);
@@ -268,7 +268,7 @@ public class WebappManager {
 		private void registerJavascriptServlet(final String urlPath, final java.nio.file.Path controlerPath) {
 			context.servlet(new ServletInfo(JavascriptServlet.class.getName() + '@' + urlPath, JavascriptServlet.class,
 					GenericFactory.fromInstance(
-							new JavascriptServlet(getScriptEngine(), libraryManager, controlerPath))).addMapping(
+							new JavascriptServlet(getScriptEngine(), libraryService, controlerPath))).addMapping(
 					urlPath));
 		}
 
@@ -300,7 +300,7 @@ public class WebappManager {
 		public <T extends Servlet> Builder registerJavaServlet(final String urlPath, final Class<T> servletClass,
 				final GenericFactory<T> servletFactory) {
 			context.servlet(servletClass.getName() + '@' + urlPath, servletClass, servletFactory == null ?
-					SmartFactory.from(libraryManager, getConstructorParameters(), servletClass) :
+					SmartFactory.from(libraryService, getConstructorParameters(), servletClass) :
 					servletFactory, urlPath == null ? null : StringUtils.split(urlPath));
 			return this;
 		}
@@ -327,7 +327,7 @@ public class WebappManager {
 				final GenericFactory<T> filterFactory) {
 			final String filterName = filterClass.getName() + '@' + urlPathes;
 			context.filter(filterName, filterClass, filterFactory == null ?
-					SmartFactory.from(libraryManager, getConstructorParameters(), filterClass) :
+					SmartFactory.from(libraryService, getConstructorParameters(), filterClass) :
 					filterFactory);
 			if (urlPathes != null) {
 				String[] urlPaths = StringUtils.split(urlPathes);

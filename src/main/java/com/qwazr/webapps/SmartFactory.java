@@ -1,5 +1,5 @@
-/**
- * Copyright 2017 Emmanuel Keller / QWAZR
+/*
+ * Copyright 2017-2018 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,10 +12,10 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps;
 
-import com.qwazr.library.LibraryManager;
+import com.qwazr.library.LibraryServiceInterface;
 import com.qwazr.server.GenericFactory;
 import com.qwazr.server.ServerException;
 import com.qwazr.utils.reflection.ConstructorParametersImpl;
@@ -51,26 +51,26 @@ class SmartFactory<T> implements GenericFactory<T> {
 
 	final static class WithLibrary<T> extends SmartFactory<T> {
 
-		private final LibraryManager libraryManager;
+		private final LibraryServiceInterface libraryService;
 
-		private WithLibrary(final LibraryManager libraryManager, final ConstructorParametersImpl constructorParameters,
-				final Class<T> clazz) {
+		private WithLibrary(final LibraryServiceInterface libraryService,
+				final ConstructorParametersImpl constructorParameters, final Class<T> clazz) {
 			super(constructorParameters, clazz);
-			this.libraryManager = libraryManager;
+			this.libraryService = libraryService;
 		}
 
 		@Override
 		public ImmediateInstanceHandle<T> createInstance() throws InstantiationException {
 			final ImmediateInstanceHandle<T> result = super.createInstance();
-			libraryManager.inject(result.getInstance());
+			libraryService.inject(result.getInstance());
 			return result;
 		}
 	}
 
-	static <T> SmartFactory<T> from(final LibraryManager libraryManager,
+	static <T> SmartFactory<T> from(final LibraryServiceInterface libraryService,
 			final ConstructorParametersImpl constructorParameters, final Class<T> clazz) {
-		return libraryManager == null ?
+		return libraryService == null ?
 				new SmartFactory<>(constructorParameters, clazz) :
-				new WithLibrary<>(libraryManager, constructorParameters, clazz);
+				new WithLibrary<>(libraryService, constructorParameters, clazz);
 	}
 }

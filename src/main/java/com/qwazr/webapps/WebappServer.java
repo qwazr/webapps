@@ -66,11 +66,12 @@ public class WebappServer implements BaseServer {
 				.registerWebService(webServices);
 
 		final LibraryManager libraryManager =
-				new LibraryManager(configuration.dataDirectory, configuration.getEtcFiles()).registerIdentityManager(
-						builder).registerContextAttribute(builder).registerWebService(webServices);
+				new LibraryManager(configuration.dataDirectory, configuration.getEtcFiles());
+		builder.shutdownListener(server -> libraryManager.close());
+		webServices.singletons(libraryManager.getService());
 
 		final WebappManager.Builder webappManagerBuilder = WebappManager.of(builder, builder.getWebAppContext())
-				.libraryManager(libraryManager)
+				.libraryService(libraryManager.getService())
 				.registerDefaultFaviconServlet()
 				.persistSessions(configuration.tempDirectory.toPath().resolve(WebappManager.SESSIONS_PERSISTENCE_DIR))
 				.webappDefinition(configuration.dataDirectory.toPath(),
@@ -81,8 +82,8 @@ public class WebappServer implements BaseServer {
 
 		final WebappManager webappManager = webappManagerBuilder.build();
 		webServices.singletons(webappManager.getService());
-		builder.getWebServiceContext().jaxrs(webServices);
 
+		builder.getWebServiceContext().jaxrs(webServices);
 		server = builder.build();
 		service = webappManager.getService();
 	}

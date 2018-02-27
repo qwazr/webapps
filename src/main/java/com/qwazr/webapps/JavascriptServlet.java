@@ -15,7 +15,7 @@
  */
 package com.qwazr.webapps;
 
-import com.qwazr.library.LibraryManager;
+import com.qwazr.library.LibraryServiceInterface;
 import com.qwazr.scripts.ScriptConsole;
 
 import javax.script.Bindings;
@@ -36,12 +36,12 @@ public class JavascriptServlet extends HttpServlet {
 
 	private final Path controllerFile;
 
-	private final LibraryManager libraryManager;
+	private final LibraryServiceInterface libraryService;
 
-	public JavascriptServlet(final ScriptEngine scriptEngine, final LibraryManager libraryManager,
+	public JavascriptServlet(final ScriptEngine scriptEngine, final LibraryServiceInterface libraryService,
 			final Path controllerFile) {
 		this.scriptEngine = scriptEngine;
-		this.libraryManager = libraryManager;
+		this.libraryService = libraryService;
 		this.controllerFile = controllerFile;
 	}
 
@@ -54,7 +54,7 @@ public class JavascriptServlet extends HttpServlet {
 		bindings.put("console", new ScriptConsole(null));
 		bindings.put("request", request);
 		bindings.put("response", response);
-		bindings.put("library", libraryManager);
+		bindings.put("library", libraryService);
 		bindings.put("closeable", req.getAttribute(CloseableFilter.ATTRIBUTE_NAME));
 		bindings.put("session", request.getSession());
 		bindings.putAll(request.getAttributes());
