@@ -46,7 +46,7 @@ public class WebappServer implements BaseServer {
 	private final WebappServiceInterface service;
 
 	public WebappServer(final ServerConfiguration configuration, final PreBuild prebuild)
-			throws IOException, URISyntaxException, ReflectiveOperationException {
+			throws IOException, ReflectiveOperationException {
 
 		final ExecutorService executorService = Executors.newCachedThreadPool();
 		final GenericServerBuilder builder = GenericServer.of(configuration, executorService);
