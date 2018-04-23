@@ -2,7 +2,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>qwazr-webapps</artifactId>
-    <version>1.4.0</version>
+    <version>1.4.1-SNAPSHOT</version>
     <name>QWAZR Webapps</name>
     <description>Web application server for QWAZR</description>
     <packaging>jar</packaging>
@@ -10,7 +10,7 @@
     <parent>
         <groupId>com.qwazr</groupId>
         <artifactId>qwazr-parent</artifactId>
-        <version>1.4.0</version>
+        <version>1.4.1-SNAPSHOT</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
@@ -18,7 +18,7 @@
         <connection>scm:git:git@github.com:qwazr/webapps.git</connection>
         <developerConnection>scm:git:git@github.com:qwazr/webapps.git</developerConnection>
         <url>git@github.com:qwazr/webapps.git</url>
-        <tag>v1.4.0</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <dependencies>
@@ -26,24 +26,24 @@
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-scripts</artifactId>
-            <version>1.4.0</version>
+            <version>1.4.1-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-library-freemarker</artifactId>
-            <version>1.4.0</version>
+            <version>1.4.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-library-asciidoctor</artifactId>
-            <version>1.4.0</version>
+            <version>1.4.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-library-markdown</artifactId>
-            <version>1.4.0</version>
+            <version>1.4.1-SNAPSHOT</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
