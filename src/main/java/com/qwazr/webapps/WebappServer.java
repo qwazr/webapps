@@ -31,7 +31,6 @@ import com.qwazr.utils.LoggerUtils;
 import javax.management.JMException;
 import javax.servlet.ServletException;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.ExecutorService;
@@ -73,9 +72,8 @@ public class WebappServer implements BaseServer {
 		final WebappManager.Builder webappManagerBuilder = WebappManager.of(builder, builder.getWebAppContext())
 				.libraryService(libraryManager.getService())
 				.registerDefaultFaviconServlet()
-				.persistSessions(configuration.tempDirectory.toPath().resolve(WebappManager.SESSIONS_PERSISTENCE_DIR))
-				.webappDefinition(configuration.dataDirectory.toPath(),
-						WebappDefinition.load(configuration.getEtcFiles()));
+				.persistSessions(configuration.tempDirectory.resolve(WebappManager.SESSIONS_PERSISTENCE_DIR))
+				.webappDefinition(configuration.dataDirectory, WebappDefinition.load(configuration.getEtcFiles()));
 
 		if (prebuild != null)
 			prebuild.accept(webappManagerBuilder, builder);
@@ -104,7 +102,7 @@ public class WebappServer implements BaseServer {
 	}
 
 	public static synchronized void main(final String... args)
-			throws IOException, ReflectiveOperationException, ServletException, JMException, URISyntaxException {
+			throws IOException, ReflectiveOperationException, ServletException, JMException {
 		if (INSTANCE != null)
 			shutdown();
 		INSTANCE = new WebappServer(new ServerConfiguration(args), null);

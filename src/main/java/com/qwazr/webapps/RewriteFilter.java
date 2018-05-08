@@ -45,7 +45,7 @@ public class RewriteFilter implements Filter {
 			matcher = pattern.matcher(reqUrl);
 		}
 		final String newUrl = matcher.replaceAll(replace);
-		if (reqUrl.equals(newUrl))
+		if (reqUrl.toString().equals(newUrl))
 			chain.doFilter(req, rep);
 		else
 			request.getRequestDispatcher(newUrl).forward(request, rep);

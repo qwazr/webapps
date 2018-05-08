@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 Emmanuel Keller / QWAZR
+ * Copyright 2017-2018 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,7 +15,6 @@
  */
 package com.qwazr.webapps.test;
 
-import com.google.common.io.Files;
 import com.qwazr.server.configuration.ServerConfiguration;
 import com.qwazr.utils.RandomUtils;
 import com.qwazr.webapps.WebappServer;
@@ -35,7 +34,7 @@ import javax.ws.rs.client.WebTarget;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
-import java.net.URISyntaxException;
+import java.nio.file.Files;
 
 public class ServletTest implements TestChecker {
 
@@ -46,12 +45,11 @@ public class ServletTest implements TestChecker {
 	public static String randomString2;
 
 	@BeforeClass
-	public static void before()
-			throws IOException, URISyntaxException, ReflectiveOperationException, JMException, ServletException {
+	public static void before() throws IOException, ReflectiveOperationException, JMException, ServletException {
 		randomString1 = RandomUtils.alphanumeric(10);
 		randomString2 = RandomUtils.alphanumeric(10);
 		server = new WebappServer(ServerConfiguration.of()
-				.data(Files.createTempDir())
+				.data(Files.createTempDirectory("servletTest"))
 				.publicAddress("localhost")
 				.listenAddress("localhost")
 				.etcFilter("*.json")

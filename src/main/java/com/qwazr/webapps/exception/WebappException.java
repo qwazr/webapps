@@ -44,7 +44,7 @@ public class WebappException extends AbstractWebappException {
 
 	}
 
-	public class Error {
+	public static class Error {
 
 		public final int status;
 		public final Title title;
@@ -71,28 +71,33 @@ public class WebappException extends AbstractWebappException {
 		this(status, title, e == null ? null : e.getMessage());
 	}
 
-	private void sendQuietlyHTML(HttpServletResponse response) throws IOException {
-		PrintWriter printWriter;
+	private void sendQuietlyHTML(final HttpServletResponse response) throws IOException {
+		PrintWriter printWriter = null;
 		try {
-			printWriter = response.getWriter();
-		} catch (IllegalStateException e) {
-			printWriter = new PrintWriter(response.getOutputStream());
+			try {
+				printWriter = response.getWriter();
+			} catch (IllegalStateException e) {
+				printWriter = new PrintWriter(response.getOutputStream());
+			}
+			String message = StringEscapeUtils.escapeHtml4(error.message);
+			response.setStatus(error.status);
+			response.setContentType("text/html");
+			printWriter.print("<html><head><title>");
+			printWriter.print(error.title.title);
+			printWriter.println("</title></head>");
+			printWriter.print("<body><h3>");
+			printWriter.print(error.title.title);
+			printWriter.println("</h3>");
+			printWriter.print("<pre>");
+			printWriter.print(message);
+			printWriter.println("</pre></body></html>");
+		} finally {
+			if (printWriter != null)
+				printWriter.close();
 		}
-		String message = StringEscapeUtils.escapeHtml4(error.message);
-		response.setStatus(error.status);
-		response.setContentType("text/html");
-		printWriter.print("<html><head><title>");
-		printWriter.print(error.title.title);
-		printWriter.println("</title></head>");
-		printWriter.print("<body><h3>");
-		printWriter.print(error.title.title);
-		printWriter.println("</h3>");
-		printWriter.print("<pre>");
-		printWriter.print(message);
-		printWriter.println("</pre></body></html>");
 	}
 
-	private void sendQuietlyXML(HttpServletResponse response) throws IOException {
+	private void sendQuietlyXML(final HttpServletResponse response) throws IOException {
 		XMLBuilder2 xml = XMLBuilder2.create("error").a("code", Integer.toString(error.status));
 		if (error.title != null)
 			xml.e("title").t(error.title.title).up();
@@ -101,12 +106,12 @@ public class WebappException extends AbstractWebappException {
 		xml.toWriter(true, response.getWriter(), null);
 	}
 
-	private void sendQuietlyJSON(HttpServletResponse response) throws IOException {
+	private void sendQuietlyJSON(final HttpServletResponse response) throws IOException {
 		ObjectMappers.JSON.writeValue(response.getWriter(), error);
 	}
 
 	@Override
-	public void sendQuietly(HttpServletResponse response) {
+	public void sendQuietly(final HttpServletResponse response) {
 		try {
 			String contentType = response.getContentType();
 			response.setStatus(error.status);

@@ -1,5 +1,5 @@
-/**
- * Copyright 2015-2016 Emmanuel Keller / QWAZR
+/*
+ * Copyright 2015-2018 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps.example;
 
 import com.qwazr.library.annotations.Library;
@@ -127,11 +127,8 @@ public class DocumentationServlet extends HttpServlet {
 			response.setDateHeader("Last-Modified", file.lastModified());
 			response.setHeader("Cache-Control", "max-age=86400");
 			response.setDateHeader("Expires", System.currentTimeMillis() + 86400 * 1000);
-			InputStream inputStream = new FileInputStream(file);
-			try {
+			try (final InputStream inputStream = new FileInputStream(file)) {
 				IOUtils.copy(inputStream, response.getOutputStream());
-			} finally {
-				IOUtils.closeQuietly(inputStream);
 			}
 			return;
 		} else if (file.isDirectory()) {
@@ -146,23 +143,31 @@ public class DocumentationServlet extends HttpServlet {
 		}
 	}
 
-	protected Pair<String, String[]> getRemoteLink(String remotePath, String path) {
+	protected Pair<String, String[]> getRemoteLink(final String remotePath, final String path) {
 		if (StringUtils.isEmpty(path))
 			return null;
-		String[] parts = StringUtils.split(path, '/');
+		final StringBuilder pathBuilder = new StringBuilder(path);
+		final String[] parts = StringUtils.split(path, '/');
 		if (parts.length > 0) {
-			path = remotePath + parts[0];
+			pathBuilder.append(remotePath);
+			pathBuilder.append(parts[0]);
 			int i = 0;
-			for (String part : parts)
-				if (i++ > 0)
-					path += '/' + part;
+			for (String part : parts) {
+				if (i++ > 0) {
+					pathBuilder.append('/');
+					pathBuilder.append(part);
+				}
+			}
 		}
-		return Pair.of(path, parts);
+		return Pair.of(pathBuilder.toString(), parts);
 	}
 
 	protected List<File> getBuildList(File parentFile) {
-		List<File> list = new ArrayList();
-		for (File file : parentFile.listFiles()) {
+		final List<File> list = new ArrayList<>();
+		final File[] files = parentFile.listFiles();
+		if (files == null)
+			return list;
+		for (final File file : files) {
 			if (file.isDirectory()) {
 				if (isDocFile(file))
 					list.add(file);
@@ -175,7 +180,10 @@ public class DocumentationServlet extends HttpServlet {
 	}
 
 	protected boolean isDocFile(File parentFile) {
-		for (File file : parentFile.listFiles()) {
+		final File[] files = parentFile.listFiles();
+		if (files == null)
+			return false;
+		for (final File file : files) {
 			if (file.isFile()) {
 				if (isDocFile(file.getName()))
 					return true;

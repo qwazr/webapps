@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 Emmanuel Keller / QWAZR
+ * Copyright 2015-2018 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -20,8 +20,8 @@ import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.qwazr.utils.ObjectMappers;
 
-import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -146,15 +146,15 @@ public class WebappDefinition {
 		}
 	}
 
-	public static WebappDefinition load(final File jsonFile) throws IOException {
-		return jsonFile == null ? EMPTY : ObjectMappers.JSON.readValue(jsonFile, WebappDefinition.class);
+	public static WebappDefinition load(final Path jsonFile) throws IOException {
+		return jsonFile == null ? EMPTY : ObjectMappers.JSON.readValue(jsonFile.toFile(), WebappDefinition.class);
 	}
 
-	public static WebappDefinition load(final Collection<File> configurationFiles) {
+	public static WebappDefinition load(final Collection<Path> configurationFiles) {
 		if (configurationFiles == null || configurationFiles.isEmpty())
 			return EMPTY;
 		final WebappDefinition.Builder builder = new WebappDefinition.Builder();
-		configurationFiles.stream().filter(f -> f.getName().endsWith(".json")).forEach(f -> {
+		configurationFiles.stream().filter(f -> f.getFileName().toString().endsWith(".json")).forEach(f -> {
 			try {
 				builder.add(load(f));
 			} catch (IOException e) {
