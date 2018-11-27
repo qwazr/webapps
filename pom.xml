@@ -1,9 +1,8 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>qwazr-webapps</artifactId>
-    <version>1.4.1-SNAPSHOT</version>
+    <version>1.4.1</version>
     <name>QWAZR Webapps</name>
     <description>Web application server for QWAZR</description>
     <packaging>jar</packaging>
@@ -11,7 +10,7 @@
     <parent>
         <groupId>com.qwazr</groupId>
         <artifactId>qwazr-parent</artifactId>
-        <version>1.4.1-SNAPSHOT</version>
+        <version>1.4.1</version>
         <relativePath>../parent/pom.xml</relativePath>
     </parent>
 
@@ -19,7 +18,7 @@
         <connection>scm:git:git@github.com:qwazr/webapps.git</connection>
         <developerConnection>scm:git:git@github.com:qwazr/webapps.git</developerConnection>
         <url>git@github.com:qwazr/webapps.git</url>
-        <tag>HEAD</tag>
+        <tag>v1.4.1</tag>
     </scm>
 
     <dependencies>
@@ -27,24 +26,24 @@
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-scripts</artifactId>
-            <version>1.4.1-SNAPSHOT</version>
+            <version>1.4.1</version>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-library-freemarker</artifactId>
-            <version>1.4.1-SNAPSHOT</version>
+            <version>1.4.1</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-library-asciidoctor</artifactId>
-            <version>1.4.1-SNAPSHOT</version>
+            <version>1.4.1</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-library-markdown</artifactId>
-            <version>1.4.1-SNAPSHOT</version>
+            <version>1.4.1</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
@@ -102,8 +101,7 @@
                                     <shadedArtifactAttached>true</shadedArtifactAttached>
                                     <shadedClassifierName>exec</shadedClassifierName>
                                     <transformers>
-                                        <transformer
-                                                implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
                                             <manifestEntries>
                                                 <Main-Class>com.qwazr.webapps.WebappServer</Main-Class>
                                                 <Implementation-Version>${project.version}-${buildNumber}
@@ -112,8 +110,7 @@
                                                 </Specification-Version>
                                             </manifestEntries>
                                         </transformer>
-                                        <transformer
-                                                implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                                        <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                                     </transformers>
                                     <filters>
                                         <filter>
