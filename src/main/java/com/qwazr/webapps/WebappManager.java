@@ -31,9 +31,7 @@ import com.qwazr.utils.SubstitutedVariables;
 import com.qwazr.utils.concurrent.ConcurrentUtils;
 import com.qwazr.utils.json.JacksonConfig;
 import com.qwazr.utils.reflection.ConstructorParametersImpl;
-import io.swagger.jaxrs.config.SwaggerContextService;
-import io.swagger.jaxrs.listing.ApiListingResource;
-import io.swagger.jaxrs.listing.SwaggerSerializers;
+import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
 import io.undertow.servlet.Servlets;
 import io.undertow.servlet.api.SecurityInfo;
 import io.undertow.servlet.api.ServletInfo;
@@ -61,7 +59,7 @@ import java.util.function.Supplier;
 public class WebappManager {
 
 	public final static List<Class<?>> SWAGGER_CLASSES =
-			Collections.unmodifiableList(Arrays.asList(ApiListingResource.class, SwaggerSerializers.class));
+			Collections.unmodifiableList(Collections.singletonList(OpenApiResource.class));
 
 	public final static List<Class<?>> JACKSON_CLASSES = Collections.unmodifiableList(
 			Arrays.asList(JacksonConfig.class, JacksonXMLProvider.class, JacksonJsonProvider.class));
@@ -350,13 +348,9 @@ public class WebappManager {
 		}
 
 		private ServletInfo addSwaggerContext(String urlPath, final ServletInfo servletInfo) {
-			final String contextId = ServletContainer.class.getName() + '@' + urlPath;
 			urlPath = StringUtils.removeEnd(urlPath, "*");
 			urlPath = StringUtils.removeEnd(urlPath, "/");
-			return servletInfo.addInitParam(SwaggerContextService.SCANNER_ID_KEY, contextId)
-					.addInitParam(SwaggerContextService.CONFIG_ID_KEY, contextId)
-					.addInitParam(SwaggerContextService.CONTEXT_ID_KEY, contextId)
-					.addInitParam("swagger.api.basepath", urlPath);
+			return servletInfo.addInitParam("swagger.api.basepath", urlPath);
 		}
 
 		public void registerJavaJaxRsAppServlet(final String urlPath, final Class<? extends Application> appClass) {

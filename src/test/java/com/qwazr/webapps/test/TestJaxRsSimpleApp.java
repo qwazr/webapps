@@ -1,5 +1,5 @@
 /**
- * Copyright 2016 Emmanuel Keller / QWAZR
+ * Copyright 2016-2020 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,9 +18,7 @@ package com.qwazr.webapps.test;
 import com.fasterxml.jackson.jaxrs.json.JacksonJsonProvider;
 import com.fasterxml.jackson.jaxrs.xml.JacksonXMLProvider;
 import com.qwazr.utils.json.JacksonConfig;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.Info;
-import io.swagger.annotations.SwaggerDefinition;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 
 import javax.ws.rs.ApplicationPath;
 import javax.ws.rs.core.Application;
@@ -31,15 +29,14 @@ import java.util.Set;
 /**
  * Example of JAX-RS
  */
-@Api
+@OpenAPIDefinition
 @ApplicationPath("/jaxrs-app")
 public class TestJaxRsSimpleApp extends Application {
 
 	public Set<Class<?>> getClasses() {
-		return new HashSet<>(
-				Arrays.asList(TestJaxRsResources.ServiceJson.class, TestJaxRsResources.ServiceXml.class,
-						TestJaxRsResources.ServiceAuth.class, JacksonConfig.class,
-						JacksonJsonProvider.class, JacksonXMLProvider.class));
+		return new HashSet<>(Arrays.asList(TestJaxRsResources.ServiceJson.class, TestJaxRsResources.ServiceXml.class,
+				TestJaxRsResources.ServiceAuth.class, JacksonConfig.class, JacksonJsonProvider.class,
+				JacksonXMLProvider.class));
 	}
 
 }

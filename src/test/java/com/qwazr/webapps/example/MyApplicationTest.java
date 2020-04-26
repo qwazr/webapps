@@ -47,6 +47,6 @@ public class MyApplicationTest {
 	@After
 	public void cleanup() {
 		if (MyApplication.serverInstance != null)
-			MyApplication.serverInstance.stopAll();
+			MyApplication.serverInstance.close();
 	}
 }

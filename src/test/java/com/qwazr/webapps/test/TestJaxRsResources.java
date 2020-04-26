@@ -15,14 +15,20 @@
  **/
 package com.qwazr.webapps.test;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.Info;
-import io.swagger.annotations.SwaggerDefinition;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.servers.Server;
+import io.swagger.v3.oas.annotations.servers.ServerVariable;
 
 import javax.annotation.security.PermitAll;
 import javax.annotation.security.RolesAllowed;
 import javax.servlet.http.HttpServletResponse;
-import javax.ws.rs.*;
+import javax.ws.rs.GET;
+import javax.ws.rs.HEAD;
+import javax.ws.rs.POST;
+import javax.ws.rs.Path;
+import javax.ws.rs.PathParam;
+import javax.ws.rs.Produces;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
@@ -36,9 +42,9 @@ public class TestJaxRsResources {
 
 	public final static String TEST_STRING = "JAX_RS_TEST_STRING";
 
-	@Api
 	@Path("/json")
-	@SwaggerDefinition(basePath = "/jaxrs-class-json", info = @Info(title = "ServiceJson", version = "v1.2.3"))
+	@OpenAPIDefinition(servers = { @Server(variables = { @ServerVariable(name = "basepath",
+			defaultValue = "/jaxrs-class-json") }) }, info = @Info(title = "ServiceJson", version = "v1.2.3"))
 	public static class ServiceJson {
 
 		@Path("/test/{path-param}")
@@ -49,7 +55,7 @@ public class TestJaxRsResources {
 		}
 	}
 
-	@Api
+	@OpenAPIDefinition
 	@Path("/xml")
 	public static class ServiceBothXml {
 
@@ -61,7 +67,8 @@ public class TestJaxRsResources {
 		}
 	}
 
-	@Api
+	@OpenAPIDefinition(servers = { @Server(variables = { @ServerVariable(name = "basepath",
+			defaultValue = "/jaxrs-class-both") }) })
 	@Path("/json")
 	public static class ServiceBothJson {
 
@@ -73,13 +80,13 @@ public class TestJaxRsResources {
 		}
 	}
 
-	@SwaggerDefinition(basePath = "/jaxrs-class-both", info = @Info(title = "ServiceBoth", version = "v1.2.3"))
+	@OpenAPIDefinition(info = @Info(title = "ServiceBoth", version = "v1.2.3"))
 	public interface ServiceBothConfig {
 	}
 
-	@Api
 	@Path("/xml")
-	@SwaggerDefinition(basePath = "/jaxrs-class-xml", info = @Info(title = "ServiceXml", version = "v1.2.3"))
+	@OpenAPIDefinition(servers = { @Server(variables = { @ServerVariable(name = "basepath",
+			defaultValue = "/jaxrs-class-xml") }) }, info = @Info(title = "ServiceXml", version = "v1.2.3"))
 	public static class ServiceXml {
 
 		@Path("/test/{path-param}")
@@ -90,11 +97,12 @@ public class TestJaxRsResources {
 		}
 	}
 
-	@SwaggerDefinition(basePath = "/jaxrs-auth", info = @Info(title = "ServiceAuth", version = "v1.2.3"))
+	@OpenAPIDefinition(servers = { @Server(variables = { @ServerVariable(name = "basepath",
+			defaultValue = "/jaxrs-auth") }) }, info = @Info(title = "ServiceAuth", version = "v1.2.3"))
 	public interface ServiceAuthConfig {
 	}
 
-	@Api
+	@OpenAPIDefinition(info = @Info(title = "ServiceAuth", version = "v1.2.3"))
 	@Path("/auth")
 	@PermitAll
 	public static class ServiceAuth {

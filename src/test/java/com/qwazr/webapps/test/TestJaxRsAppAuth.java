@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018 Emmanuel Keller / QWAZR
+ * Copyright 2016-2020 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,10 @@
 package com.qwazr.webapps.test;
 
 import com.qwazr.webapps.WebappManager;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.Info;
-import io.swagger.annotations.SwaggerDefinition;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.servers.Server;
+import io.swagger.v3.oas.annotations.servers.ServerVariable;
 import org.glassfish.jersey.server.filter.RolesAllowedDynamicFeature;
 
 import javax.annotation.security.PermitAll;
@@ -31,7 +32,8 @@ import java.util.Set;
  * Example of JAX-RS with authentication
  */
 @PermitAll
-@Api
+@OpenAPIDefinition(servers = { @Server(variables = { @ServerVariable(name = "basepath",
+		defaultValue = "/jaxrs-app-auth") }) })
 @ApplicationPath("/jaxrs-app-auth")
 public class TestJaxRsAppAuth extends Application {
 
@@ -45,7 +47,7 @@ public class TestJaxRsAppAuth extends Application {
 		return classes;
 	}
 
-	@SwaggerDefinition(basePath = "/jaxrs-app-auth", info = @Info(title = "TestJaxRsAppAuth", version = "v1.2.3"))
+	@OpenAPIDefinition(info = @Info(title = "TestJaxRsAppAuth", version = "v1.2.3"))
 	public interface AppConfig {
 	}
 }
