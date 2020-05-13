@@ -33,6 +33,9 @@ import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import java.io.IOException;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsNull.notNullValue;
+
 @FixMethodOrder(MethodSorters.NAME_ASCENDING)
 public class FullTest implements TestChecker {
 
@@ -252,7 +255,12 @@ public class FullTest implements TestChecker {
 		checkResponse(target.path(badUrl).request().get(), 404).close();
 		final String goodUrl = "/css/test.css";
 		checkContentType(checkResponse(target.path(goodUrl).request().head(), 200), MIME_TEXT_CSS).close();
-		checkContains(checkEntity(checkResponse(target.path(goodUrl).request().get(), 200), MIME_TEXT_CSS), ".qwazr {");
+		try (final Response response = target.path(goodUrl).request().get()) {
+			checkResponse(response, 200);
+			checkContains(checkEntity(response, MIME_TEXT_CSS), ".qwazr {");
+			assertThat(response.getHeaderString("Etag"), notNullValue());
+			assertThat(response.getHeaderString("Last-Modified"), notNullValue());
+		}
 	}
 
 	@Test

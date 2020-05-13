@@ -58,6 +58,8 @@ import java.util.function.Supplier;
 
 public class WebappManager {
 
+	public final static int DEFAULT_EXPIRATION_TIME = 86400;
+
 	public final static List<Class<?>> SWAGGER_CLASSES =
 			Collections.unmodifiableList(Collections.singletonList(OpenApiResource.class));
 
@@ -122,7 +124,7 @@ public class WebappManager {
 					if (finalFilePath.contains(".") && !finalFilePath.contains("/"))
 						registerStaticServlet(urlPath, finalFilePath);
 					else
-						registerStaticServlet(urlPath, parentDirectory.resolve(finalFilePath));
+						registerStaticServlet(urlPath, parentDirectory.resolve(finalFilePath), DEFAULT_EXPIRATION_TIME);
 				});
 
 			// Load the listeners
@@ -210,30 +212,40 @@ public class WebappManager {
 			return mimeTypeMap;
 		}
 
-		public Builder registerStaticServlet(final String urlPath, final String resourcePath) {
+		public Builder registerStaticServlet(final String urlPath, final String resourcePath,
+				final int expirationSecTime) {
 			final ServletInfo servletInfo =
 					new ServletInfo(StaticResourceServlet.class.getName() + '@' + urlPath, StaticResourceServlet.class,
 							GenericFactory.fromInstance(
 									new StaticResourceServlet('/' + StringUtils.replaceChars(resourcePath, '.', '/'),
-											getMimeTypeMap()))).addMapping(urlPath);
+											getMimeTypeMap(), expirationSecTime))).addMapping(urlPath);
 			context.servlet(servletInfo);
 			return this;
 		}
 
-		public Builder registerStaticServlet(final String urlPath, final java.nio.file.Path staticsPath) {
+		public Builder registerStaticServlet(final String urlPath, final String resourcePath) {
+			return registerStaticServlet(urlPath, resourcePath, DEFAULT_EXPIRATION_TIME);
+		}
+
+		public Builder registerStaticServlet(final String urlPath, final java.nio.file.Path staticsPath,
+				final int expirationSecTime) {
 			final ServletInfo servletInfo =
 					new ServletInfo(StaticFileServlet.class.getName() + '@' + urlPath, StaticFileServlet.class,
-							GenericFactory.fromInstance(
-									new StaticFileServlet(getMimeTypeMap(), staticsPath))).addMapping(urlPath);
+							GenericFactory.fromInstance(new StaticFileServlet(getMimeTypeMap(), staticsPath,
+									expirationSecTime))).addMapping(urlPath);
 			context.servlet(servletInfo);
 			return this;
+		}
+
+		private ServletInfo getDefaultFaviconServlet(int expirationTimeSec) {
+			return new ServletInfo(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH,
+					StaticResourceServlet.class, GenericFactory.fromInstance(
+					new StaticResourceServlet("/com/qwazr/webapps/favicon.ico", getMimeTypeMap(), expirationTimeSec))).
+					addMapping(FAVICON_PATH);
 		}
 
 		private ServletInfo getDefaultFaviconServlet() {
-			return new ServletInfo(StaticResourceServlet.class.getName() + '@' + FAVICON_PATH,
-					StaticResourceServlet.class, GenericFactory.fromInstance(
-					new StaticResourceServlet("/com/qwazr/webapps/favicon.ico", getMimeTypeMap()))).
-					addMapping(FAVICON_PATH);
+			return getDefaultFaviconServlet(DEFAULT_EXPIRATION_TIME);
 		}
 
 		private Builder registerController(final String urlPath, final java.nio.file.Path parentDirectory,

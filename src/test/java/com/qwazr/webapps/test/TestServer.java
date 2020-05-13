@@ -15,11 +15,11 @@
  */
 package com.qwazr.webapps.test;
 
-import com.google.common.io.Files;
 import com.qwazr.webapps.WebappServer;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
+import java.nio.file.Files;
 import java.nio.file.Paths;
 
 public class TestServer {
@@ -29,7 +29,7 @@ public class TestServer {
 	public static synchronized void startServer() throws Exception {
 		if (WebappServer.getInstance() != null)
 			return;
-		final File dataDir = Files.createTempDir();
+		final File dataDir = Files.createTempDirectory("webapp-date").toFile();
 		System.setProperty("QWAZR_DATA", dataDir.getAbsolutePath());
 		System.setProperty("PUBLIC_ADDR", "localhost");
 		System.setProperty("LISTEN_ADDR", "localhost");

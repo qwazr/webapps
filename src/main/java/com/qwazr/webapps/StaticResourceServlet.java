@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2016 Emmanuel Keller / QWAZR
+ * Copyright 2015-2020 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -32,11 +32,15 @@ public class StaticResourceServlet extends HttpServlet {
 
 	private final MimetypesFileTypeMap mimeTypeMap;
 
-	public StaticResourceServlet(final String resourcePrefix, final MimetypesFileTypeMap mimeTypeMap) {
+	private final int expirationTimeSec;
+
+	public StaticResourceServlet(final String resourcePrefix, final MimetypesFileTypeMap mimeTypeMap,
+			final int expirationTimeSec) {
 		this.resourcePrefix = resourcePrefix;
 		this.mimeTypeMap = Objects.requireNonNull(mimeTypeMap, "The mimeTypeMap is missing");
+		this.expirationTimeSec = expirationTimeSec;
 	}
-
+	
 	private String getResourcePath(final HttpServletRequest request) {
 		final String path = request.getPathInfo();
 		return path == null ? resourcePrefix : resourcePrefix + path;
@@ -55,7 +59,7 @@ public class StaticResourceServlet extends HttpServlet {
 		final String resourcePath = getResourcePath(request);
 		try (final InputStream input = findResource(resourcePath)) {
 			final String type = mimeTypeMap.getContentType(resourcePath);
-			StaticFileServlet.head(null, type, null, response);
+			StaticFileServlet.head(null, null, type, null, expirationTimeSec, response);
 		} catch (FileNotFoundException e) {
 			response.sendError(404, e.getMessage());
 		}
@@ -67,7 +71,7 @@ public class StaticResourceServlet extends HttpServlet {
 		final String resourcePath = getResourcePath(request);
 		try (final InputStream input = findResource(resourcePath)) {
 			final String type = mimeTypeMap.getContentType(resourcePath);
-			StaticFileServlet.head(null, type, null, response);
+			StaticFileServlet.head(null, null, type, null, expirationTimeSec, response);
 			IOUtils.copy(input, response.getOutputStream());
 		} catch (FileNotFoundException e) {
 			response.sendError(404, e.getMessage());

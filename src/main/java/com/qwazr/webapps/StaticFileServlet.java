@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 Emmanuel Keller / QWAZR
+ * Copyright 2015-2020 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,6 +16,7 @@
 package com.qwazr.webapps;
 
 import com.qwazr.server.ServerException;
+import com.qwazr.utils.HashUtils;
 import org.apache.commons.io.IOUtils;
 
 import javax.activation.MimetypesFileTypeMap;
@@ -33,9 +34,12 @@ public class StaticFileServlet extends HttpServlet {
 
 	private final MimetypesFileTypeMap mimeTypeMap;
 	private final Path staticPath;
+	private final int expirationSecTime;
 
-	public StaticFileServlet(final MimetypesFileTypeMap mimeTypeMap, final Path staticPath) {
+	public StaticFileServlet(final MimetypesFileTypeMap mimeTypeMap, final Path staticPath,
+			final int expirationSecTime) {
 		this.mimeTypeMap = mimeTypeMap;
+		this.expirationSecTime = expirationSecTime;
 		if (staticPath == null)
 			throw new ServerException("The path is empty");
 		if (!Files.exists(staticPath))
@@ -71,16 +75,20 @@ public class StaticFileServlet extends HttpServlet {
 		return staticFile.toFile();
 	}
 
-	final static void head(final Long length, final String type, final Long lastModified,
-			final HttpServletResponse response) {
+	static void head(final String fileName, final Long length, final String type, final Long lastModified,
+			final long expirationSecTime, final HttpServletResponse response) {
 		if (type != null)
 			response.setContentType(type);
 		if (length != null)
 			response.setContentLengthLong(length);
-		if (lastModified != null)
+		if (lastModified != null) {
 			response.setDateHeader("Last-Modified", lastModified);
-		response.setHeader("Cache-Control", "max-age=86400");
-		response.setDateHeader("Expires", System.currentTimeMillis() + 86400 * 1000);
+			if (fileName != null)
+				response.setHeader("ETag",
+						HashUtils.getMurmur3Hash32Hex(fileName) + '-' + Long.toHexString(lastModified));
+		}
+		response.setHeader("Cache-Control", "max-age=" + expirationSecTime);
+		response.setDateHeader("Expires", System.currentTimeMillis() + expirationSecTime * 1000);
 	}
 
 	@Override
@@ -89,7 +97,7 @@ public class StaticFileServlet extends HttpServlet {
 		if (staticFile == null)
 			return;
 		final String type = mimeTypeMap.getContentType(staticFile);
-		head(staticFile.length(), type, staticFile.lastModified(), response);
+		head(staticFile.toString(), staticFile.length(), type, staticFile.lastModified(), expirationSecTime, response);
 	}
 
 	@Override
@@ -98,7 +106,7 @@ public class StaticFileServlet extends HttpServlet {
 		if (staticFile == null)
 			return;
 		final String type = mimeTypeMap.getContentType(staticFile);
-		head(staticFile.length(), type, staticFile.lastModified(), response);
+		head(staticFile.toString(), staticFile.length(), type, staticFile.lastModified(), expirationSecTime, response);
 		try (final FileInputStream fis = new FileInputStream(staticFile)) {
 			final ServletOutputStream out = response.getOutputStream();
 			IOUtils.copy(fis, out);

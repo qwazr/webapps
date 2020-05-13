@@ -52,17 +52,11 @@ public class WebappHttpResponse implements HttpServletResponse {
 		return response.getWriter();
 	}
 
-	public void sendFile(File file) throws IOException {
-		FileInputStream fis = new FileInputStream(file);
-		try {
-			BufferedInputStream bis = new BufferedInputStream(fis);
-			try {
+	public void sendFile(final File file) throws IOException {
+		try (final FileInputStream fis = new FileInputStream(file)) {
+			try (final BufferedInputStream bis = new BufferedInputStream(fis)) {
 				IOUtils.copy(bis, response.getOutputStream());
-			} finally {
-				IOUtils.closeQuietly(bis);
 			}
-		} finally {
-			IOUtils.closeQuietly(fis);
 		}
 	}
 

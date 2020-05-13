@@ -36,6 +36,9 @@ import javax.ws.rs.core.Response;
 import java.io.IOException;
 import java.nio.file.Files;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.Is.is;
+
 public class ServletTest implements TestChecker {
 
 	public static WebappServer server;
@@ -95,6 +98,7 @@ public class ServletTest implements TestChecker {
 				target.path("webjars/bootstrap/4.3.1/css/bootstrap.css").request().get(), 200)) {
 			final String content = checkEntity(response, MediaType.valueOf("text/css"));
 			checkContains(content, "bootstrap");
+			assertThat(response.getHeaderString("ETag"), is("bootstrap.css_4.3.1"));
 		}
 	}
 
