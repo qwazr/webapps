@@ -34,13 +34,15 @@ public class StaticResourceServlet extends HttpServlet {
 
 	private final int expirationTimeSec;
 
+	private final long lastModified = System.currentTimeMillis();
+
 	public StaticResourceServlet(final String resourcePrefix, final MimetypesFileTypeMap mimeTypeMap,
 			final int expirationTimeSec) {
 		this.resourcePrefix = resourcePrefix;
 		this.mimeTypeMap = Objects.requireNonNull(mimeTypeMap, "The mimeTypeMap is missing");
 		this.expirationTimeSec = expirationTimeSec;
 	}
-	
+
 	private String getResourcePath(final HttpServletRequest request) {
 		final String path = request.getPathInfo();
 		return path == null ? resourcePrefix : resourcePrefix + path;
@@ -59,7 +61,7 @@ public class StaticResourceServlet extends HttpServlet {
 		final String resourcePath = getResourcePath(request);
 		try (final InputStream input = findResource(resourcePath)) {
 			final String type = mimeTypeMap.getContentType(resourcePath);
-			StaticFileServlet.head(null, null, type, null, expirationTimeSec, response);
+			StaticFileServlet.head(resourcePath, null, type, lastModified, expirationTimeSec, response);
 		} catch (FileNotFoundException e) {
 			response.sendError(404, e.getMessage());
 		}
@@ -71,7 +73,7 @@ public class StaticResourceServlet extends HttpServlet {
 		final String resourcePath = getResourcePath(request);
 		try (final InputStream input = findResource(resourcePath)) {
 			final String type = mimeTypeMap.getContentType(resourcePath);
-			StaticFileServlet.head(null, null, type, null, expirationTimeSec, response);
+			StaticFileServlet.head(resourcePath, null, type, lastModified, expirationTimeSec, response);
 			IOUtils.copy(input, response.getOutputStream());
 		} catch (FileNotFoundException e) {
 			response.sendError(404, e.getMessage());
