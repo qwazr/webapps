@@ -45,13 +45,13 @@ public class DocumentationServlet extends HttpServlet {
 	private File documentationPath = new File("src");
 
 	@Library("freemarker")
-	private FreeMarkerTool freemarkerTool = null;
+	private final FreeMarkerTool freemarkerTool = null;
 
 	@Library("markdown")
-	private MarkdownTool markdownTool = null;
+	private final MarkdownTool markdownTool = null;
 
 	@Library("adoc")
-	private AsciiDoctorTool asciiDoctorTool = null;
+	private final AsciiDoctorTool asciiDoctorTool = null;
 
 	private final MimetypesFileTypeMap mimeTypeMap =
 			new MimetypesFileTypeMap(getClass().getResourceAsStream("/com/qwazr/webapps/mime.types"));

@@ -1,5 +1,5 @@
-/**
- * Copyright 2014-2016 Emmanuel Keller / QWAZR
+/*
+ * Copyright 2014-2020 Emmanuel Keller / QWAZR
  * <p/>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,90 +12,82 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps.body;
-
-import java.util.List;
-import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.core.Form;
 import javax.ws.rs.core.MultivaluedMap;
+import java.util.List;
+import java.util.Map;
 
 public class FormHttpBody implements HttpBodyInterface {
 
-    private final MultivaluedMap<String, String> multiMap;
-    private final Map<String, String[]> simpleMap;
+	private final MultivaluedMap<String, String> multiMap;
+	private final Map<String, String[]> simpleMap;
 
-    FormHttpBody(Form form) {
-	multiMap = form.asMap();
-	simpleMap = null;
-    }
-
-    FormHttpBody(HttpServletRequest request) {
-	simpleMap = request.getParameterMap();
-	multiMap = null;
-    }
-
-    /**
-     * Alias of getFirstParameter
-     *
-     * @param name
-     *            the name of the parameter
-     * @return the value stored for this parameter
-     */
-    public String parameter(String name) {
-	return firstParameter(name);
-    }
-
-    /**
-     *
-     * @param name
-     *            The name of the parameter
-     * @return the value stored for this parameter
-     */
-    public String getParameter(String name) {
-	return firstParameter(name);
-    }
-
-    /**
-     *
-     * @param name
-     *            The name of the parameter
-     * @return the first value or null if the form does not contain any value.
-     */
-    public String firstParameter(String name) {
-	if (simpleMap != null) {
-	    String[] values = simpleMap.get(name);
-	    if (values == null || values.length < 1)
-		return null;
-	    return values[0];
+	FormHttpBody(Form form) {
+		multiMap = form.asMap();
+		simpleMap = null;
 	}
-	if (multiMap != null)
-	    return multiMap.getFirst(name);
-	return null;
-    }
 
-    /**
-     *
-     * @param name
-     *            The name of the parameter
-     * @return an array containing the values or null if the parameter does not
-     *         contain any value.
-     */
-    public String[] getParameters(String name) {
-	if (simpleMap != null)
-	    return simpleMap.get(name);
-	if (multiMap != null) {
-	    List<String> values = multiMap.get(name);
-	    if (values == null)
-		return null;
-	    return values.toArray(new String[values.size()]);
+	FormHttpBody(HttpServletRequest request) {
+		simpleMap = request.getParameterMap();
+		multiMap = null;
 	}
-	return null;
-    }
 
-    public String[] parameters(String name) {
-	return getParameters(name);
-    }
+	/**
+	 * Alias of getFirstParameter
+	 *
+	 * @param name the name of the parameter
+	 * @return the value stored for this parameter
+	 */
+	public String parameter(String name) {
+		return firstParameter(name);
+	}
+
+	/**
+	 * @param name The name of the parameter
+	 * @return the value stored for this parameter
+	 */
+	public String getParameter(String name) {
+		return firstParameter(name);
+	}
+
+	/**
+	 * @param name The name of the parameter
+	 * @return the first value or null if the form does not contain any value.
+	 */
+	public String firstParameter(String name) {
+		if (simpleMap != null) {
+			String[] values = simpleMap.get(name);
+			if (values == null || values.length < 1)
+				return null;
+			return values[0];
+		}
+		if (multiMap != null)
+			return multiMap.getFirst(name);
+		return null;
+	}
+
+	/**
+	 * @param name The name of the parameter
+	 * @return an array containing the values or null if the parameter does not
+	 * contain any value.
+	 */
+	public String[] getParameters(String name) {
+		if (simpleMap != null)
+			return simpleMap.get(name);
+		if (multiMap != null) {
+			final List<String> values = multiMap.get(name);
+			if (values == null)
+				return null;
+			return values.toArray(new String[0]);
+		}
+		return null;
+	}
+
+	public String[] parameters(String name) {
+		return getParameters(name);
+	}
 }

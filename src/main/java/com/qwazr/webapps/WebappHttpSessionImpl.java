@@ -200,7 +200,7 @@ public class WebappHttpSessionImpl implements WebappHttpSession {
 		public void putAll(Map<? extends String, ?> m) {
 			if (m == null)
 				return;
-			m.forEach((key, value) -> put(key, value));
+			m.forEach(this::put);
 		}
 
 		@Override
@@ -214,8 +214,8 @@ public class WebappHttpSessionImpl implements WebappHttpSession {
 
 		@Override
 		public Set<String> keySet() {
-			LinkedHashSet<String> set = new LinkedHashSet<String>();
-			Enumeration<String> e = session.getAttributeNames();
+			final LinkedHashSet<String> set = new LinkedHashSet<>();
+			final Enumeration<String> e = session.getAttributeNames();
 			if (e != null)
 				while (e.hasMoreElements())
 					set.add(e.nextElement());
@@ -232,10 +232,11 @@ public class WebappHttpSessionImpl implements WebappHttpSession {
 			return values;
 		}
 
+		@SuppressWarnings("rawtypes")
 		@Override
 		public Set<Entry<String, Object>> entrySet() {
-			LinkedHashMap<String, Object> map = new LinkedHashMap();
-			Enumeration<String> e = session.getAttributeNames();
+			final LinkedHashMap<String, Object> map = new LinkedHashMap<>();
+			final Enumeration<String> e = session.getAttributeNames();
 			if (e != null) {
 				while (e.hasMoreElements()) {
 					String key = e.nextElement();

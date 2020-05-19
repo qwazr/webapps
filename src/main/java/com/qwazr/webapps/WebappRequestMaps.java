@@ -1,5 +1,5 @@
-/**
- * Copyright 2014-2016 Emmanuel Keller / QWAZR
+/*
+ * Copyright 2014-2020 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -12,7 +12,7 @@
  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
  * See the License for the specific language governing permissions and
  * limitations under the License.
- **/
+ */
 package com.qwazr.webapps;
 
 import javax.servlet.http.HttpServletRequest;
@@ -102,7 +102,7 @@ public abstract class WebappRequestMaps<T> implements Map<String, T> {
 	}
 
 	private Map<String, T> toMap() {
-		final Map<String, T> map = new LinkedHashMap<String, T>();
+		final Map<String, T> map = new LinkedHashMap<>();
 		final Enumeration<String> names = getNames();
 		while (names.hasMoreElements()) {
 			final String key = names.nextElement();

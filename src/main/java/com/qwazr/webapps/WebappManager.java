@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2017 Emmanuel Keller / QWAZR
+ * Copyright 2015-2020 Emmanuel Keller / QWAZR
  * <p>
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -49,9 +49,7 @@ import javax.ws.rs.Path;
 import javax.ws.rs.core.Application;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
@@ -60,11 +58,10 @@ public class WebappManager {
 
 	public final static int DEFAULT_EXPIRATION_TIME = 86400;
 
-	public final static List<Class<?>> SWAGGER_CLASSES =
-			Collections.unmodifiableList(Collections.singletonList(OpenApiResource.class));
+	public final static List<Class<?>> SWAGGER_CLASSES = List.of(OpenApiResource.class);
 
-	public final static List<Class<?>> JACKSON_CLASSES = Collections.unmodifiableList(
-			Arrays.asList(JacksonConfig.class, JacksonXMLProvider.class, JacksonJsonProvider.class));
+	public final static List<Class<?>> JACKSON_CLASSES =
+			List.of(JacksonConfig.class, JacksonXMLProvider.class, JacksonJsonProvider.class);
 
 	public final static String SESSIONS_PERSISTENCE_DIR = "webapp-sessions";
 

@@ -1,3 +1,4 @@
+<#--noinspection JSUnresolvedLibraryURL,JSUnresolvedLibraryURL-->
 <!DOCTYPE html>
 <html lang="en">
 <head>
