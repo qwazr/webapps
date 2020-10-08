@@ -95,10 +95,10 @@ public class ServletTest implements TestChecker {
 	@Test
 	public void testWebjars() throws IOException {
 		try (final Response response = checkResponse(
-				target.path("webjars/bootstrap/4.3.1/css/bootstrap.css").request().get(), 200)) {
+				target.path("webjars/bootstrap/4.5.2/css/bootstrap.css").request().get(), 200)) {
 			final String content = checkEntity(response, MediaType.valueOf("text/css"));
 			checkContains(content, "bootstrap");
-			assertThat(response.getHeaderString("ETag"), is("bootstrap.css_4.3.1"));
+			assertThat(response.getHeaderString("ETag"), is("bootstrap.css_4.5.2"));
 		}
 	}
 

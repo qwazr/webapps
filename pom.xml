@@ -2,7 +2,6 @@
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>qwazr-webapps</artifactId>
-    <version>1.5.1-SNAPSHOT</version>
     <name>QWAZR Webapps</name>
     <description>Web application server for QWAZR</description>
     <packaging>jar</packaging>
@@ -35,30 +34,30 @@
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-scripts</artifactId>
-            <version>1.5.1-SNAPSHOT</version>
+            <version>${project.version}</version>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-library-freemarker</artifactId>
-            <version>1.5.1-SNAPSHOT</version>
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-library-asciidoctor</artifactId>
-            <version>1.5.1-SNAPSHOT</version>
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.qwazr</groupId>
             <artifactId>qwazr-library-markdown</artifactId>
-            <version>1.5.1-SNAPSHOT</version>
+            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>com.jamesmurty.utils</groupId>
             <artifactId>java-xmlbuilder</artifactId>
-            <version>1.2</version>
+            <version>1.3</version>
         </dependency>
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
@@ -75,12 +74,12 @@
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-jaxrs2</artifactId>
-            <version>2.1.2</version>
+            <version>2.1.5</version>
         </dependency>
         <dependency>
             <groupId>io.swagger.core.v3</groupId>
             <artifactId>swagger-jaxrs2-servlet-initializer-v2</artifactId>
-            <version>2.1.2</version>
+            <version>2.1.5</version>
         </dependency>
         <dependency>
             <groupId>org.webjars</groupId>
@@ -91,7 +90,7 @@
         <dependency>
             <groupId>org.webjars</groupId>
             <artifactId>bootstrap</artifactId>
-            <version>4.3.1</version>
+            <version>4.5.2</version>
             <scope>test</scope>
         </dependency>
 
